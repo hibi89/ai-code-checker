@@ -73,6 +73,7 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 - AI가 만든 발견 항목의 발췌 일치는 위치 확인일 뿐, 결함 판정 자체의 검증은 아닙니다. High/Critical 항목은 사람이 원본과 실행 맥락을 확인해야 합니다.
 - 이 도구는 테스트 실행, 침투 테스트, 보안 인증 또는 무결점 보증을 제공하지 않습니다.
 - 선택 파일과 마스킹된 코드가 동의 후 Google Gemini API로 전송됩니다.
+- API 오류 `HTTP 401 UNAUTHENTICATED`가 나오면 로컬 `.env`의 키가 유효한지, 해당 Google 프로젝트에서 Gemini API를 사용할 수 있는지 확인하세요. 키는 저장소, 채팅, 이슈에 올리지 마세요.
 
 ## 검수
 

@@ -115,6 +115,27 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertNotIn(source_secret, str(error.exception))
         self.assertNotIn("private provider diagnostic", str(error.exception))
 
+    def test_provider_error_exposes_status_but_not_raw_details(self) -> None:
+        class ProviderClientError(RuntimeError):
+            code = 400
+            status = "INVALID_ARGUMENT"
+            message = "private provider diagnostic"
+
+        class FailingModels:
+            def generate_content(self, **kwargs):
+                raise ProviderClientError()
+
+        client = SimpleNamespace(models=FailingModels())
+        with self.assertRaises(ReviewError) as error:
+            analyze_bundle(
+                bundle_from_text("print('synthetic')\n"),
+                api_key="test-only",
+                client=client,
+            )
+        self.assertIn("HTTP 400", str(error.exception))
+        self.assertIn("INVALID_ARGUMENT", str(error.exception))
+        self.assertNotIn("private provider diagnostic", str(error.exception))
+
     def test_preflight_budget_stops_before_external_api_call(self) -> None:
         models = FakeModels(None)
         client = SimpleNamespace(models=models)

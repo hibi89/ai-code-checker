@@ -42,6 +42,18 @@ class ReviewError(RuntimeError):
     """Raised when review cannot safely produce a structured result."""
 
 
+def _safe_error_label(error: Exception) -> str:
+    """Expose a bounded status hint without echoing provider diagnostics or code."""
+    label = type(error).__name__
+    code = getattr(error, "code", None)
+    if isinstance(code, int) and 400 <= code < 600:
+        label += f" (HTTP {code})"
+    status = getattr(error, "status", None)
+    if isinstance(status, str) and re.fullmatch(r"[A-Z0-9_]{1,40}", status):
+        label += f" {status}"
+    return label
+
+
 @dataclass(frozen=True)
 class CostEstimate:
     estimated_input_tokens: int
@@ -210,7 +222,7 @@ def analyze_bundle(
     except ReviewError:
         raise
     except Exception as error:
-        raise ReviewError(f"AI 분석 요청이 실패했습니다: {type(error).__name__}") from error
+        raise ReviewError(f"AI 분석 요청이 실패했습니다: {_safe_error_label(error)}") from error
 
     duration_ms = int((time.monotonic() - started_at) * 1000)
     usage = _read_usage(
