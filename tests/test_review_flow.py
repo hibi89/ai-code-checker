@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from code_input import bundle_from_text
 from code_input import InputError, InputLimits
-from main import Settings, _read_stdin_bundle, _save_report, run_cli
+from main import Settings, _configure_console_encoding, _read_stdin_bundle, _save_report, run_cli
 from reporting import convert_ai_findings, render_report, verify_ai_citation
 from review_models import AIReview, AIReviewFinding, PerspectiveCheck, TokenUsage
 from reviewer import ReviewError, analyze_bundle, append_usage_log, estimate_request_cost
@@ -47,6 +47,22 @@ class FakeModels:
 
 
 class ReviewFlowTests(unittest.TestCase):
+    def test_console_streams_are_reconfigured_for_utf8_when_supported(self) -> None:
+        class ReconfigurableStream:
+            def __init__(self):
+                self.options = None
+
+            def reconfigure(self, **kwargs):
+                self.options = kwargs
+
+        stdout = ReconfigurableStream()
+        stderr = ReconfigurableStream()
+        with patch("main.sys.stdout", stdout), patch("main.sys.stderr", stderr):
+            _configure_console_encoding()
+
+        self.assertEqual(stdout.options, {"encoding": "utf-8", "errors": "backslashreplace"})
+        self.assertEqual(stderr.options, {"encoding": "utf-8", "errors": "backslashreplace"})
+
     def test_default_report_is_saved_under_user_app_data_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp)

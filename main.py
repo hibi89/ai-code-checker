@@ -107,6 +107,17 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _configure_console_encoding() -> None:
+    """Keep Korean CLI output usable on Windows consoles with legacy code pages."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="backslashreplace")
+            except (OSError, ValueError):
+                pass
+
+
 def _read_stdin_bundle(filename: str, limits: InputLimits) -> CodeBundle:
     try:
         if sys.stdin.isatty():
@@ -196,6 +207,7 @@ def _usage_log_path() -> Path:
 
 
 def run_cli(argv: list[str] | None = None) -> int:
+    _configure_console_encoding()
     parser = build_parser()
     args = parser.parse_args(argv)
     limits = InputLimits()
