@@ -13,6 +13,8 @@
 
 위 생성 실패 기록 이후 CLI 호출 경로를 Google이 새 프로젝트에 권장하는 Interactions API로 전환했다. 같은 `gemini-3.1-flash-lite`·JSON 스키마·원가 한도를 쓰며, `store=false`를 명시한다. 이 업데이트된 CLI로는 아직 실 API 파일럿을 하지 않았다. 마지막 `ConnectError` 요청의 사용량/청구를 Google AI Studio에서 확인한 뒤 아래 두 합성 ZIP을 각각 한 번만 실행한다. [Interactions API 지원 모델·저장 설정](https://ai.google.dev/gemini-api/docs/interactions-overview) · [구조화 출력](https://ai.google.dev/gemini-api/docs/structured-output)
 
+2026-10-26 재확인: 현재 열려 있는 AI Studio 문서 탭은 API 키/대시보드 링크를 Google 로그인 화면으로 보낸다. 기존 브라우저 세션에는 사용량 화면이 열려 있지 않으며, 계정 로그인이나 키 화면 열람은 진행하지 않았다. 따라서 이전 `ConnectError`의 실제 과금 여부와 Paid 프로젝트 설정은 여전히 미확인이다. 사용량을 확인할 수 있는 로그인 세션에서 먼저 기존 요청의 기록을 대조한 다음에만 아래 유료 실 API 파일럿을 진행한다. 이때도 합성 ZIP 두 건 외에는 전송하지 않는다.
+
 예제 코드는 합성이며 실행하지 않는다. CLI는 코드를 실행하지 않고 텍스트로만 읽는다. 다만 실제 분석은 선택한 파일을 Google Gemini API로 전송하므로, 전송을 허용할 때만 아래 명령을 실행한다.
 
 ## 실행 순서
