@@ -77,7 +77,7 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 - 선택 파일과 마스킹된 코드가 동의 후 Google Gemini API로 전송됩니다.
 - 결제가 활성화된 Gemini 유료 프로젝트에서는 프롬프트·응답을 제품 개선에 사용하지 않지만, 현재 Google 정책상 악용 모니터링을 위해 입력·맥락·응답이 최대 55일 보관될 수 있습니다. 이 도구는 Zero Data Retention을 제공하지 않습니다. [Google 데이터 처리 및 보관 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
 - 고객 코드는 클라우드 동기화 폴더 밖에서 처리하세요. 판매 운영 시 작업 사본·리포트 사본·임시 파일을 납품 후 7일 안에 직접 삭제해야 합니다. Google 측 보관은 별도입니다.
-- API 오류 `HTTP 401 UNAUTHENTICATED`가 나오면 로컬 `.env`의 키가 유효한지, 해당 Google 프로젝트에서 Gemini API를 사용할 수 있는지 확인하세요. 키는 저장소, 채팅, 이슈에 올리지 마세요.
+- API 오류 `HTTP 401 UNAUTHENTICATED`는 보통 키가 없거나 유효하지 않거나 만료된 경우입니다. Google AI Studio의 API Keys 화면에서 키 상태·유형과 연결 프로젝트를 확인하고, 오래된 Standard 키라면 Gemini API 제한을 적용하거나 새 키를 발급해 로컬 `.env`의 `GEMINI_API_KEY`만 교체한 뒤 다시 확인하세요. 2026-05-28부터 AI Studio 신규 키는 auth key로 발급되며, 제한이 없는 Standard 키는 거절될 수 있습니다. 키를 저장소·채팅·이슈에 올리지 마세요. [키 유형·관리 안내](https://ai.google.dev/gemini-api/docs/api-key) · [401 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 
 ## 검수
 

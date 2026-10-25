@@ -10,7 +10,7 @@
 - **MVP 구현:** 폴더/ZIP/단일 파일/표준 입력, 비밀값 마스킹, 로컬 정적 검사, 단일 Gemini 구조화 분석, 비용 상한, 사용량 로그, 한국어 Markdown 리포트를 구현했다.
 - **기본 검수:** 자동 테스트 29개, Python 구문 컴파일, 의존성 검사, 외부 API를 쓰지 않는 로컬 dry-run을 통과했다. 실행 환경은 Windows와 Python 3.11이다.
 - **교차환경 CI:** AI 생성 Markdown 이스케이프와 Windows 한국어 콘솔 인코딩 문제를 수정했다. 수정본에서 Ubuntu·Windows × Python 3.10~3.13의 8개 조합이 컴파일, 단위 테스트, 외부 API 없는 dry-run까지 모두 통과했다. [GitHub Actions 결과](https://github.com/hibi89/ai-code-checker/actions/runs/40217283267)
-- **아직 출시 전:** 합성 코드 API 연동 시도가 Google에서 `HTTP 401 UNAUTHENTICATED`로 거절되어 구조화 응답과 실제 사용량을 확인하지 못했다. 유효한 Gemini API 인증 설정이 필요하다. 대표 코드 정확성 수동 검수, 다른 OS/파이썬 버전 호환성, 실제 주문 시간·원가 파일럿도 남아 있다.
+- **아직 출시 전:** 합성 코드 API 연동 시도가 Google에서 `HTTP 401 UNAUTHENTICATED`로 거절되어 구조화 응답과 실제 사용량을 확인하지 못했다. 현재는 연결 프로젝트·키 상태·키 유형을 AI Studio에서 확인하고 유효한 Gemini API 인증을 설정해야 한다. OS/Python 매트릭스는 통과했지만, 대표 코드 정확성 수동 검수와 실 API 원가·주문 시간 파일럿, 운영 절차 확인은 남아 있다.
 - 따라서 **설계와 MVP는 완료**, 크몽 판매 등록은 API 연결·정확성·실운영 검증 후 진행한다.
 
 ## 1. 목표와 판매 방식
