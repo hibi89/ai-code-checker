@@ -20,7 +20,7 @@
 
 ## 요구 사항
 
-- Python 3.10 이상
+- Python 3.11 이상 (CI 검증: Python 3.11~3.15)
 - Google Gemini API 키
 
 ## 설치 (Windows PowerShell)
@@ -90,7 +90,7 @@ AI 응답에서 8개 점검 관점이 빠지거나 중복되면 리포트에 불
 python -m unittest discover -s tests -v
 ~~~
 
-공개 저장소의 GitHub Actions는 push/PR마다 Ubuntu·Windows와 Python 3.10~3.13 조합에서 컴파일, 자동 테스트, 외부 API 없는 dry-run을 실행하고, 별도 작업에서 `requirements.txt`의 알려진 취약점을 `pip-audit`로 확인합니다.
+공개 저장소의 GitHub Actions는 push/PR마다 Ubuntu 24.04·26.04 및 Windows Server 2025에서 Python 3.11~3.15 조합의 컴파일, 자동 테스트, 외부 API 없는 dry-run을 실행하고, 별도 작업에서 `requirements.txt`의 알려진 취약점을 `pip-audit`로 확인합니다. Python 3.10은 2026-10-01 보안 지원이 종료되어 지원 대상에서 제외했습니다.
 
 ## 상품 설계 문서
 
