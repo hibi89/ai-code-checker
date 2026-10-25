@@ -59,6 +59,18 @@ def _safe_error_label(error: Exception) -> str:
     return label
 
 
+def _safe_error_hint(error: Exception) -> str:
+    """Give actionable authentication guidance without exposing key or provider text."""
+    code = getattr(error, "code", None)
+    status = getattr(error, "status", None)
+    if code == 401 or status == "UNAUTHENTICATED":
+        return (
+            " Google AI Studio에서 GEMINI_API_KEY의 유효성, 키 유형, 연결 프로젝트를 확인하세요. "
+            "키 값은 공유하지 마세요."
+        )
+    return ""
+
+
 @dataclass(frozen=True)
 class CostEstimate:
     estimated_input_tokens: int
@@ -227,7 +239,10 @@ def analyze_bundle(
     except ReviewError:
         raise
     except Exception as error:
-        raise ReviewError(f"AI 분석 요청이 실패했습니다: {_safe_error_label(error)}") from error
+        hint = _safe_error_hint(error)
+        raise ReviewError(
+            f"AI 분석 요청이 실패했습니다: {_safe_error_label(error)}{hint}"
+        ) from error
 
     duration_ms = int((time.monotonic() - started_at) * 1000)
     usage = _read_usage(

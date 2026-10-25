@@ -202,6 +202,29 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertIn("INVALID_ARGUMENT", str(error.exception))
         self.assertNotIn("private provider diagnostic", str(error.exception))
 
+    def test_auth_error_has_key_setup_hint_without_exposing_provider_details(self) -> None:
+        class UnauthenticatedClientError(RuntimeError):
+            code = 401
+            status = "UNAUTHENTICATED"
+            message = "private API key payload"
+
+        class FailingModels:
+            def generate_content(self, **kwargs):
+                raise UnauthenticatedClientError()
+
+        client = SimpleNamespace(models=FailingModels())
+        with self.assertRaises(ReviewError) as error:
+            analyze_bundle(
+                bundle_from_text("def add(a, b): return a + b\n"),
+                api_key="synthetic-test-key",
+                client=client,
+            )
+
+        self.assertIn("HTTP 401", str(error.exception))
+        self.assertIn("Google AI Studio", str(error.exception))
+        self.assertIn("GEMINI_API_KEY", str(error.exception))
+        self.assertNotIn("private API key payload", str(error.exception))
+
     def test_preflight_budget_stops_before_external_api_call(self) -> None:
         models = FakeModels(None)
         client = SimpleNamespace(models=models)
