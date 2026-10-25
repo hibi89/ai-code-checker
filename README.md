@@ -85,6 +85,8 @@ python -m unittest discover -s tests -v
 
 [상품화 일정, 범위, 가격 실험, 비용 가정 및 출시 전 검수 기준](PRODUCT_PLAN_KMONG.md)
 
+[크몽 서비스 제목, 패키지 설명, 준비사항 및 FAQ 초안](KMONG_LISTING_DRAFT.md)
+
 크몽 썸네일 시안은 [assets/kmong-thumbnail-concept.jpg](assets/kmong-thumbnail-concept.jpg), 합성 코드로 만든 결과물 서식 예시는 [output/pdf/sample-report-example.pdf](output/pdf/sample-report-example.pdf)입니다. 샘플은 실제 분석 결과가 아닙니다.
 
 ## 라이선스
