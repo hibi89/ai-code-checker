@@ -104,8 +104,9 @@ SENSITIVE_FILENAMES = {
 SENSITIVE_SUFFIXES = {".pem", ".p12", ".pfx", ".key", ".jks", ".keystore"}
 
 _SECRET_NAME = (
-    r"(?:api[_-]?(?:key|token)|access[_-]?token|auth[_-]?token|refresh[_-]?token|"
-    r"client[_-]?secret|secret(?:[_-]?key)?|token|password|passwd|"
+    r"(?:api[_-]?(?:key|token)|access[_-]?(?:key(?:[_-]?id)?|token)|"
+    r"auth[_-]?token|refresh[_-]?token|client[_-]?secret|"
+    r"secret[_-]?access[_-]?key|secret(?:[_-]?key)?|credentials?|token|password|passwd|"
     r"private[_-]?key|database[_-]?url|db[_-]?url|connection[_-]?string|"
     r"dsn|redis[_-]?url|mongo[_-]?url)"
 )

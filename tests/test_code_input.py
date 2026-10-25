@@ -45,6 +45,15 @@ class CodeInputTests(unittest.TestCase):
         self.assertIn("API_KEY = <REDACTED>", rendered)
         self.assertEqual(bundle.redaction_count, 1)
 
+    def test_aws_secret_access_key_is_redacted(self) -> None:
+        secret = "synthetic-aws-secret-value-123456"
+        bundle = bundle_from_text(f'AWS_SECRET_ACCESS_KEY = "{secret}"\n')
+
+        rendered = bundle.render()
+        self.assertNotIn(secret, rendered)
+        self.assertIn('AWS_SECRET_ACCESS_KEY = "<REDACTED>"', rendered)
+        self.assertEqual(bundle.redaction_count, 1)
+
     def test_common_korean_personal_data_is_redacted_but_example_email_is_kept(self) -> None:
         source_text = (
             'owner = "owner@' + 'mycompany.co.kr"\n'
