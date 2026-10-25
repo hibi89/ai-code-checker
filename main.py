@@ -108,20 +108,32 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _read_stdin_bundle(filename: str, limits: InputLimits) -> CodeBundle:
-    if sys.stdin.isatty():
-        print("코드를 붙여 넣고 입력을 마치면 새 줄에 END를 입력하세요.")
-        lines: list[str] = []
-        while True:
-            try:
-                line = input()
-            except EOFError:
-                break
-            if line.strip() == "END":
-                break
-            lines.append(line)
-        text = "\n".join(lines)
-    else:
-        text = sys.stdin.read(limits.max_total_bytes + 1)
+    try:
+        if sys.stdin.isatty():
+            print("코드를 붙여 넣고 입력을 마치면 새 줄에 END를 입력하세요.")
+            lines: list[str] = []
+            total_bytes = 0
+            while True:
+                line = sys.stdin.readline(limits.max_total_bytes + 2)
+                if not line:
+                    break
+                if len(line) > limits.max_total_bytes + 1:
+                    raise InputError("붙여넣은 입력이 프로젝트 크기 제한을 초과했습니다.")
+                line = line.rstrip("\n")
+                if line.endswith("\r"):
+                    line = line[:-1]
+                if line.strip() == "END":
+                    break
+                line_bytes = len(line.encode("utf-8")) + (1 if lines else 0)
+                total_bytes += line_bytes
+                if total_bytes > min(limits.max_file_bytes, limits.max_total_bytes):
+                    raise InputError("붙여넣은 입력이 파일 크기 제한을 초과했습니다.")
+                lines.append(line)
+            text = "\n".join(lines)
+        else:
+            text = sys.stdin.read(limits.max_total_bytes + 1)
+    except UnicodeError as error:
+        raise InputError("표준 입력을 UTF-8 텍스트로 읽지 못했습니다.") from error
     return bundle_from_text(text, filename=filename, limits=limits)
 
 
@@ -197,17 +209,6 @@ def run_cli(argv: list[str] | None = None) -> int:
         static_findings = run_static_checks(bundle)
         _print_input_summary(bundle, len(static_findings))
 
-        if args.dry_run:
-            print("드라이런 완료: 외부 전송과 AI 호출은 하지 않았습니다.")
-            return 0
-
-        if not settings.api_key:
-            print("GEMINI_API_KEY가 없습니다. .env를 설정한 뒤 다시 실행하세요.", file=sys.stderr)
-            return 2
-        if args.order_ref and not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", args.order_ref):
-            print("--order-ref는 영문·숫자·점·밑줄·하이픈으로 된 1~64자만 허용합니다.", file=sys.stderr)
-            return 2
-
         prompt = build_prompt(bundle)
         estimate = estimate_request_cost(
             prompt,
@@ -220,13 +221,28 @@ def run_cli(argv: list[str] | None = None) -> int:
             f"(입력 추정 {estimate.estimated_input_tokens:,} tokens, "
             f"출력 상한 {estimate.max_output_tokens:,} tokens)"
         )
-        if estimate.max_estimated_cost_usd > settings.max_estimated_cost_usd:
+        over_budget = estimate.max_estimated_cost_usd > settings.max_estimated_cost_usd
+        if over_budget:
             print(
-                "예상 원가가 설정 상한을 넘어 API를 호출하지 않았습니다. "
-                "입력 범위를 줄이거나 MAX_ESTIMATED_COST_USD를 검토하세요.",
+                "예상 원가가 설정 상한을 넘습니다. 실제 분석은 입력 범위를 줄이거나 "
+                "MAX_ESTIMATED_COST_USD를 검토하기 전까지 API를 호출하지 않습니다.",
                 file=sys.stderr,
             )
+
+        if args.dry_run:
+            print("드라이런 완료: 외부 전송과 AI 호출은 하지 않았습니다.")
+            return 0
+
+        if over_budget:
             return 2
+
+        if not settings.api_key:
+            print("GEMINI_API_KEY가 없습니다. .env를 설정한 뒤 다시 실행하세요.", file=sys.stderr)
+            return 2
+        if args.order_ref and not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", args.order_ref):
+            print("--order-ref는 영문·숫자·점·밑줄·하이픈으로 된 1~64자만 허용합니다.", file=sys.stderr)
+            return 2
+
         if not _confirm_cloud_upload(args):
             print("외부 전송 동의가 없어 AI 분석을 시작하지 않았습니다.")
             return 2

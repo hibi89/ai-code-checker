@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import json
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from code_input import bundle_from_text
+from code_input import InputError, InputLimits
+from main import Settings, _read_stdin_bundle, run_cli
 from reporting import convert_ai_findings, render_report, verify_ai_citation
 from review_models import AIReview, AIReviewFinding, PerspectiveCheck, TokenUsage
 from reviewer import ReviewError, analyze_bundle, append_usage_log, estimate_request_cost
@@ -41,6 +46,41 @@ class FakeModels:
 
 
 class ReviewFlowTests(unittest.TestCase):
+    def test_dry_run_prints_cost_preflight_without_calling_ai(self) -> None:
+        settings = Settings(
+            api_key="",
+            model="gemini-3.1-flash-lite",
+            input_price=0.25,
+            output_price=1.50,
+            max_output_tokens=2048,
+            max_estimated_cost_usd=0.05,
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "demo.py"
+            source.write_text("print('synthetic')\n", encoding="utf-8")
+            output = io.StringIO()
+            with (
+                patch("main.load_settings", return_value=settings),
+                patch("main.analyze_bundle") as analyze,
+                redirect_stdout(output),
+            ):
+                result = run_cli([str(source), "--dry-run"])
+
+        self.assertEqual(result, 0)
+        self.assertIn("예상 최대 API 원가", output.getvalue())
+        self.assertIn("외부 전송과 AI 호출은 하지 않았습니다", output.getvalue())
+        analyze.assert_not_called()
+
+    def test_interactive_stdin_stops_when_byte_limit_is_exceeded(self) -> None:
+        class TerminalInput(io.StringIO):
+            def isatty(self) -> bool:
+                return True
+
+        terminal = TerminalInput("0123456789\nEND\n")
+        with patch("main.sys.stdin", terminal), patch("builtins.print"):
+            with self.assertRaises(InputError):
+                _read_stdin_bundle("stdin.py", InputLimits(max_file_bytes=8, max_total_bytes=8))
+
     def test_citation_requires_matching_path_line_and_exact_excerpt(self) -> None:
         bundle = bundle_from_text("def read_user(user_id):\n    return user_id\n")
         finding = AIReviewFinding(
@@ -204,6 +244,34 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertFalse(ai_findings[0].citation_verified)
         self.assertIn("원본 대조 실패", report)
         self.assertIn("결함 자체를 증명하지는 않습니다", report)
+
+    def test_report_escapes_model_generated_markdown_links_and_images(self) -> None:
+        injected = "![pixel](https://tracker.example/pixel.png) [click](https://tracker.example/)"
+        review = empty_review().model_copy(update={
+            "summary": injected,
+            "checks": [
+                PerspectiveCheck(
+                    perspective="security",
+                    status="no_clear_issue",
+                    summary=injected,
+                ),
+                *empty_review().checks[1:],
+            ],
+        })
+        bundle = bundle_from_text("print('safe')\n")
+        report = render_report(
+            bundle=bundle,
+            static_findings=[],
+            ai_review=review,
+            ai_findings=[],
+            usage=TokenUsage("gemini-3.1-flash-lite", 10, 10, 20, 0.0000175, "test"),
+            preflight_cost_usd=0.001,
+            cost_limit_usd=0.05,
+        )
+
+        self.assertNotIn("![pixel]", report)
+        self.assertNotIn("](https://tracker.example", report)
+        self.assertIn("&#33;&#91;pixel&#93;&#40;https://tracker.example/pixel.png&#41;", report)
 
 
 if __name__ == "__main__":

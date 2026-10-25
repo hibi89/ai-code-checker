@@ -54,6 +54,8 @@ Get-Content -Raw .\main.py | python main.py --filename main.py
 
 코드를 Gemini로 보내기 전에 전송 동의 화면이 나옵니다. 자동화·비대화형 실행에서는 --confirm-upload를 명시해야 합니다.
 
+`--dry-run`은 실제 파일 목록, 마스킹 및 정적 검사 결과와 예상 최대 API 원가를 보여줍니다. 설정한 원가 상한을 넘는지도 확인하지만, 어떤 경우에도 외부 API를 호출하지 않습니다.
+
 ~~~powershell
 python main.py .\project.zip --confirm-upload --order-ref KM-001
 ~~~
