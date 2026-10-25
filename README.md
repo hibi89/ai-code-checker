@@ -93,6 +93,8 @@ python -m unittest discover -s tests -v
 
 [크몽 서비스 제목, 패키지 설명, 준비사항 및 FAQ 초안](KMONG_LISTING_DRAFT.md)
 
+[Gemini 실 API 인증 후 정확도·원가·처리시간 파일럿 절차](PILOT_EVALUATION.md)
+
 크몽 등록용 메인 이미지 후보는 [assets/kmong-thumbnail-kmong-ready.png](assets/kmong-thumbnail-kmong-ready.png) (4:3)입니다. 예전 아이디어 시안은 [assets/kmong-thumbnail-concept.jpg](assets/kmong-thumbnail-concept.jpg)입니다. 합성 코드로 만든 결과물 서식 예시는 [output/pdf/sample-report-example.pdf](output/pdf/sample-report-example.pdf)이며 실제 분석 결과가 아닙니다.
 
 ## 라이선스
