@@ -4,7 +4,7 @@ import json
 import io
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,7 +13,7 @@ from unittest.mock import patch
 from code_input import bundle_from_text
 from code_input import InputError, InputLimits
 from main import Settings, _configure_console_encoding, _read_stdin_bundle, _save_report, run_cli
-from reporting import convert_ai_findings, render_report, verify_ai_citation
+from reporting import convert_ai_findings, render_report, review_completeness_issues, verify_ai_citation
 from review_models import AIReview, AIReviewFinding, PerspectiveCheck, TokenUsage
 from reviewer import ReviewError, analyze_bundle, append_usage_log, estimate_request_cost
 
@@ -343,6 +343,68 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertIn("원본 대조 실패", report)
         self.assertIn("결함 자체를 증명하지는 않습니다", report)
 
+    def test_report_flags_missing_or_duplicate_review_perspectives(self) -> None:
+        complete = empty_review()
+        incomplete = complete.model_copy(update={
+            "checks": [
+                item for item in complete.checks if item.perspective != "testing"
+            ] + [complete.checks[0]],
+        })
+        issues = review_completeness_issues(incomplete)
+        self.assertEqual(len(issues), 2)
+        self.assertIn("테스트", issues[0])
+        self.assertIn("보안", issues[1])
+
+        report = render_report(
+            bundle=bundle_from_text("print('hello')\n"),
+            static_findings=[],
+            ai_review=incomplete,
+            ai_findings=[],
+            usage=TokenUsage("gemini-3.1-flash-lite", 10, 10, 20, 0.0000175, "test"),
+            preflight_cost_usd=0.001,
+            cost_limit_usd=0.05,
+        )
+        self.assertIn("AI 관점 응답 형식: 미완료", report)
+        self.assertIn("불완전한 AI 응답", report)
+        self.assertIn("납품 가능한 완료 결과가 아닙니다", report)
+
+    def test_cli_does_not_return_success_for_incomplete_ai_checklist(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "demo.py"
+            source.write_text("print('synthetic')\n", encoding="utf-8")
+            report_path = root / "incomplete.md"
+            settings = Settings(
+                api_key="test-only",
+                model="gemini-3.1-flash-lite",
+                input_price=0.25,
+                output_price=1.50,
+                max_output_tokens=2048,
+                max_estimated_cost_usd=0.05,
+            )
+            review = empty_review().model_copy(update={
+                "checks": empty_review().checks[:-1],
+            })
+            usage = TokenUsage("gemini-3.1-flash-lite", 10, 10, 20, 0.0000175, "test")
+            estimate = estimate_request_cost("synthetic prompt", 0.25, 1.50, 2048)
+            output = io.StringIO()
+            with (
+                patch("main.load_settings", return_value=settings),
+                patch("main.analyze_bundle", return_value=(review, usage, estimate, [])),
+                patch("reviewer.append_usage_log"),
+                redirect_stdout(output),
+                redirect_stderr(output),
+            ):
+                result = run_cli([
+                    str(source), "--confirm-upload", "--output", str(report_path)
+                ])
+
+            self.assertEqual(result, 2)
+            self.assertTrue(report_path.exists())
+            self.assertIn("AI 응답의 8개 관점 체크리스트가 불완전", output.getvalue())
+            self.assertIn("AI 관점 응답 형식: 미완료", report_path.read_text(encoding="utf-8"))
+            self.assertNotIn("검수가 끝났습니다", output.getvalue())
+
     def test_report_escapes_model_generated_markdown_links_and_images(self) -> None:
         injected = "![pixel](https://tracker.example/pixel.png) [click](https://tracker.example/)"
         review = empty_review().model_copy(update={
@@ -374,3 +436,4 @@ class ReviewFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
