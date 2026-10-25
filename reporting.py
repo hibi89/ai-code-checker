@@ -28,6 +28,22 @@ STATUS_LABELS = {
 }
 
 
+def review_completeness_issues(review: AIReview) -> list[str]:
+    """Return checklist omissions or duplicates without implying review quality."""
+    counts: dict[str, int] = {}
+    for item in review.checks:
+        counts[item.perspective] = counts.get(item.perspective, 0) + 1
+
+    missing = [label for perspective, label in PERSPECTIVE_LABELS.items() if counts.get(perspective, 0) == 0]
+    duplicates = [label for perspective, label in PERSPECTIVE_LABELS.items() if counts.get(perspective, 0) > 1]
+    issues: list[str] = []
+    if missing:
+        issues.append("AI 응답에 점검 결과가 빠진 관점: " + ", ".join(missing))
+    if duplicates:
+        issues.append("AI 응답에 중복 점검 결과가 있는 관점: " + ", ".join(duplicates))
+    return issues
+
+
 def _safe_text(value: str) -> str:
     text = " ".join(str(value).replace("\r", "\n").splitlines()).strip()
     text = html.escape(text, quote=False)
@@ -114,6 +130,7 @@ def render_report(
     findings = _sorted(static_findings + ai_findings)
     check_map = {item.perspective: item for item in ai_review.checks}
     warnings = list(bundle.warnings) + list(usage_warnings or [])
+    completeness_issues = review_completeness_issues(ai_review)
 
     lines = [
         "# AI 보조 코드 검수 리포트",
@@ -122,6 +139,7 @@ def render_report(
         f"- 분석 파일: {len(bundle.files)}개 / {bundle.source_bytes:,} bytes",
         f"- 제외 파일: {len(bundle.excluded_paths)}개",
         "- 분석 방식: 로컬 정적 검사 + Gemini 단일 분석 호출",
+        f"- AI 관점 응답 형식: {'미완료' if completeness_issues else '8개 관점 결과 포함'}",
         "- 코드 실행·의존성 설치: 하지 않음",
         "",
         "> 이 결과는 AI 보조 검수입니다. 취약점 부재나 정상 동작을 보증하지 않습니다. AI 항목은 코드 발췌가 원본에 있는지 별도로 표시하며, 발췌 일치가 결함 자체를 증명하지는 않습니다.",
@@ -145,6 +163,11 @@ def render_report(
             status = STATUS_LABELS[check.status]
             summary = _safe_text(check.summary)
         lines.append(f"| {label} | {status} | {summary} |")
+
+    if completeness_issues:
+        lines.extend(["", "## 불완전한 AI 응답", ""])
+        lines.extend(f"- {_safe_text(issue)}" for issue in completeness_issues)
+        lines.append("- 이 리포트는 납품 가능한 완료 결과가 아닙니다. 누락·중복 관점을 확인하고 다시 검수해야 합니다.")
 
     lines.extend(["", "## 발견 항목", ""])
     if not findings:
@@ -208,3 +231,4 @@ def render_report(
 
     lines.append("")
     return "\n".join(lines)
+
