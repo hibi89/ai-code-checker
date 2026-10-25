@@ -9,7 +9,7 @@
 - **설계 확정:** 40,000원 기본 메뉴, 고객 범위, 운영 흐름, 보안 안내와 출시 기준을 정리했다.
 - **MVP 구현:** 폴더/ZIP/단일 파일/표준 입력, 비밀값 마스킹, 로컬 정적 검사, 단일 Gemini 구조화 분석, 비용 상한, 사용량 로그, 한국어 Markdown 리포트를 구현했다.
 - **기본 검수:** 자동 테스트 34개(Windows에서 33개 통과·POSIX FIFO 검사는 플랫폼상 1개 건너뜀), Python 구문 컴파일, 의존성 검사를 통과했다. 실행 환경은 Windows와 Python 3.11이다.
-- **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, 401 오류 안내를 보완했다. Ubuntu·Windows × Python 3.10~3.13의 8개 조합에서 컴파일, 단위 테스트, 외부 API 없는 dry-run을 모두 확인한다. [GitHub Actions 실행 내역](https://github.com/hibi89/ai-code-checker/actions/workflows/tests.yml)
+- **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, API 오류 안내, 폴더 입력의 특수 파일 제외를 보완했다. 최신 소스 코드 커밋 `7c6fb16`에서 Ubuntu·Windows × Python 3.10~3.13의 8개 작업이 컴파일, 단위 테스트, 외부 API 없는 dry-run을 모두 통과했다. [GitHub Actions 실행](https://github.com/hibi89/ai-code-checker/actions/runs/40221866572)
 - **API 키 확인:** 갱신된 로컬 키로 Gemini 모델 목록 조회에 성공했고 `gemini-3.1-flash-lite`의 `generateContent` 지원도 확인했다. 따라서 이전 401 인증 오류는 해소된 것으로 보인다.
 - **아직 출시 전:** 실제 생성 요청은 `gemini-3.1-flash-lite`에서 503 `UNAVAILABLE`로 두 번 실패했다. 공식 Quickstart의 `gemini-3.8-flash`도 Interactions API 호출 타임아웃, GenerateContent 호출 503이었고, 뒤이은 안전한 합성 샘플 재시도는 `ConnectError`로 끝났다. 구조화 응답·사용량·정확도는 아직 확인하지 못했다. Google은 503을 일시적 과부하/중단으로 안내한다. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 - 공식 Quickstart 예시의 `gemini-3.8-flash`는 2026-12-31까지 유료 단가가 입력 $0.75·출력 $3.75/백만 토큰으로, 현재 저비용 기본 모델 `gemini-3.1-flash-lite`의 설정 단가 $0.25·$1.50보다 높다. 가성비 목표에 따라 기본 모델은 유지하고, 실제 품질·원가 파일럿 없이 변경하지 않는다. [Gemini 3.8 Flash 모델](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) · [공식 가격표](https://ai.google.dev/gemini-api/docs/pricing)
@@ -148,7 +148,7 @@
 - MVP가 지원하는 언어·확장자를 명시한다. 나머지 언어는 분석 범위 밖 또는 제한 분석으로 표시한다.
 - API 실패, 타임아웃, 재시도, 모델 미지원, 구조화 결과 오류, 호출 한도 초과를 처리한다.
 - 부분 실패를 전체 성공으로 표시하지 않는다.
-- **현재 검수:** 로컬 Windows/Python 3.11에서 컴파일, 의존성 검사, 자동 테스트 34개(1개 플랫폼상 건너뜀)를 통과했다. 기존 GitHub Actions의 Ubuntu·Windows × Python 3.10~3.13 매트릭스도 완료했다. 최신 특수 파일 차단 변경의 교차환경 실행은 이번 커밋의 CI를 확인한다. 실제 Gemini 생성 응답과 대표 코드 정확도는 별도 실 API·사람 검수 파일럿에서 확인한다.
+- **현재 검수:** 로컬 Windows/Python 3.11에서 컴파일, 의존성 검사, 자동 테스트 34개(33개 통과·POSIX 전용 1개 건너뜀)를 확인했다. 최신 소스 코드 커밋의 GitHub Actions Ubuntu·Windows × Python 3.10~3.13 매트릭스 8개 작업도 모두 성공해 Linux FIFO 검사를 포함한 교차환경 변경을 확인했다. 실제 Gemini 생성 응답과 대표 코드 정확도는 별도 실 API·사람 검수 파일럿에서 확인한다.
 
 ### 비용과 가성비
 
@@ -246,7 +246,7 @@
 |---|---:|---|
 | 3일 MVP 구현 | 3일 | **구현 범위 완료**: 로컬 운영 도구, 기본 리포트, 호출 원가·사용량 제한 |
 | 최초 설계와 구현 대조 | 2일 | **설계 문서 갱신 완료**: 유지/제외/출시 후 후보를 명시 |
-| 보안·정확성·호환성·원가 실검수 | 3일 | **일부 진행**: 자동 테스트 34개(Windows 1개 건너뜀), 기존 Ubuntu·Windows × Python 3.10~3.13 8개 CI 통과. 생성 API 503/연결 오류, 최신 변경 CI, 실 API·정확도 파일럿 남음 |
+| 보안·정확성·호환성·원가 실검수 | 3일 | **일부 진행**: 자동 테스트 34개와 최신 Ubuntu·Windows × Python 3.10~3.13 8개 CI 통과. 생성 API 503/연결 오류와 실 API·정확도 파일럿 남음 |
 | 샘플 출력과 크몽 등록 자료 | 1~2일 | 썸네일 시안, 합성 샘플 PDF, 서비스 문구·FAQ 초안 준비. 운영 정책과 공개 표현 최종 확인 남음 |
 | 전체 계획 | 약 9~10 집중 작업일 | **코드와 설계는 완료. 크몽 공개 전 약 4~5 집중일의 실검수·등록 준비 예상** |
 
