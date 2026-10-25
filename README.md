@@ -88,7 +88,7 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 python -m unittest discover -s tests -v
 ~~~
 
-공개 저장소의 GitHub Actions는 push/PR마다 Ubuntu·Windows와 Python 3.10~3.13 조합에서 컴파일, 자동 테스트, 외부 API 없는 dry-run을 실행합니다.
+공개 저장소의 GitHub Actions는 push/PR마다 Ubuntu·Windows와 Python 3.10~3.13 조합에서 컴파일, 자동 테스트, 외부 API 없는 dry-run을 실행하고, 별도 작업에서 `requirements.txt`의 알려진 취약점을 `pip-audit`로 확인합니다.
 
 ## 상품 설계 문서
 
