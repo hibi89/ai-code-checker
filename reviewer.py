@@ -156,19 +156,28 @@ def _read_usage(
     output_rate: float,
     duration_ms: int,
 ) -> TokenUsage:
-    metadata = getattr(response, "usage_metadata", None)
+    metadata = getattr(response, "usage", None)
+    interactions_usage = metadata is not None
+    if metadata is None:
+        metadata = getattr(response, "usage_metadata", None)
     if metadata is None:
         return TokenUsage(
             model, None, None, None, None, "API usage metadata unavailable", duration_ms
         )
 
-    prompt_tokens = getattr(metadata, "prompt_token_count", None)
-    candidate_tokens = getattr(metadata, "candidates_token_count", None)
-    thought_tokens = getattr(metadata, "thoughts_token_count", None)
+    if interactions_usage:
+        prompt_tokens = getattr(metadata, "total_input_tokens", None)
+        candidate_tokens = getattr(metadata, "total_output_tokens", None)
+        thought_tokens = getattr(metadata, "total_thought_tokens", None)
+        total_tokens = getattr(metadata, "total_tokens", None)
+    else:
+        prompt_tokens = getattr(metadata, "prompt_token_count", None)
+        candidate_tokens = getattr(metadata, "candidates_token_count", None)
+        thought_tokens = getattr(metadata, "thoughts_token_count", None)
+        total_tokens = getattr(metadata, "total_token_count", None)
     output_tokens = None
     if candidate_tokens is not None or thought_tokens is not None:
         output_tokens = (candidate_tokens or 0) + (thought_tokens or 0)
-    total_tokens = getattr(metadata, "total_token_count", None)
 
     cost = None
     if prompt_tokens is not None and output_tokens is not None:
@@ -222,27 +231,26 @@ def analyze_bundle(
                 retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )
-        response = active_client.models.generate_content(
+        response = active_client.interactions.create(
             model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                response_mime_type="application/json",
-                response_schema=AIReview,
-                temperature=0.1,
-                max_output_tokens=max_output_tokens,
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                    disable=True
-                ),
-            ),
+            input=prompt,
+            system_instruction=SYSTEM_INSTRUCTION,
+            response_format=[{
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": AIReview.model_json_schema(),
+            }],
+            generation_config={"max_output_tokens": max_output_tokens},
+            store=False,
         )
         parsed = getattr(response, "parsed", None)
         if isinstance(parsed, AIReview):
             review = parsed
-        elif getattr(response, "text", None):
-            review = AIReview.model_validate_json(response.text)
         else:
-            raise ReviewError("Gemini가 구조화된 텍스트 결과를 반환하지 않았습니다.")
+            output_text = getattr(response, "output_text", None)
+            if not isinstance(output_text, str) or not output_text.strip():
+                raise ReviewError("Gemini가 구조화된 텍스트 결과를 반환하지 않았습니다.")
+            review = AIReview.model_validate_json(output_text)
     except ReviewError:
         raise
     except Exception as error:
