@@ -103,16 +103,17 @@ SENSITIVE_FILENAMES = {
 }
 SENSITIVE_SUFFIXES = {".pem", ".p12", ".pfx", ".key", ".jks", ".keystore"}
 
-_SENSITIVE_KEY = re.compile(
-    r"(?i)\b(?:api[_-]?key|token|client[_-]?secret|secret(?:[_-]?key)?|"
-    r"password|passwd|private[_-]?key|database[_-]?url|"
-    r"db[_-]?url|connection[_-]?string|dsn|redis[_-]?url|mongo[_-]?url)\b"
+_SECRET_NAME = (
+    r"(?:api[_-]?(?:key|token)|access[_-]?token|auth[_-]?token|refresh[_-]?token|"
+    r"client[_-]?secret|secret(?:[_-]?key)?|token|password|passwd|"
+    r"private[_-]?key|database[_-]?url|db[_-]?url|connection[_-]?string|"
+    r"dsn|redis[_-]?url|mongo[_-]?url)"
 )
-_QUOTED_SECRET_ASSIGNMENT = re.compile(
-    r"(?i)(?P<prefix>\b(?:api[_-]?key|token|client[_-]?secret|secret(?:[_-]?key)?|"
-    r"password|passwd|private[_-]?key|"
-    r"database[_-]?url|db[_-]?url|connection[_-]?string|dsn|redis[_-]?url|mongo[_-]?url)"
-    r"\b\s*(?:=|:)\s*)(?P<quote>['\"])(?P<value>[^'\"\r\n]{8,})(?P=quote)"
+_SENSITIVE_KEY = re.compile(rf"(?i)(?<![A-Za-z0-9]){_SECRET_NAME}(?=$|[^A-Za-z0-9])")
+_SECRET_ASSIGNMENT = re.compile(
+    rf"(?i)(?P<prefix>(?<![A-Za-z0-9]){_SECRET_NAME}(?=$|[^A-Za-z0-9])\s*(?:=|:)\s*)"
+    r"(?:(?P<quote>['\"])(?P<value>[^'\"\r\n]{8,})(?P=quote)|"
+    r"(?P<bare>[A-Za-z0-9_./+@:%=?&~-]{12,})(?=(?:[ \t]*(?:#|,|;|\}|\])|[\r\n]|$)))"
 )
 _PRIVATE_KEY_BLOCK = re.compile(
     r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?-----END [A-Z0-9 ]*PRIVATE KEY-----",
@@ -180,15 +181,16 @@ def _redact_text(path: str, text: str) -> tuple[str, tuple[SecretRedaction, ...]
     )
 
     def replace_assignment(match: re.Match[str]) -> str:
-        value = match.group("value")
+        value = match.group("value") or match.group("bare")
         if len(value.strip()) < 12 or _placeholder(value):
             return match.group(0)
         line_number = text.count("\n", 0, match.start()) + 1
         redactions.append(SecretRedaction(line_number, "credential assignment"))
         quote = match.group("quote")
-        return f"{match.group('prefix')}{quote}<REDACTED>{quote}"
+        replacement = f"{quote}<REDACTED>{quote}" if quote else "<REDACTED>"
+        return f"{match.group('prefix')}{replacement}"
 
-    text, _ = _QUOTED_SECRET_ASSIGNMENT.subn(replace_assignment, text)
+    text, _ = _SECRET_ASSIGNMENT.subn(replace_assignment, text)
 
     for pattern, kind in _TOKEN_PATTERNS:
         def replace_token(match: re.Match[str], current_kind: str = kind) -> str:

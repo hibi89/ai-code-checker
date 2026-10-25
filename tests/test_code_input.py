@@ -19,6 +19,19 @@ class CodeInputTests(unittest.TestCase):
         self.assertEqual(bundle.redaction_count, 1)
         self.assertEqual(bundle.files[0].redactions[0].line_number, 1)
 
+    def test_unquoted_secret_assignment_is_redacted_without_hiding_env_lookup(self) -> None:
+        secret = "prod_secret_value_123456789"
+        bundle = bundle_from_text(
+            f"API_TOKEN = {secret}\n"
+            'password = os.getenv("PASSWORD")\n'
+        )
+
+        rendered = bundle.render()
+        self.assertNotIn(secret, rendered)
+        self.assertIn("API_TOKEN = <REDACTED>", rendered)
+        self.assertIn('password = os.getenv("PASSWORD")', rendered)
+        self.assertEqual(bundle.redaction_count, 1)
+
     def test_common_korean_personal_data_is_redacted_but_example_email_is_kept(self) -> None:
         source_text = (
             'owner = "owner@' + 'mycompany.co.kr"\n'

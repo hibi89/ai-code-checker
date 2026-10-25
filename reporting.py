@@ -30,7 +30,19 @@ STATUS_LABELS = {
 
 def _safe_text(value: str) -> str:
     text = " ".join(str(value).replace("\r", "\n").splitlines()).strip()
-    return html.escape(text, quote=False).replace("`", "&#96;").replace("|", "&#124;")
+    text = html.escape(text, quote=False)
+    markdown_entities = {
+        "`": "&#96;",
+        "*": "&#42;",
+        "_": "&#95;",
+        "[": "&#91;",
+        "]": "&#93;",
+        "(": "&#40;",
+        ")": "&#41;",
+        "!": "&#33;",
+        "|": "&#124;",
+    }
+    return "".join(markdown_entities.get(character, character) for character in text)
 
 
 def _safe_code(value: str) -> str:
