@@ -176,7 +176,7 @@ def _save_report(report: str, requested_path: str | None) -> Path:
             raise ValueError("리포트 경로의 파일이 이미 있습니다. 다른 경로를 지정하세요.") from error
         return destination
 
-    directory = Path("reports")
+    directory = Path.home() / ".ai-code-checker" / "reports"
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     for suffix in range(100):

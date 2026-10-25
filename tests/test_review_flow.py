@@ -5,13 +5,14 @@ import io
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from code_input import bundle_from_text
 from code_input import InputError, InputLimits
-from main import Settings, _read_stdin_bundle, run_cli
+from main import Settings, _read_stdin_bundle, _save_report, run_cli
 from reporting import convert_ai_findings, render_report, verify_ai_citation
 from review_models import AIReview, AIReviewFinding, PerspectiveCheck, TokenUsage
 from reviewer import ReviewError, analyze_bundle, append_usage_log, estimate_request_cost
@@ -46,6 +47,15 @@ class FakeModels:
 
 
 class ReviewFlowTests(unittest.TestCase):
+    def test_default_report_is_saved_under_user_app_data_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp)
+            with patch("main.Path.home", return_value=home):
+                destination = _save_report("# synthetic report\n", None)
+
+            self.assertEqual(destination.parent, home / ".ai-code-checker" / "reports")
+            self.assertEqual(destination.read_text(encoding="utf-8"), "# synthetic report\n")
+
     def test_dry_run_prints_cost_preflight_without_calling_ai(self) -> None:
         settings = Settings(
             api_key="",
@@ -213,6 +223,38 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertEqual(record["order_ref"], "KM-01")
         self.assertEqual(record["input_tokens"], 100)
         self.assertNotIn("print(", contents)
+
+    def test_usage_log_prunes_records_older_than_90_days(self) -> None:
+        now = datetime.now(timezone.utc)
+        old = {
+            "timestamp_utc": (now - timedelta(days=91)).isoformat(),
+            "order_ref": "old-order",
+        }
+        recent = {
+            "timestamp_utc": (now - timedelta(days=30)).isoformat(),
+            "order_ref": "recent-order",
+        }
+        usage = TokenUsage(
+            model="gemini-3.1-flash-lite",
+            input_tokens=100,
+            output_tokens=50,
+            total_tokens=150,
+            estimated_cost_usd=0.000155,
+            cost_basis="test",
+        )
+
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as temp:
+            path = Path(temp) / ".ai-code-checker" / "usage.jsonl"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                json.dumps(old) + "\n" + json.dumps(recent) + "\n",
+                encoding="utf-8",
+            )
+            append_usage_log(usage, path=path, order_ref="new-order")
+            records = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+        order_refs = [record["order_ref"] for record in records]
+        self.assertEqual(order_refs, ["recent-order", "new-order"])
 
     def test_report_labels_unverified_ai_citations(self) -> None:
         bundle = bundle_from_text("print('hello')\n")

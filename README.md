@@ -60,7 +60,7 @@ Get-Content -Raw .\main.py | python main.py --filename main.py
 python main.py .\project.zip --confirm-upload --order-ref KM-001
 ~~~
 
-기본 리포트는 reports/ 폴더에 생성되고, 기존 파일은 덮어쓰지 않습니다. 사용량 로그는 사용자 홈의 .ai-code-checker/usage.jsonl에 저장하며, 코드 내용이나 비밀값은 기록하지 않습니다.
+기본 리포트는 사용자 홈의 `.ai-code-checker/reports/`에 저장되고, 기존 파일은 덮어쓰지 않습니다. 리포트에는 코드 발췌가 포함될 수 있으니 기밀 자료로 취급하고 안전하게 삭제하세요. 사용량 로그는 사용자 홈의 `.ai-code-checker/usage.jsonl`에 저장하며 코드 원문은 기록하지 않습니다. 새 로그를 기록할 때 90일이 지난 로그 행을 정리합니다.
 
 ## 입력 및 비용 한도
 
@@ -75,6 +75,8 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 - AI가 만든 발견 항목의 발췌 일치는 위치 확인일 뿐, 결함 판정 자체의 검증은 아닙니다. High/Critical 항목은 사람이 원본과 실행 맥락을 확인해야 합니다.
 - 이 도구는 테스트 실행, 침투 테스트, 보안 인증 또는 무결점 보증을 제공하지 않습니다.
 - 선택 파일과 마스킹된 코드가 동의 후 Google Gemini API로 전송됩니다.
+- 결제가 활성화된 Gemini 유료 프로젝트에서는 프롬프트·응답을 제품 개선에 사용하지 않지만, 현재 Google 정책상 악용 모니터링을 위해 입력·맥락·응답이 최대 55일 보관될 수 있습니다. 이 도구는 Zero Data Retention을 제공하지 않습니다. [Google 데이터 처리 및 보관 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
+- 고객 코드는 클라우드 동기화 폴더 밖에서 처리하세요. 판매 운영 시 작업 사본·리포트 사본·임시 파일을 납품 후 7일 안에 직접 삭제해야 합니다. Google 측 보관은 별도입니다.
 - API 오류 `HTTP 401 UNAUTHENTICATED`가 나오면 로컬 `.env`의 키가 유효한지, 해당 Google 프로젝트에서 Gemini API를 사용할 수 있는지 확인하세요. 키는 저장소, 채팅, 이슈에 올리지 마세요.
 
 ## 검수

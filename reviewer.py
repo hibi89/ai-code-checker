@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +42,9 @@ SYSTEM_INSTRUCTION = """
 
 class ReviewError(RuntimeError):
     """Raised when review cannot safely produce a structured result."""
+
+
+USAGE_LOG_RETENTION_DAYS = 90
 
 
 def _safe_error_label(error: Exception) -> str:
@@ -252,6 +257,10 @@ def append_usage_log(
         raise ValueError("주문 참조는 영문·숫자·점·밑줄·하이픈으로 된 1~64자만 허용합니다.")
     log_path = Path(path).expanduser()
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    if log_path.is_symlink():
+        raise OSError("사용량 로그 경로가 심볼릭 링크라 기록을 중단했습니다.")
+
+    _prune_usage_log(log_path)
     record = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "order_ref": order_ref or None,
@@ -266,3 +275,41 @@ def append_usage_log(
     }
     with log_path.open("a", encoding="utf-8", newline="\n") as stream:
         stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def _prune_usage_log(log_path: Path) -> None:
+    if not log_path.exists():
+        return
+    cutoff = datetime.now(timezone.utc) - timedelta(days=USAGE_LOG_RETENTION_DAYS)
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="\n",
+            dir=log_path.parent,
+            prefix=".usage-",
+            suffix=".tmp",
+            delete=False,
+        ) as destination:
+            temp_path = Path(destination.name)
+            with log_path.open("r", encoding="utf-8") as existing:
+                for line in existing:
+                    try:
+                        record = json.loads(line)
+                        timestamp = datetime.fromisoformat(record["timestamp_utc"])
+                        if timestamp.tzinfo is None:
+                            continue
+                    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                        continue
+                    if timestamp >= cutoff:
+                        destination.write(line if line.endswith("\n") else line + "\n")
+
+        os.replace(temp_path, log_path)
+    except (OSError, UnicodeError):
+        if temp_path is not None:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise
