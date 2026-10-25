@@ -365,7 +365,12 @@ def load_directory(root_path: str | Path, limits: InputLimits = InputLimits()) -
             if candidate_count > limits.max_files:
                 raise InputError(f"분석 가능한 파일이 {limits.max_files}개 제한을 초과했습니다.")
             try:
-                size = file_path.stat().st_size
+                file_stat = file_path.lstat()
+                if not stat.S_ISREG(file_stat.st_mode):
+                    excluded.append(relative_path)
+                    warnings.append(f"일반 파일이 아니어서 읽지 않고 제외함: {relative_path}")
+                    continue
+                size = file_stat.st_size
                 if size > limits.max_file_bytes:
                     raise InputError(f"파일 크기 제한 초과: {relative_path}")
                 if sum(len(raw) for _, raw in records) + size > limits.max_total_bytes:

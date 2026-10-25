@@ -9,7 +9,7 @@
 
 2026-10-26 로컬 드라이런의 요청 전 최대 원가 추정은 취약 ZIP **$0.004834**, 안전 ZIP **$0.004902**였다. 두 건 합계는 약 **$0.009736**다. 입력 추정치와 현재 `.env.example`의 목록 단가로 계산한 상한이며, 실제 Google 청구액이나 향후 가격을 보증하지 않는다. 이 드라이런은 Google API를 호출하지 않았다.
 
-2026-10-26 새 키 확인 결과: `models.list()`에 성공했고 `gemini-3.1-flash-lite`가 생성 모델 목록에 표시됐다. 다만 취약 ZIP 분석은 이 모델에서 503 `UNAVAILABLE`로 두 차례 실패했고, 공식 Quickstart의 `gemini-3.8-flash` 생성 호출도 Interactions API 타임아웃 및 GenerateContent 503으로 끝났다. 성공한 AI 리포트나 사용 토큰 값은 아직 없다. 3.8 Flash는 현재 기본 Flash-Lite보다 단가가 높아 이 서비스의 기본 모델로 바꾸지 않았다. Google의 오류 설명은 503을 일시적 과부하 또는 서비스 중단으로 분류한다. [Google API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
+2026-10-26 새 키 확인 결과: `models.list()`에 성공했고 `gemini-3.1-flash-lite`가 생성 모델 목록에 표시됐다. 다만 취약 ZIP 분석은 이 모델에서 503 `UNAVAILABLE`로 두 차례 실패했고, 공식 Quickstart의 `gemini-3.8-flash` 생성 호출도 Interactions API 타임아웃 및 GenerateContent 503으로 끝났다. 이후 안전한 합성 ZIP(2개 파일, 839 bytes)으로 한 번 더 시도했지만 `ConnectError`가 발생했다. 성공한 AI 리포트나 사용 토큰 값은 아직 없다. 3.8 Flash는 현재 기본 Flash-Lite보다 단가가 높아 이 서비스의 기본 모델로 바꾸지 않았다. Google의 오류 설명은 503을 일시적 과부하 또는 서비스 중단으로 분류한다. [Google API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 
 예제 코드는 합성이며 실행하지 않는다. CLI는 코드를 실행하지 않고 텍스트로만 읽는다. 다만 실제 분석은 선택한 파일을 Google Gemini API로 전송하므로, 전송을 허용할 때만 아래 명령을 실행한다.
 

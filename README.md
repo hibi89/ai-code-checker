@@ -7,6 +7,7 @@
 ## 기능
 
 - 폴더, ZIP, 단일 파일, 표준 입력 지원
+- 폴더 입력에서는 심볼릭 링크와 일반 파일이 아닌 항목을 따라가거나 열지 않음
 - ZIP을 디스크에 풀지 않고 제한된 크기만 읽음
 - .env, 개인키 등 민감 파일은 열지 않고 제외
 - 코드 안에서 알려진 API 키·토큰 패턴과 자격증명 값을 마스킹
@@ -78,6 +79,8 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 - 결제가 활성화된 Gemini 유료 프로젝트에서는 프롬프트·응답을 제품 개선에 사용하지 않지만, 현재 Google 정책상 악용 모니터링을 위해 입력·맥락·응답이 최대 55일 보관될 수 있습니다. 이 도구는 Zero Data Retention을 제공하지 않습니다. [Google 데이터 처리 및 보관 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
 - 고객 코드는 클라우드 동기화 폴더 밖에서 처리하세요. 판매 운영 시 작업 사본·리포트 사본·임시 파일을 납품 후 7일 안에 직접 삭제해야 합니다. Google 측 보관은 별도입니다.
 - API 오류 `HTTP 401 UNAUTHENTICATED`는 보통 키가 없거나 유효하지 않거나 만료된 경우입니다. Google AI Studio의 API Keys 화면에서 키 상태·유형과 연결 프로젝트를 확인하고, 오래된 Standard 키라면 Gemini API 제한을 적용하거나 새 키를 발급해 로컬 `.env`의 `GEMINI_API_KEY`만 교체한 뒤 다시 확인하세요. 2026-05-28부터 AI Studio 신규 키는 auth key로 발급되며, 제한이 없는 Standard 키는 거절될 수 있습니다. 키를 저장소·채팅·이슈에 올리지 마세요. [키 유형·관리 안내](https://ai.google.dev/gemini-api/docs/api-key) · [401 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
+- API 오류 `HTTP 503 UNAVAILABLE`은 일시적인 서버 과부하나 중단일 수 있습니다. 먼저 잠시 뒤 다시 시도하세요. 이 CLI는 중복 비용을 막기 위해 생성 요청을 자동 재시도하지 않으므로, 반복 호출보다 잠시 기다렸다 한 번 재시도하는 편이 낫습니다. 503만으로 키가 잘못됐다고 판단하지 마세요. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
+- 연결 오류나 타임아웃은 요청 처리 여부를 확인할 수 없을 수 있습니다. 네트워크를 점검하고 Google 사용량을 확인한 뒤 재시도하세요.
 
 ## 검수
 

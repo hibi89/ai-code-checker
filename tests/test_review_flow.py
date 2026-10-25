@@ -202,6 +202,23 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertIn("INVALID_ARGUMENT", str(error.exception))
         self.assertNotIn("private provider diagnostic", str(error.exception))
 
+    def test_unavailable_error_suggests_bounded_retry(self) -> None:
+        class UnavailableClientError(RuntimeError):
+            code = 503
+            status = "UNAVAILABLE"
+
+        class FailingModels:
+            def generate_content(self, **kwargs):
+                raise UnavailableClientError("private service detail")
+
+        client = SimpleNamespace(models=FailingModels())
+        with self.assertRaises(ReviewError) as error:
+            analyze_bundle(bundle_from_text("print('synthetic')"), api_key="test-only", client=client)
+
+        self.assertIn("HTTP 503", str(error.exception))
+        self.assertIn("잠시 기다린 뒤 재시도", str(error.exception))
+        self.assertNotIn("private service detail", str(error.exception))
+
     def test_auth_error_has_key_setup_hint_without_exposing_provider_details(self) -> None:
         class UnauthenticatedClientError(RuntimeError):
             code = 401

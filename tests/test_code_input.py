@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 import zipfile
@@ -110,6 +111,19 @@ class CodeInputTests(unittest.TestCase):
             bundle = load_directory(root)
 
         self.assertEqual([source.path for source in bundle.files], ["src/main.py"])
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "named pipes require POSIX")
+    def test_named_pipe_is_excluded_without_opening(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "main.py").write_text("print('ok')", encoding="utf-8")
+            os.mkfifo(root / "pipe.py")
+
+            bundle = load_directory(root)
+
+        self.assertEqual([source.path for source in bundle.files], ["main.py"])
+        self.assertIn("pipe.py", bundle.excluded_paths)
+        self.assertTrue(any("일반 파일이 아니어서" in warning for warning in bundle.warnings))
 
     def test_zip_traversal_is_rejected_without_extracting(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
