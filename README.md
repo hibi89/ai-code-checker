@@ -1,6 +1,6 @@
 # AI Code Checker
 
-로컬에서 실행하는 AI 보조 코드 검수 CLI입니다. 선택한 프로젝트의 지원 파일을 안전하게 모아, 로컬 정적 검사와 Gemini의 **단일 분석 호출**로 한국어 검수 리포트를 만듭니다.
+로컬에서 실행하는 AI 보조 코드 검수 CLI입니다. 선택한 프로젝트의 지원 파일을 안전하게 모아, 로컬 정적 검사와 Gemini Interactions API의 **단일 분석 호출**로 한국어 검수 리포트를 만듭니다. API 요청은 `store=false`로 보내 서버에 다시 불러올 Interaction 기록을 만들지 않습니다.
 
 하나의 AI 모델이 보안·신뢰성·테스트·구조·유지보수·성능·자원관리·복잡도/비용의 8개 관점을 확인합니다. 서로 독립된 8개 AI나 사람 리뷰어가 검토하는 서비스는 아닙니다.
 
@@ -78,7 +78,7 @@ AI 응답에서 8개 점검 관점이 빠지거나 중복되면 리포트에 불
 - AI가 만든 발견 항목의 발췌 일치는 위치 확인일 뿐, 결함 판정 자체의 검증은 아닙니다. High/Critical 항목은 사람이 원본과 실행 맥락을 확인해야 합니다.
 - 이 도구는 테스트 실행, 침투 테스트, 보안 인증 또는 무결점 보증을 제공하지 않습니다.
 - 선택 파일과 마스킹된 코드가 동의 후 Google Gemini API로 전송됩니다.
-- 결제가 활성화된 Gemini 유료 프로젝트에서는 프롬프트·응답을 제품 개선에 사용하지 않지만, 현재 Google 정책상 악용 모니터링을 위해 입력·맥락·응답이 최대 55일 보관될 수 있습니다. 이 도구는 Zero Data Retention을 제공하지 않습니다. [Google 데이터 처리 및 보관 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
+- Interaction 저장을 끄더라도 Zero Data Retention을 제공하는 것은 아닙니다. 결제가 활성화된 Gemini 유료 프로젝트에서는 프롬프트·응답을 제품 개선에 사용하지 않지만, Google 정책상 악용 모니터링을 위해 입력·맥락·응답이 최대 55일 보관될 수 있습니다. [Interactions 저장 설정](https://ai.google.dev/gemini-api/docs/interactions-overview) · [Google 데이터 처리 및 보관 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
 - 고객 코드는 클라우드 동기화 폴더 밖에서 처리하세요. 판매 운영 시 작업 사본·리포트 사본·임시 파일을 납품 후 7일 안에 직접 삭제해야 합니다. Google 측 보관은 별도입니다.
 - API 오류 `HTTP 401 UNAUTHENTICATED`는 보통 키가 없거나 유효하지 않거나 만료된 경우입니다. Google AI Studio의 API Keys 화면에서 키 상태·유형과 연결 프로젝트를 확인하고, 오래된 Standard 키라면 Gemini API 제한을 적용하거나 새 키를 발급해 로컬 `.env`의 `GEMINI_API_KEY`만 교체한 뒤 다시 확인하세요. 2026-05-28부터 AI Studio 신규 키는 auth key로 발급되며, 제한이 없는 Standard 키는 거절될 수 있습니다. 키를 저장소·채팅·이슈에 올리지 마세요. [키 유형·관리 안내](https://ai.google.dev/gemini-api/docs/api-key) · [401 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 - API 오류 `HTTP 503 UNAVAILABLE`은 일시적인 서버 과부하나 중단일 수 있습니다. 먼저 잠시 뒤 다시 시도하세요. 이 CLI는 중복 비용을 막기 위해 생성 요청을 자동 재시도하지 않으므로, 반복 호출보다 잠시 기다렸다 한 번 재시도하는 편이 낫습니다. 503만으로 키가 잘못됐다고 판단하지 마세요. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
@@ -105,4 +105,3 @@ python -m unittest discover -s tests -v
 ## 라이선스
 
 MIT. LICENSE를 확인하세요.
-
