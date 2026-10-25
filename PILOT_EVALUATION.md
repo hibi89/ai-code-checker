@@ -11,6 +11,8 @@
 
 2026-10-26 새 키 확인 결과: `models.list()`에 성공했고 `gemini-3.1-flash-lite`가 생성 모델 목록에 표시됐다. 다만 취약 ZIP 분석은 이 모델에서 503 `UNAVAILABLE`로 두 차례 실패했고, 공식 Quickstart의 `gemini-3.8-flash` 생성 호출도 Interactions API 타임아웃 및 GenerateContent 503으로 끝났다. 이후 안전한 합성 ZIP(2개 파일, 839 bytes)과 취약 합성 ZIP(2개 파일, 576 bytes)으로 각각 한 번 더 시도했지만 모두 `ConnectError`가 발생했다. 마지막 취약 ZIP 요청의 사전 최대 원가 추정은 `$0.004834`였고, 성공 응답·토큰 사용량을 받지 못해 실제 처리/청구 여부는 확인할 수 없다. Google 사용량 화면을 확인하기 전에는 추가 요청을 보내지 않는다. 성공한 AI 리포트나 사용 토큰 값은 아직 없다. 3.8 Flash는 현재 기본 Flash-Lite보다 단가가 높아 이 서비스의 기본 모델로 바꾸지 않았다. Google의 오류 설명은 503을 일시적 과부하 또는 서비스 중단으로 분류한다. [Google API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 
+위 생성 실패 기록 이후 CLI 호출 경로를 Google이 새 프로젝트에 권장하는 Interactions API로 전환했다. 같은 `gemini-3.1-flash-lite`·JSON 스키마·원가 한도를 쓰며, `store=false`를 명시한다. 이 업데이트된 CLI로는 아직 실 API 파일럿을 하지 않았다. 마지막 `ConnectError` 요청의 사용량/청구를 Google AI Studio에서 확인한 뒤 아래 두 합성 ZIP을 각각 한 번만 실행한다. [Interactions API 지원 모델·저장 설정](https://ai.google.dev/gemini-api/docs/interactions-overview) · [구조화 출력](https://ai.google.dev/gemini-api/docs/structured-output)
+
 예제 코드는 합성이며 실행하지 않는다. CLI는 코드를 실행하지 않고 텍스트로만 읽는다. 다만 실제 분석은 선택한 파일을 Google Gemini API로 전송하므로, 전송을 허용할 때만 아래 명령을 실행한다.
 
 ## 실행 순서
@@ -56,4 +58,3 @@
 | 전체 사람 작업 시간 |  |  |
 
 실 API 인증이 성공해도 이 파일럿 통과 전까지 정확도·실제 원가·90분 납기는 검증되지 않은 상태로 둔다. 자세한 출시 게이트는 [상품화 계획](PRODUCT_PLAN_KMONG.md)의 상품화 완료 기준을 따른다.
-
