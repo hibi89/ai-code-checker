@@ -36,12 +36,12 @@ def empty_review() -> AIReview:
     )
 
 
-class FakeModels:
+class FakeInteractions:
     def __init__(self, response):
         self.response = response
         self.calls = []
 
-    def generate_content(self, **kwargs):
+    def create(self, **kwargs):
         self.calls.append(kwargs)
         return self.response
 
@@ -130,17 +130,16 @@ class ReviewFlowTests(unittest.TestCase):
 
     def test_single_structured_request_records_provider_usage(self) -> None:
         response = SimpleNamespace(
-            parsed=empty_review(),
-            text=None,
-            usage_metadata=SimpleNamespace(
-                prompt_token_count=1200,
-                candidates_token_count=300,
-                thoughts_token_count=50,
-                total_token_count=1550,
+            output_text=empty_review().model_dump_json(),
+            usage=SimpleNamespace(
+                total_input_tokens=1200,
+                total_output_tokens=300,
+                total_thought_tokens=50,
+                total_tokens=1550,
             ),
         )
-        models = FakeModels(response)
-        client = SimpleNamespace(models=models)
+        interactions = FakeInteractions(response)
+        client = SimpleNamespace(interactions=interactions)
         bundle = bundle_from_text("print('hello')\n")
 
         review, usage, estimate, warnings = analyze_bundle(
@@ -149,9 +148,14 @@ class ReviewFlowTests(unittest.TestCase):
             client=client,
         )
 
-        self.assertEqual(len(models.calls), 1)
-        self.assertEqual(models.calls[0]["config"].max_output_tokens, 2048)
-        self.assertTrue(models.calls[0]["config"].automatic_function_calling.disable)
+        self.assertEqual(len(interactions.calls), 1)
+        request = interactions.calls[0]
+        self.assertEqual(request["model"], "gemini-3.1-flash-lite")
+        self.assertFalse(request["store"])
+        self.assertEqual(
+            request["generation_config"], {"max_output_tokens": 2048}
+        )
+        self.assertEqual(request["response_format"][0]["mime_type"], "application/json")
         self.assertIsInstance(review, AIReview)
         self.assertEqual(usage.model, "gemini-3.1-flash-lite")
         self.assertEqual(usage.input_tokens, 1200)
@@ -161,23 +165,23 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertEqual(warnings, [])
 
     def test_api_failure_does_not_retry_or_echo_request_contents(self) -> None:
-        class FailingModels:
+        class FailingInteractions:
             def __init__(self):
                 self.calls = 0
 
-            def generate_content(self, **kwargs):
+            def create(self, **kwargs):
                 self.calls += 1
                 raise ConnectionError("private provider diagnostic")
 
-        models = FailingModels()
-        client = SimpleNamespace(models=models)
+        interactions = FailingInteractions()
+        client = SimpleNamespace(interactions=interactions)
         source_secret = "sample-private-source-marker"
         bundle = bundle_from_text(f"print('{source_secret}')\n")
 
         with self.assertRaises(ReviewError) as error:
             analyze_bundle(bundle, api_key="test-only", client=client)
 
-        self.assertEqual(models.calls, 1)
+        self.assertEqual(interactions.calls, 1)
         self.assertNotIn(source_secret, str(error.exception))
         self.assertNotIn("private provider diagnostic", str(error.exception))
 
@@ -187,11 +191,11 @@ class ReviewFlowTests(unittest.TestCase):
             status = "INVALID_ARGUMENT"
             message = "private provider diagnostic"
 
-        class FailingModels:
-            def generate_content(self, **kwargs):
+        class FailingInteractions:
+            def create(self, **kwargs):
                 raise ProviderClientError()
 
-        client = SimpleNamespace(models=FailingModels())
+        client = SimpleNamespace(interactions=FailingInteractions())
         with self.assertRaises(ReviewError) as error:
             analyze_bundle(
                 bundle_from_text("print('synthetic')\n"),
@@ -207,11 +211,11 @@ class ReviewFlowTests(unittest.TestCase):
             code = 503
             status = "UNAVAILABLE"
 
-        class FailingModels:
-            def generate_content(self, **kwargs):
+        class FailingInteractions:
+            def create(self, **kwargs):
                 raise UnavailableClientError("private service detail")
 
-        client = SimpleNamespace(models=FailingModels())
+        client = SimpleNamespace(interactions=FailingInteractions())
         with self.assertRaises(ReviewError) as error:
             analyze_bundle(bundle_from_text("print('synthetic')"), api_key="test-only", client=client)
 
@@ -225,11 +229,11 @@ class ReviewFlowTests(unittest.TestCase):
             status = "UNAUTHENTICATED"
             message = "private API key payload"
 
-        class FailingModels:
-            def generate_content(self, **kwargs):
+        class FailingInteractions:
+            def create(self, **kwargs):
                 raise UnauthenticatedClientError()
 
-        client = SimpleNamespace(models=FailingModels())
+        client = SimpleNamespace(interactions=FailingInteractions())
         with self.assertRaises(ReviewError) as error:
             analyze_bundle(
                 bundle_from_text("def add(a, b): return a + b\n"),
@@ -243,8 +247,8 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertNotIn("private API key payload", str(error.exception))
 
     def test_preflight_budget_stops_before_external_api_call(self) -> None:
-        models = FakeModels(None)
-        client = SimpleNamespace(models=models)
+        interactions = FakeInteractions(None)
+        client = SimpleNamespace(interactions=interactions)
         bundle = bundle_from_text("print('hello')\n")
 
         with self.assertRaises(ReviewError):
@@ -254,7 +258,7 @@ class ReviewFlowTests(unittest.TestCase):
                 client=client,
                 max_estimated_cost_usd=0.000000001,
             )
-        self.assertEqual(models.calls, [])
+        self.assertEqual(interactions.calls, [])
 
     def test_preflight_estimate_includes_structured_prompt(self) -> None:
         estimate = estimate_request_cost("hello", 0.25, 1.50, 2048)
@@ -436,4 +440,3 @@ class ReviewFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
