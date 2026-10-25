@@ -9,7 +9,7 @@
 - **설계 확정:** 40,000원 기본 메뉴, 고객 범위, 운영 흐름, 보안 안내와 출시 기준을 정리했다.
 - **MVP 구현:** 폴더/ZIP/단일 파일/표준 입력, 비밀값 마스킹, 로컬 정적 검사, 단일 Gemini 구조화 분석, 비용 상한, 사용량 로그, 한국어 Markdown 리포트를 구현했다.
 - **기본 검수:** 자동 테스트 30개, Python 구문 컴파일, 의존성 검사, 외부 API를 쓰지 않는 로컬 dry-run을 통과했다. 실행 환경은 Windows와 Python 3.11이다.
-- **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, 401 오류 안내를 보완했다. 최신 코드 커밋에서 Ubuntu·Windows × Python 3.10~3.13의 8개 조합이 컴파일, 30개 단위 테스트, 외부 API 없는 dry-run까지 모두 통과했다. [GitHub Actions 결과](https://github.com/hibi89/ai-code-checker/actions/runs/40218019465)
+- **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, 401 오류 안내를 보완했다. CLI 코드가 포함된 `89f218e` 커밋에서 Ubuntu·Windows × Python 3.10~3.13의 8개 조합이 컴파일, 30개 단위 테스트, 외부 API 없는 dry-run까지 모두 통과했다. [GitHub Actions 결과](https://github.com/hibi89/ai-code-checker/actions/runs/40219428777)
 - **아직 출시 전:** 합성 코드 API 연동 시도가 Google에서 `HTTP 401 UNAUTHENTICATED`로 거절되어 구조화 응답과 실제 사용량을 확인하지 못했다. 현재는 연결 프로젝트·키 상태·키 유형을 AI Studio에서 확인하고 유효한 Gemini API 인증을 설정해야 한다. OS/Python 매트릭스는 통과했지만, 대표 코드 정확성 수동 검수와 실 API 원가·주문 시간 파일럿, 운영 절차 확인은 남아 있다.
 - 따라서 **설계와 MVP는 완료**, 크몽 판매 등록은 API 연결·정확성·실운영 검증 후 진행한다.
 
