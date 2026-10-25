@@ -8,8 +8,8 @@
 
 - **설계 확정:** 40,000원 기본 메뉴, 고객 범위, 운영 흐름, 보안 안내와 출시 기준을 정리했다.
 - **MVP 구현:** 폴더/ZIP/단일 파일/표준 입력, 비밀값 마스킹, 로컬 정적 검사, 단일 Gemini 구조화 분석, 비용 상한, 사용량 로그, 한국어 Markdown 리포트를 구현했다.
-- **기본 검수:** 자동 테스트 36개(Windows에서 35개 통과·POSIX FIFO 검사는 플랫폼상 1개 건너뜀), Python 구문 컴파일, 의존성 검사를 통과했다. 로컬 `pip-audit` 재검사와 `requirements.txt` 런타임 의존성 검사 모두 알려진 취약점 0건이다. 실행 환경은 Windows와 Python 3.11이다.
-- **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, API 오류 안내, 폴더 입력의 특수 파일 제외를 보완했다. 2026-10-26 최신 실행은 Ubuntu·Windows × Python 3.10~3.13 테스트 8개와 `requirements.txt`의 `pip-audit` 1개, 총 9개 작업이 모두 통과했다. [최신 GitHub Actions 실행](https://github.com/hibi89/ai-code-checker/actions/runs/40222941136)
+- **기본 검수:** 자동 테스트 36개(Windows에서 35개 통과·POSIX FIFO 검사는 플랫폼상 1개 건너뜀), Python 구문 컴파일, 의존성 검사를 통과했다. 실행 환경은 Windows와 Python 3.11이다. 제한된 로컬 네트워크에서는 새 `pip-audit` 조회가 PyPI에 연결되지 않았지만, 아래 최신 GitHub Actions의 의존성 감사는 통과했다.
+- **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, API 오류 안내, 폴더 입력의 특수 파일 제외 및 Interactions API 요청 경로를 보완했다. 2026-10-26 커밋 `5796a43`의 GitHub Actions 실행에서 Ubuntu·Windows × Python 3.10~3.13 테스트 8개와 `requirements.txt`의 `pip-audit` 1개, 총 9개 작업이 모두 통과했다. [최신 GitHub Actions 실행](https://github.com/hibi89/ai-code-checker/actions/runs/40224715083)
 - **API 키 확인:** 갱신된 로컬 키로 Gemini 모델 목록 조회에 성공했다. 이전 401 인증 오류는 해소된 것으로 보인다. Google 공식 Interactions API 지원 모델 목록에 기본 저가 모델 `gemini-3.1-flash-lite`도 포함된다.
 - **API 호출 경로 갱신:** 사용자가 제공한 AI Studio Quickstart를 반영해 최신 권장 Interactions API로 전환했다. 기본 모델·단일 호출·JSON 스키마·비용 상한은 유지하고 `store=false`를 명시해 재조회 가능한 Interaction 객체 저장을 요청하지 않는다. 이 경로로 실 생성 응답을 받은 적은 아직 없다.
 - **아직 출시 전:** 이전 GenerateContent 테스트는 `gemini-3.1-flash-lite`에서 503 `UNAVAILABLE` 두 번, 안전·취약 합성 샘플 각 한 번은 `ConnectError`로 실패했다. 공식 Quickstart의 `gemini-3.8-flash` Interactions 호출도 타임아웃, GenerateContent는 503이었다. 마지막 취약 샘플 요청은 사전 상한 `$0.004834`였지만 응답·토큰 사용량을 받지 못해 실제 청구 여부가 불확실하다. Google 사용량을 확인하기 전까지 추가 실 API 요청을 보류한다. 구조화 응답·정확도도 아직 검증되지 않았다. Google은 503을 일시적 과부하/중단으로 안내한다. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
@@ -164,7 +164,7 @@
 - MVP가 지원하는 언어·확장자를 명시한다. 나머지 언어는 분석 범위 밖 또는 제한 분석으로 표시한다.
 - API 실패, 타임아웃, 재시도, 모델 미지원, 구조화 결과 오류, 호출 한도 초과를 처리한다.
 - 부분 실패를 전체 성공으로 표시하지 않는다.
-- **현재 검수:** 로컬 Windows/Python 3.11에서 컴파일, 의존성 검사, 자동 테스트 36개(35개 통과·POSIX 전용 1개 건너뜀)를 확인했다. 최신 GitHub Actions 실행에서는 Ubuntu·Windows × Python 3.10~3.13 테스트 8개와 런타임 의존성 감사 1개가 모두 성공했으며, 이번 체크리스트 완전성 보완은 원격 CI 재실행 대기 중이다. 실제 Gemini 생성 응답과 대표 코드 정확도는 별도 실 API·사람 검수 파일럿에서 확인한다.
+- **현재 검수:** 로컬 Windows/Python 3.11에서 컴파일, `pip check`, 자동 테스트 36개(35개 통과·POSIX 전용 1개 건너뜀)를 확인했다. 최신 GitHub Actions 실행에서는 Ubuntu·Windows × Python 3.10~3.13 테스트 8개와 런타임 의존성 감사 1개가 모두 성공했다. 실제 Gemini 생성 응답과 대표 코드 정확도는 별도 실 API·사람 검수 파일럿에서 확인한다.
 
 ### 비용과 가성비
 
@@ -266,7 +266,7 @@
 |---|---:|---|
 | 3일 MVP 구현 | 3일 | **구현 범위 완료**: 로컬 운영 도구, 기본 리포트, 호출 원가·사용량 제한 |
 | 최초 설계와 구현 대조 | 2일 | **설계 문서 갱신 완료**: 유지/제외/출시 후 후보를 명시 |
-| 보안·정확성·호환성·원가 실검수 | 3일 | **일부 진행**: 로컬 36개 테스트(35개 통과·플랫폼 전용 1개 건너뜀) 통과, 최신 기존 CI 9개 작업 통과. 체크리스트 완전성 보완의 새 CI와 실 API 생성 응답·정확도 파일럿 남음 |
+| 보안·정확성·호환성·원가 실검수 | 3일 | **일부 진행**: 로컬 36개 테스트(35개 통과·플랫폼 전용 1개 건너뜀)와 최신 CI 9개 작업 통과. 실 API 생성 응답·정확도 파일럿 남음 |
 | 샘플 출력과 크몽 등록 자료 | 1~2일 | 썸네일 시안, 합성 샘플 PDF, 서비스 문구·FAQ 초안 준비. 계정의 데이터 설정·수수료·공개 미리보기 확인 남음 |
 | 전체 계획 | 약 9~10 집중 작업일 | **코드와 설계는 완료. 지금부터 실 API가 복구된 뒤 파일럿·운영 설정·등록 자료 최종 확인까지 약 2~3 집중 작업일로 추정(외부 API 복구 대기시간 제외)** |
 
