@@ -207,8 +207,9 @@
 
 #### 상품 썸네일 시안
 
-- 생성 이미지: [assets/kmong-thumbnail-concept.jpg](assets/kmong-thumbnail-concept.jpg)
-- 이미지 안의 코드와 발견 사항은 시각 예시용 합성 내용이다. 실제 검증 사례나 정확성 보증으로 표시하지 않는다. 현재 구현 범위와 일치하는지 등록 직전에 최종 확인한다.
+- 등록용 이미지 후보: [assets/kmong-thumbnail-kmong-ready.png](assets/kmong-thumbnail-kmong-ready.png) (1448×1086, 4:3). 가격·보증·인증 주장을 넣지 않고 주요 문구와 요소에 여백을 둔 시안이다.
+- 크몽 [메인이미지 제작·등록 가이드](https://support.kmong.com/hc/ko/articles/42938721537305-%EB%A9%94%EC%9D%B8%EC%9D%B4%EB%AF%B8%EC%A7%80-%EC%A0%9C%EC%9E%91-%EB%93%B1%EB%A1%9D-%EA%B0%80%EC%9D%B4%EB%93%9C)의 4:3 비율, 안전 여백, 가격 표현 기준과 대조했다. 판매자 등록 화면에서 최종 크롭·표시 상태 확인은 남아 있다.
+- 이미지의 코드와 발견 사항은 시각 예시용 합성 내용이다. 실제 검증 사례나 정확성 보증으로 표시하지 않는다. 예전 정사각형 컨셉 시안은 아이디어 참고용이며 등록 이미지로 사용하지 않는다.
 - 샘플 결과물: [output/pdf/sample-report-example.pdf](output/pdf/sample-report-example.pdf). 합성 코드와 수작업으로 작성한 출력 예시이며, Gemini 실응답이나 실제 고객 분석 결과가 아니다.
 - 크몽 등록 문구: [KMONG_LISTING_DRAFT.md](KMONG_LISTING_DRAFT.md). 제목·패키지·의뢰인 안내·FAQ 초안을 작성했으며, 인증·정확성·보관 정책 검증 후 공개한다.
 
