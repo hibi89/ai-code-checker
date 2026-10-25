@@ -12,7 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from code_input import CodeBundle, InputError, InputLimits, bundle_from_text, load_path
-from reporting import convert_ai_findings, render_report
+from reporting import convert_ai_findings, render_report, review_completeness_issues
 from reviewer import ReviewError, analyze_bundle, build_prompt, estimate_request_cost
 from static_checks import run_static_checks
 
@@ -268,6 +268,7 @@ def run_cli(argv: list[str] | None = None) -> int:
             max_output_tokens=settings.max_output_tokens,
             max_estimated_cost_usd=settings.max_estimated_cost_usd,
         )
+        completeness_issues = review_completeness_issues(ai_review)
         ai_findings = convert_ai_findings(ai_review, bundle)
 
         try:
@@ -294,6 +295,10 @@ def run_cli(argv: list[str] | None = None) -> int:
             usage_warnings=usage_warnings,
         )
         report_path = _save_report(report, args.output)
+        if completeness_issues:
+            print("AI 응답의 8개 관점 체크리스트가 불완전합니다. 이 리포트를 납품하지 말고 다시 확인하세요.", file=sys.stderr)
+            print(f"불완전 결과 리포트: {report_path}")
+            return 2
         print(f"검수가 끝났습니다. 한국어 리포트: {report_path}")
         if any(not finding.citation_verified for finding in ai_findings):
             print("AI 발견 항목 중 원본 경로·줄·발췌가 맞지 않는 항목이 있습니다. 리포트에서 사람 확인 표시를 확인하세요.")
@@ -309,3 +314,4 @@ def run_cli(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(run_cli())
+
