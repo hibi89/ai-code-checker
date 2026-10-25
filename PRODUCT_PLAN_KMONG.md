@@ -10,9 +10,10 @@
 - **MVP 구현:** 폴더/ZIP/단일 파일/표준 입력, 비밀값 마스킹, 로컬 정적 검사, 단일 Gemini 구조화 분석, 비용 상한, 사용량 로그, 한국어 Markdown 리포트를 구현했다.
 - **기본 검수:** 자동 테스트 36개(Windows에서 35개 통과·POSIX FIFO 검사는 플랫폼상 1개 건너뜀), Python 구문 컴파일, 의존성 검사를 통과했다. 로컬 `pip-audit` 재검사와 `requirements.txt` 런타임 의존성 검사 모두 알려진 취약점 0건이다. 실행 환경은 Windows와 Python 3.11이다.
 - **교차환경 CI:** AI 생성 Markdown 이스케이프, Windows 한국어 콘솔 인코딩, API 오류 안내, 폴더 입력의 특수 파일 제외를 보완했다. 2026-10-26 최신 실행은 Ubuntu·Windows × Python 3.10~3.13 테스트 8개와 `requirements.txt`의 `pip-audit` 1개, 총 9개 작업이 모두 통과했다. [최신 GitHub Actions 실행](https://github.com/hibi89/ai-code-checker/actions/runs/40222941136)
-- **API 키 확인:** 갱신된 로컬 키로 Gemini 모델 목록 조회에 성공했고 `gemini-3.1-flash-lite`의 `generateContent` 지원도 확인했다. 따라서 이전 401 인증 오류는 해소된 것으로 보인다.
-- **아직 출시 전:** 실제 생성 요청은 `gemini-3.1-flash-lite`에서 503 `UNAVAILABLE` 두 번, 안전·취약 합성 샘플 각 한 번은 `ConnectError`로 실패했다. 공식 Quickstart의 `gemini-3.8-flash`도 Interactions API 호출 타임아웃과 GenerateContent 503으로 끝났다. 마지막 취약 샘플 요청은 사전 상한 `$0.004834`였지만 응답·토큰 사용량을 받지 못해 실제 청구 여부가 불확실하다. Google 사용량을 확인하기 전까지 추가 실 API 요청을 보류한다. 구조화 응답·정확도도 아직 검증되지 않았다. Google은 503을 일시적 과부하/중단으로 안내한다. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
-- 사용자가 확인한 Google AI Studio Quickstart는 `google-genai` SDK와 `client.interactions.create()`를 이용한 `gemini-3.8-flash` 예제다. 현재 공식 문서는 Interactions API를 새 프로젝트에 권장하면서도 기존 `generateContent` API를 계속 지원한다고 설명한다. 현재 구현은 `generateContent` 구조화 응답을 사용하므로 문서 예시와 API 방식이 다르다. 작동 중인 경로를 확인하지 않은 채 마이그레이션하지 않고, 저가 기본 모델의 유료 API 파일럿에서 응답·사용량·정확도를 확인한 뒤 필요하면 전환한다. [Google AI Studio Quickstart](https://ai.google.dev/gemini-api/docs/get-started) · [Interactions API 안내](https://ai.google.dev/gemini-api/docs/interactions-overview) · [마이그레이션 안내](https://ai.google.dev/gemini-api/docs/migrate-to-interactions)
+- **API 키 확인:** 갱신된 로컬 키로 Gemini 모델 목록 조회에 성공했다. 이전 401 인증 오류는 해소된 것으로 보인다. Google 공식 Interactions API 지원 모델 목록에 기본 저가 모델 `gemini-3.1-flash-lite`도 포함된다.
+- **API 호출 경로 갱신:** 사용자가 제공한 AI Studio Quickstart를 반영해 최신 권장 Interactions API로 전환했다. 기본 모델·단일 호출·JSON 스키마·비용 상한은 유지하고 `store=false`를 명시해 재조회 가능한 Interaction 객체 저장을 요청하지 않는다. 이 경로로 실 생성 응답을 받은 적은 아직 없다.
+- **아직 출시 전:** 이전 GenerateContent 테스트는 `gemini-3.1-flash-lite`에서 503 `UNAVAILABLE` 두 번, 안전·취약 합성 샘플 각 한 번은 `ConnectError`로 실패했다. 공식 Quickstart의 `gemini-3.8-flash` Interactions 호출도 타임아웃, GenerateContent는 503이었다. 마지막 취약 샘플 요청은 사전 상한 `$0.004834`였지만 응답·토큰 사용량을 받지 못해 실제 청구 여부가 불확실하다. Google 사용량을 확인하기 전까지 추가 실 API 요청을 보류한다. 구조화 응답·정확도도 아직 검증되지 않았다. Google은 503을 일시적 과부하/중단으로 안내한다. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
+- `store=false`는 Interactions API 객체 저장을 끄는 설정이며 Zero Data Retention 보장이 아니다. Google Paid tier의 악용 모니터링 보관 안내(최대 55일)는 그대로 적용해 고객 동의 문구와 계정 로그 확인 조건에 포함한다. [Interactions API 저장 안내](https://ai.google.dev/gemini-api/docs/interactions-overview) · [유료 서비스 데이터 처리 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
 - Quickstart 예시의 `gemini-3.8-flash`는 2026-12-31까지 유료 단가가 입력 $0.75·출력 $3.75/백만 토큰으로, 현재 저비용 기본 모델 `gemini-3.1-flash-lite`의 설정 단가 $0.25·$1.50보다 높다. 가성비 목표에 따라 기본 모델은 유지하고, 실제 품질·원가 파일럿 없이 변경하지 않는다. [Gemini 3.8 Flash 모델](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) · [공식 가격표](https://ai.google.dev/gemini-api/docs/pricing)
 - 따라서 **설계와 MVP는 완료**, 크몽 판매 등록은 실제 구조화 응답·정확성·실운영 검증 후 진행한다.
 
@@ -43,7 +44,7 @@
 
 최초 CODE COUNCIL 설계는 보안·성능·아키텍처·테스트·신뢰성·유지보수·자원관리·복잡도/비용의 8개 관점에서 검토하고, Judge가 의견을 종합하며, 필요하면 재심과 코드 수정을 거치는 구조다.
 
-현재 `main.py`는 폴더, ZIP, 단일 파일 또는 표준 입력을 받는 로컬 CLI다. 파일 크기/확장자 제한, ZIP 경로 검사, `.env`·키 파일 제외, 흔한 비밀값과 개인정보 패턴 마스킹을 적용한다. 코드 실행 없이 일부 정적 점검을 하고, 기본 설정은 Gemini 3.1 Flash-Lite **단일 구조화 요청 1회**다. 호출 전 최대 예상 비용을 확인하고, 호출 뒤 토큰·비용 추정·처리 시간을 원문 없이 로컬 JSONL에 기록한다. 결과는 한국어 Markdown 리포트로 저장한다.
+현재 `main.py`는 폴더, ZIP, 단일 파일 또는 표준 입력을 받는 로컬 CLI다. 파일 크기/확장자 제한, ZIP 경로 검사, `.env`·키 파일 제외, 흔한 비밀값과 개인정보 패턴 마스킹을 적용한다. 코드 실행 없이 일부 정적 점검을 하고, 기본 설정은 Gemini 3.1 Flash-Lite Interactions API **단일 구조화 요청 1회**다. `store=false`를 요청하고, 호출 전 최대 예상 비용을 확인하며 호출 뒤 토큰·비용 추정·처리 시간을 원문 없이 로컬 JSONL에 기록한다. 결과는 한국어 Markdown 리포트로 저장한다.
 
 원 설계의 8개 관점은 하나의 모델 응답 안의 체크리스트로 사용한다. 독립된 8개 모델, 별도 Judge, 재심, 자동 코드 수정, GitHub PR 연동은 구현하지 않았다. 크몽 기본 상품은 AI 분석 결과를 사람이 원본과 대조해 전달하는 서비스로 설계한다.
 
@@ -297,4 +298,3 @@
 - Gemini API 청구 등급: https://ai.google.dev/gemini-api/docs/billing
 - USD/KRW 참고 환율(2026-10-25): https://exchangeratetool.com/historical/usd-krw
 - 가격·환율은 2026-10-26 확인 기준이며, 상품 등록일에 크몽 화면과 Google 청구 단가를 재확인한다.
-
