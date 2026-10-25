@@ -85,6 +85,8 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 python -m unittest discover -s tests -v
 ~~~
 
+공개 저장소의 GitHub Actions는 push/PR마다 Ubuntu·Windows와 Python 3.10~3.13 조합에서 컴파일, 자동 테스트, 외부 API 없는 dry-run을 실행합니다.
+
 ## 상품 설계 문서
 
 [상품화 일정, 범위, 가격 실험, 비용 가정 및 출시 전 검수 기준](PRODUCT_PLAN_KMONG.md)
