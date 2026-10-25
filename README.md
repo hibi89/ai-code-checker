@@ -63,6 +63,8 @@ python main.py .\project.zip --confirm-upload --order-ref KM-001
 
 기본 리포트는 사용자 홈의 `.ai-code-checker/reports/`에 저장되고, 기존 파일은 덮어쓰지 않습니다. 리포트에는 코드 발췌가 포함될 수 있으니 기밀 자료로 취급하고 안전하게 삭제하세요. 사용량 로그는 사용자 홈의 `.ai-code-checker/usage.jsonl`에 저장하며 코드 원문은 기록하지 않습니다. 새 로그를 기록할 때 90일이 지난 로그 행을 정리합니다.
 
+AI 응답에서 8개 점검 관점이 빠지거나 중복되면 리포트에 불완전 상태를 표시하고 CLI가 오류 코드로 끝납니다. 불완전 리포트는 고객에게 납품하지 말고 다시 확인하세요.
+
 ## 입력 및 비용 한도
 
 기본값은 최대 50개 파일, 파일당 128 KiB, 프로젝트 전체 512 KiB, ZIP 20 MiB입니다. .git, 가상환경, 의존성·빌드 폴더, 잠금 파일, 키·인증서, .env 계열 파일은 제외됩니다. UTF-8 텍스트만 읽으며 Python, JavaScript/TypeScript, Java, Go, Rust, C/C++, C#, PHP, Ruby, Swift/Kotlin, SQL, 셸, 일반 설정 파일 등을 지원합니다.
@@ -103,3 +105,4 @@ python -m unittest discover -s tests -v
 ## 라이선스
 
 MIT. LICENSE를 확인하세요.
+
