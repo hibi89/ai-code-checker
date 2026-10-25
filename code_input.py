@@ -137,6 +137,10 @@ _PLACEHOLDER = re.compile(
     r"(?i)^(?:your|replace|example|sample|dummy|placeholder|change[_-]?me|"
     r"changeme|todo|insert[_-]?here|<.*?>|x{3,}|\*{3,}|none|null|undefined)"
 )
+_CODE_REFERENCE = re.compile(
+    r"(?i)^(?:self|cls|settings|config|options|credentials|environment|env|os|request|context|user|client)"
+    r"(?:\.[A-Za-z_][A-Za-z0-9_]*)+$"
+)
 
 
 def _is_sensitive_path(path: str) -> bool:
@@ -183,6 +187,8 @@ def _redact_text(path: str, text: str) -> tuple[str, tuple[SecretRedaction, ...]
     def replace_assignment(match: re.Match[str]) -> str:
         value = match.group("value") or match.group("bare")
         if len(value.strip()) < 12 or _placeholder(value):
+            return match.group(0)
+        if not match.group("quote") and _CODE_REFERENCE.fullmatch(value.strip()):
             return match.group(0)
         line_number = text.count("\n", 0, match.start()) + 1
         redactions.append(SecretRedaction(line_number, "credential assignment"))

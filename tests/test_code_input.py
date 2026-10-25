@@ -32,6 +32,19 @@ class CodeInputTests(unittest.TestCase):
         self.assertIn('password = os.getenv("PASSWORD")', rendered)
         self.assertEqual(bundle.redaction_count, 1)
 
+    def test_attribute_reference_is_preserved_while_real_token_is_redacted(self) -> None:
+        google_key = "AIza" + "A" * 40
+        bundle = bundle_from_text(
+            "client = Client(api_key=settings.api_key)\n"
+            f"API_KEY = {google_key}\n"
+        )
+
+        rendered = bundle.render()
+        self.assertIn("api_key=settings.api_key", rendered)
+        self.assertNotIn(google_key, rendered)
+        self.assertIn("API_KEY = <REDACTED>", rendered)
+        self.assertEqual(bundle.redaction_count, 1)
+
     def test_common_korean_personal_data_is_redacted_but_example_email_is_kept(self) -> None:
         source_text = (
             'owner = "owner@' + 'mycompany.co.kr"\n'
