@@ -41,7 +41,7 @@ jobs:
         run: python main.py tests/test_review_flow.py --dry-run
 
   dependency-audit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -57,3 +57,4 @@ jobs:
 
       - name: Audit runtime dependencies
         run: pip-audit -r requirements.txt
+
