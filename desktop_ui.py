@@ -122,8 +122,12 @@ def launch(on_ready=None) -> int:
 
         def _clear_preview(self) -> None:
             self.preview_request = None
+            # A new source or changed input invalidates the previous result.
+            # Keep stale HTML from being mistaken for this source's scan.
+            self.last_result = None
             if not self.busy:
                 self.scan_button.configure(state="disabled")
+                self.open_button.configure(state="disabled")
 
         def _paste_modified(self, _event=None) -> None:
             if self.paste_text.edit_modified():
@@ -243,7 +247,9 @@ def launch(on_ready=None) -> int:
                     if operation == "error":
                         error_type, message = payload
                         self.preview_request = None
+                        self.last_result = None
                         self.scan_button.configure(state="disabled")
+                        self.open_button.configure(state="disabled")
                         self.state_var.set("실패/차단 — 검사 완료로 처리하지 않았습니다.")
                         self._show(f"처리 실패 ({error_type})\n{message}\n\n원본 자료는 변경하지 않았습니다.")
                     elif operation == "preview":
