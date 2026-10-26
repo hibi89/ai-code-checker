@@ -17,7 +17,7 @@ class RuleAccuracyTests(unittest.TestCase):
         self.assertGreaterEqual(result["tp"], 12)
         self.assertEqual(result["fp"], 0)
         self.assertGreaterEqual(result["fn"], 3)  # Known unsupported indirection.
-        self.assertIsNone(result["real_world_accuracy"] if result["real_world_accuracy"] is None else None)
+        self.assertEqual(result["real_world_accuracy"], "UNVERIFIED")
         self.assertEqual(result["customer_release_ready"], False)
 
     def test_irrelevant_attribute_shell_true_not_a_subprocess_finding(self):
