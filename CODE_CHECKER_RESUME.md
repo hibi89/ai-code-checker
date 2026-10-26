@@ -9,3 +9,7 @@
 5. Approved process: working 3-day MVP → final blueprint gap fill → broad security/stability/performance/privacy/licensing hardening → clean device acceptance → explicit owner approval for Kmong sale. Product 0-required-API local scanning; v1 Gemini kept separate.
 6. No external model calls/customer source transfer, paid spending, new private repo, change in GitHub visibility/permissions, proprietary sales code posted to public MIT, release or commercial listing without approval. Do not execute scanned code; never infer production success from GitHub CI.
 7. Important developer commands: `python -m unittest discover -s tests -v`, `python desktop_ui.py --self-test`, `python desktop_ui.py` only on a system with Tk display. No Vercel/Production URL; local Windows desktop product.
+
+## Live merge update (2026-10-26 KST)
+
+Phase2 P0-A is no longer an open feature: [PR #5](https://github.com/hibi89/ai-code-checker/pull/5) merged into main as `2ab40c2e06638cac8aca15a2fd50aa7941336f1f`, final feature CI 16/16 PASS and 89 unit tests PASS; Windows EXE smoke PASS. Re-fetch main HEAD and final CI because these documents have later commits. Next `ㄱ` should proceed to P0-B real Windows UI/PDF/offline traffic acceptance and P0-C benchmarks/licenses without claiming those checks passed. Inability to run actual GUI or packet observation means UNVERIFIED, not failure or completion.
