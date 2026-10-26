@@ -1,6 +1,6 @@
 # CODE CHECKER — STATUS
 
-Updated: 2026-10-26 KST. Product phase: Day 1 merged; Day 2 report implemented on feature branch, pending integration; Windows GUI/EXE unavailable.
+Updated: 2026-10-26 KST. Product phase: Day1 + Day2 merged into main; Windows GUI/EXE not yet available.
 Main merge SHA: 473beb5003aec71eac44861992d2a34bc48dd27f. Day 1 PR: https://github.com/hibi89/ai-code-checker/pull/2 (merged).
 Repository: https://github.com/hibi89/ai-code-checker (Public/MIT).
 
@@ -27,21 +27,21 @@ Primary product: offline Windows checker with no mandatory API, hosting, subscri
 | Stage | Status |
 |---|---|
 | Day1 safe offline inputs, source map, coverage | MERGED and GitHub CI passed |
-| Day2 Korean HTML/Markdown report and validation | FEATURE IMPLEMENTED; code SHA 7103c67 CI 16/16 PASS; PR #3 awaiting merge |
+| Day2 Korean HTML/Markdown report and validation | MERGED PR #3, main merge SHA 7a5e78d; feature head CI 16/16 PASS |
 | Day3 Windows GUI and portable candidate | NOT STARTED |
 | Blueprint gap filling | NOT STARTED |
 | Final hardening and commercial release | NOT STARTED |
 
 ## Recovery / next task
 Last stable pre-Day1 main: 4c1c10069c3ac20a3342648e3877f1aa1b5fca5f; original v1: 8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab. No force push.
-Next user ㄱ: check latest main SHA and PR #3; if merged and green, proceed to Day3 feature/windows-portable. If not merged, finish PR #3 quality gate first.
+Next user ㄱ: verify current main SHA and post-merge CI for PR #3; then proceed to Day3 on feature/windows-portable from latest main.
 No Vercel or production URL: local-only software. Do not upload customer source, API keys or proprietary material to public GitHub; external API, paid costs, security settings, or public sale need approval.
 
 ## 채팅 이전 및 자동 재개 포인트 (2026-10-26 KST)
 
 - 공식 사용 문구: **`[코드체커 깃헙 확인해]`**. 자세한 절차: [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md).
 - 최종 확인된 기능 병합 상태: `main` `c1179f8c73725f82b15d8be8310506f9e04d1658`, [Actions 16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40300811155). **이후 문서 커밋에 따른 새 HEAD는 매번 GitHub에서 재확인.**
-- 현재 개발 단위: Day 1 완료. **Day 2는 feature/offline-report-ui에 구현됨.** CI 7103c67 16/16 PASS, 총 76 Python unittest PASS; 합성만 검증. PR #3 통합 여부는 실 GitHub 조회 필요.
+- 현재 개발 단위: Day 1 완료. **Day 2는 PR #3으로 main에 병합 완료.** feature CI 16/16 PASS, 총 76 Python unittest PASS. main SHA 7a5e78d, 병합 후 CI는 실제 실행 결과 조회가 필요.
 - 구현 재개 시 `main` 최신 SHA로부터 `feature/offline-report-ui` 브랜치 생성, GitHub PR·CI 검증 후 병합. 이 인수인계 작업은 **문서 변경만** 포함, 새 제품 기능 검증은 없음.
 - 고객 Windows GUI/EXE, 실행파일 서명·경고 확인, 상품 등록은 여전히 미완료. Gemini 사용량/연동 문제는 오프라인 핵심 개발의 선행 조건이 아님.
 
@@ -52,4 +52,10 @@ No Vercel or production URL: local-only software. Do not upload customer source,
 - Confirmed functionality: self-contained CSP HTML + escaped Markdown; masked evidence recheck, per-file coverage and original TXT line mapping, invalid citations -> partial, candidate dedup; atomic no-overwrite local write with rollback on error; metadata-only CLI; no Gemini call.
 - First failed run had 2 incorrect Markdown unescaped test expectations. Adjusted tests to assert HTML visible locations without changing safe Markdown escaping; retest green. No other failed cases observed in green run.
 - Still NOT verified: independent clean Windows/GUI/EXE, local browser visual+PDF print, live network capture, adversarial real customer projects, long-run performance, commercial acceptance. Public MIT and no Vercel unchanged.
-- Next: after PR #3 merged + final main CI checks, start Day3 Windows UI candidate on fresh feature branch. Keep original v1 code and inputs intact.
+- Next: PR #3 merged at 7a5e78d; verify post-merge main CI, then start Day3 Windows UI candidate on fresh feature branch. Keep original v1 code and inputs intact.
+
+## Day2 integration (2026-10-26 KST)
+
+- [PR #3 merged](https://github.com/hibi89/ai-code-checker/pull/3) as **main merge commit `7a5e78d8dca2bb678636b71be9d278fe2d137df2`**. Final PR head `b6b4ca05b7d833c75a09e56cc82466ba907b8a79` CI [16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40305785030).
+- Post-merge `main` Action [run 40306061874](https://github.com/hibi89/ai-code-checker/actions/runs/40306061874) was **queued when first observed**; re-check before marking fully verified. Subsequent docs commits change actual HEAD.
+- Day3 next: basic Windows UI for ZIP/TXT/folder/paste -> localized report -> HTML open, then candidate EXE packaging/actual clean Windows test. No Vercel.
