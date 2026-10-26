@@ -124,7 +124,10 @@ def main() -> int:
                         return False
                     if expected == "blocked":
                         return "실패/차단" in window.state_var.get()
-                    return window.preview_request is not None
+                    return (
+                        window.preview_request is not None
+                        and window.scan_button["state"] == "normal"
+                    )
 
                 def after_preview() -> None:
                     if expected == "blocked":
@@ -138,7 +141,7 @@ def main() -> int:
                         advance()
                         return
                     if window.scan_button["state"] != "normal":
-                        fail(name + ": scan button disabled after preview")
+                        fail(name + ": scan button disabled after preview: " + str(window.scan_button["state"]))
                         return
                     window.scan_button.invoke()
 
