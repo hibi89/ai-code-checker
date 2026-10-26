@@ -57,14 +57,13 @@ def parse_exe_toc(path: Path) -> list[tuple[str, str, bool]]:
 
 def reconcile_exe_toc(previous: dict, audit: dict, records: list[tuple[str, str, bool]]) -> dict:
     """Count every still-uncertain P0-F entry, never promote a name to an owner."""
-    for evidence in (previous, audit):
-        if (evidence.get("customer_release_ready") is not False
-                or evidence.get("license_compliance_certified") is not False):
-            raise ValueError("Unapproved inputs only")
-    if audit.get("third_party_notice_ready_to_distribute") is not False:
-        raise ValueError("Notice certification cannot be preapproved")
-    if previous.get("legal_notice_approved") is not False:
-        raise ValueError("Manual legal review remains required")
+    if (previous.get("customer_release_ready") is not False
+            or previous.get("legal_notice_approved") is not False):
+        raise ValueError("P0-F release flags must remain blocked")
+    if (audit.get("customer_release_ready") is not False
+            or audit.get("license_compliance_certified") is not False
+            or audit.get("third_party_notice_ready_to_distribute") is not False):
+        raise ValueError("P0-D legal release flags must remain blocked")
     sha = previous.get("exe_sha256")
     if not isinstance(sha, str) or len(sha) != 64 or sha != audit.get("exe_sha256"):
         raise ValueError("EXE identity mismatch")
