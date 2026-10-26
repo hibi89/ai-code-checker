@@ -8,6 +8,8 @@ on:
       - 'scripts/windows_gui_e2e.py'
       - 'scripts/windows_browser_pdf_smoke.py'
       - 'scripts/audit_frozen_exe.py'
+      - 'scripts/map_frozen_licenses.py'
+      - 'tests/test_component_license_mapping.py'
       - 'scripts/offline_dependency_inventory.py'
       - 'tests/test_frozen_exe_audit.py'
       - 'offline_core.py'
@@ -48,6 +50,11 @@ jobs:
       - name: Confirm manifest is kept local and flags manual NOTICE review
         run: |
           python -c "import json; from pathlib import Path; p=Path('.build-windows/frozen-exe-evidence.json'); j=json.loads(p.read_text(encoding='utf-8')); assert j['archive']['top_level_count']>0; assert j['archive']['pyz_module_count']>0; assert j['license_compliance_certified'] is False; assert j['third_party_notice_ready_to_distribute'] is False; assert j['customer_release_ready'] is False; print('LOCAL_BINARY_MANIFEST_PRESENT_REVIEW_GATE_OPEN')"
+      - name: Map actual embedded entry name candidates and stage original installed LICENSE texts locally
+        run: python -m scripts.map_frozen_licenses --audit .build-windows/frozen-exe-evidence.json --mapping-out .build-windows/ownership-candidates.json --notice-draft-out .build-windows/NOTICE_REVIEW_DRAFT.md
+      - name: Enforce unresolved license and customer-release gates
+        run: |
+          python -c "import json; from pathlib import Path; p=Path('.build-windows/ownership-candidates.json'); m=json.loads(p.read_text(encoding='utf-8')); a=json.loads(Path('.build-windows/frozen-exe-evidence.json').read_text(encoding='utf-8')); assert m['all_items_accounted_for_in_metadata']; assert m['total_rows']==a['archive']['top_level_count']+a['archive']['pyz_module_count']; assert m['candidate_dist_count']>0; assert m['license_text_draft']['staged_original_license_files']>0; assert m['license_compliance_certified'] is False; assert m['customer_release_ready'] is False; assert m['third_party_notice_ready_to_distribute'] is False; print('LOCAL_OWNER_CANDIDATES_PRESENT_DISTRIBUTION_BLOCKED')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
         run: |
