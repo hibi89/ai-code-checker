@@ -10,6 +10,8 @@ on:
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/map_frozen_licenses.py'
       - 'scripts/reconcile_native_build.py'
+      - 'scripts/reconcile_exe_toc.py'
+      - 'tests/test_exe_toc_provenance.py'
       - 'tests/test_native_build_provenance.py'
       - 'tests/test_component_license_mapping.py'
       - 'scripts/offline_dependency_inventory.py'
@@ -62,6 +64,11 @@ jobs:
       - name: Enforce original unresolved accounting and non-commercial gates
         run: |
           python -c "import json; from pathlib import Path; a=json.loads(Path('.build-windows/ownership-candidates.json').read_text(encoding='utf-8')); p=json.loads(Path('.build-windows/native-provenance.json').read_text(encoding='utf-8')); assert p['previous_unresolved_archive_entries']==a['unresolved_count']; assert p['all_entries_counted']; assert p['build_toc_paths_not_exposed']; assert p['source_path_not_a_license_or_vendor_proof']; assert p['customer_release_ready'] is False; assert p['legal_notice_approved'] is False; print('NATIVE_BUILD_PROVENANCE_EVIDENCE_LOCAL_ONLY')"
+      - name: Account for P0-F unmatched entries using bounded EXE build TOC metadata
+        run: python -m scripts.reconcile_exe_toc --prior .build-windows/native-provenance.json --audit .build-windows/frozen-exe-evidence.json --exe-toc .build-windows/CodeCheckerOffline/EXE-00.toc --out .build-windows/exe-toc-evidence.json
+      - name: Keep P0-G archive evidence and customer-release flags fail-closed
+        run: |
+          python -c "import json; from pathlib import Path; p=json.loads(Path('.build-windows/exe-toc-evidence.json').read_text(encoding='utf-8')); n=json.loads(Path('.build-windows/native-provenance.json').read_text(encoding='utf-8')); assert p['all_pending_entries_accounted_for']; assert p['previously_not_unique_analysis_claims']==n['not_uniquely_recorded_in_build_toc']; assert p['exe_toc_entry_claims']+p['ambiguous_exe_toc_claims']+p['without_exe_toc_claims']==p['previously_not_unique_analysis_claims']; assert p['absolute_build_paths_excluded'] and p['exe_toc_record_not_vendor_or_license_proof']; assert p['customer_release_ready'] is False and p['legal_notice_approved'] is False and p['license_compliance_certified'] is False; print('EXE_TOC_METADATA_REVIEW_ONLY_CUSTOMER_RELEASE_BLOCKED')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
         run: |
