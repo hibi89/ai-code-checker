@@ -15,3 +15,6 @@ remove_mime.py
 # Unsigned local packaging candidates and PyInstaller intermediates
 .build-windows/
 dist-windows/
+
+# CI-only unsigned native grammar packaging research; never publish local binaries.
+.build-p1g/
