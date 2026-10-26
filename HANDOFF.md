@@ -32,3 +32,7 @@ On user ㄱ: read latest HEAD and files; create feature/offline-report-ui from m
 
 ## 10. Update time / evidence limitations / document base
 2026-10-26 KST (exact clock time not recorded). Verified main 473beb5003aec71eac44861992d2a34bc48dd27f and GitHub Actions 16/16. Current documentation commit later than main SHA above, so fetch actual HEAD after this update. GitHub CI is not independent clean Windows GUI, privacy traffic, or real customer use verification.
+
+## 11. 새 채팅 원문 트리거 (2026-10-26 KST, 최신)
+
+**사용자 입력: `[코드체커 깃헙 확인해]`.** 이 메시지는 'GitHub를 확인하고 같은 총괄 자격으로 다음 승인된 작업을 시작하라'는 뜻이다. 설계 재논의/추가 질문을 하지 말고 [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md)를 읽은 뒤 실제 저장소의 SHA·열린 PR·CI를 먼저 확인한다. **최종 검증된 이전 `main`은 `c1179f8c73725f82b15d8be8310506f9e04d1658`, [16/16 CI 성공](https://github.com/hibi89/ai-code-checker/actions/runs/40300811155)**. 이 후 문서 커밋으로 HEAD가 바뀌므로 반드시 최신값 사용. Day 1 병합 완료, **다음 작업은 Day 2 `feature/offline-report-ui`에서 한국어 HTML·Markdown 오프라인 리포트 + 근거 검증 + 합성 회귀 테스트**. 그다음 Day 3 Windows GUI. 외부 API 호출·유료 작업·고객 코드 전송은 별도 승인 필요.

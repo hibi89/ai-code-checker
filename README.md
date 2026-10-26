@@ -1,5 +1,7 @@
 # AI Code Checker
 
+**새 채팅에서 바로 작업 재개:** `[코드체커 깃헙 확인해]` — [코드체커 총괄 인수인계·실행 출발점](CODE_CHECKER_RESUME.md). 현재 기준 Day 1 오프라인 코어 완료, 다음 승인 단위 Day 2 한국어 HTML·Markdown 리포트. 최신 코드는 항상 GitHub `main`과 CI 확인.
+
 > **2026-10-26 개발 방향:** 최종 제품은 **오프라인 Windows 코드체커 v2**이며 **3일 MVP → 최종 설계도 대조·확장 → 안전성·보안·품질 보강 → 크몽 상품화** 순으로 개발합니다. **아래 README의 기존 v1 CLI/Gemini 기능과 출시 전 상태는 현재 구현의 설명**이며, 새 오프라인 GUI·패키지·TXT 다중 복원은 아직 구현 전입니다.
 >
 > - [최종 제품 설계도](FINAL_PRODUCT_BLUEPRINT.md)

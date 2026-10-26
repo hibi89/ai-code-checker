@@ -1,7 +1,7 @@
 # Code Checker — Agent Operating Rules
 
 ## Source of truth and resume order
-At the start of each new conversation, read HANDOFF.md -> STATUS.md -> AGENTS.md -> REQUIREMENTS.md -> FINAL_PRODUCT_BLUEPRINT.md -> MVP_3DAY_ROADMAP.md -> architecture and implementation. Compare documentation against code and the checked production state; latest verified evidence wins.
+At the start of each new conversation, read CODE_CHECKER_RESUME.md -> HANDOFF.md -> STATUS.md -> AGENTS.md -> REQUIREMENTS.md -> FINAL_PRODUCT_BLUEPRINT.md -> MVP_3DAY_ROADMAP.md -> architecture and implementation. Compare documentation against code and the checked production state; latest verified evidence wins.
 
 ## Ownership
 ChatGPT is the design/implementation/test/review lead. The owner approves monetized expenses, external code uploads, permissions/security changes, production release, repository visibility changes, and material scope changes. The owner's one-character signal `ㄱ` means continue the next already approved work package. No implicit API usage is authorized by this signal.
@@ -34,3 +34,6 @@ Deliver a customer-operated offline code-risk checker that generates evidence-le
 3. Run broad security, robustness, privacy, compatibility and accuracy hardening before commercial delivery.
 4. Publish on Kmong only after clean-device executable/customer delivery checks and approval.
 5. Report each stage using verified SHA and PASS/FAIL/UNVERIFIED; no false claim of finished software.
+
+## Exact chat-resume trigger (owner authorized)
+When a user starts a new conversation with **`[코드체커 깃헙 확인해]`**, this means: read [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md), inspect current GitHub main/branches/PR/CI, then **start the next already-approved implementation unit immediately**. As of 2026-10-26 this is Day 2: offline Korean HTML/Markdown reporter and evidence validation on `feature/offline-report-ui`. Do not stop at a generic status summary or re-request decisions already documented. Re-check reality, use safe source-preserving branches, tests, PR, handoff updates. Never infer permission for paid Gemini calls, customer data upload, creating a private repo, repository rights changes or public commercial release.

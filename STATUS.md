@@ -36,3 +36,11 @@ Primary product: offline Windows checker with no mandatory API, hosting, subscri
 Last stable pre-Day1 main: 4c1c10069c3ac20a3342648e3877f1aa1b5fca5f; original v1: 8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab. No force push.
 Next user ㄱ: inspect latest main SHA, HANDOFF, source, create feature/offline-report-ui from main; build Korean offline HTML+Markdown reporting, evidence/location consistency checks, no silent success, synthetic tests and CI.
 No Vercel or production URL: local-only software. Do not upload customer source, API keys or proprietary material to public GitHub; external API, paid costs, security settings, or public sale need approval.
+
+## 채팅 이전 및 자동 재개 포인트 (2026-10-26 KST)
+
+- 공식 사용 문구: **`[코드체커 깃헙 확인해]`**. 자세한 절차: [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md).
+- 최종 확인된 기능 병합 상태: `main` `c1179f8c73725f82b15d8be8310506f9e04d1658`, [Actions 16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40300811155). **이후 문서 커밋에 따른 새 HEAD는 매번 GitHub에서 재확인.**
+- 현재 개발 단위: Day 1 완료. **Day 2는 아직 시작하지 않음.** Day 2 목표는 안전한 한국어 오프라인 HTML·Markdown 리포트 생성·실제 근거 검증·누락/부분 검사 표시·회귀 테스트.
+- 구현 재개 시 `main` 최신 SHA로부터 `feature/offline-report-ui` 브랜치 생성, GitHub PR·CI 검증 후 병합. 이 인수인계 작업은 **문서 변경만** 포함, 새 제품 기능 검증은 없음.
+- 고객 Windows GUI/EXE, 실행파일 서명·경고 확인, 상품 등록은 여전히 미완료. Gemini 사용량/연동 문제는 오프라인 핵심 개발의 선행 조건이 아님.
