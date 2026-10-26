@@ -1,0 +1,60 @@
+name: Phase2 synthetic performance and build dependency inventory
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/benchmark_offline.py'
+      - 'scripts/offline_dependency_inventory.py'
+      - 'tests/test_benchmark_inventory.py'
+      - 'code_input.py'
+      - 'offline_core.py'
+      - 'offline_report.py'
+      - 'static_checks.py'
+      - 'requirements-offline.txt'
+      - 'requirements-offline-build.txt'
+      - '.github/workflows/p0c-performance-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Synthetic 200-file performance
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install minimal runtime dependencies (CI only)
+        run: python -m pip install -r requirements-offline.txt
+      - name: Measure full synthetic offline scan and report workload
+        run: python -m scripts.benchmark_offline
+
+  dependency-review:
+    name: Windows offline build dependency inventory and CVE scan
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install build dependencies (CI only; not app runtime)
+        run: python -m pip install -r requirements-offline-build.txt
+      - name: Inspect exact roots, transitive deps and license metadata
+        run: python -m scripts.offline_dependency_inventory --strict
+      - name: Install vulnerability auditor (CI only)
+        run: python -m pip install pip-audit
+      - name: Audit version-pinned Windows build dependencies
+        run: python -m pip_audit -r requirements-offline-build.txt
