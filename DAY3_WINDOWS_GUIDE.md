@@ -10,7 +10,7 @@ Two approaches compared: (A) Tkinter standard-library desktop GUI + headless con
 
 On a Windows machine with Python 3.11 or newer, from the repository root:
 
-    python -m pip install -r requirements.txt
+    python -m pip install -r requirements-offline.txt
     python desktop_ui.py
 
 Choose source file/TXT/ZIP, folder, or paste. For TXT/paste, select a language; if the TXT has explicitly delimited FILE headers, set language to Auto so each section extension applies. Click (1) Input preview to see files, bytes, lines, excluded/unsupported count and expected Python AST vs generic-only coverage. Click (2) Local scan to generate Korean HTML and Markdown. Use Open HTML and browser Print to PDF.
