@@ -18,3 +18,9 @@ Synthetic tests cover exact/missing/ambiguous mapping, EXE identity, fail-closed
 ## Next evidence and remaining gates
 
 Record actual Windows CI counts once run. Even if PKG metadata matches the final entry, CPython/Tcl/Tk/VC/PyInstaller notices and terms, real clean Windows behavior, Defender/SmartScreen, OS-level packet observation, interactive PDF visual review, and scanner accuracy are still UNVERIFIED. Customer EXE publication and monetization require explicit owner approval. No Vercel. Do not use customer code or paid model APIs.
+
+## Actual Windows runner results (2026-10-26 KST)
+
+- Feature implementation SHA `1a5dab52c3d5670004ff61a7b9cf4371f5810844`, [regular CI 16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40330934255), **126/126 unit tests PASS** ([push CI](https://github.com/hibi89/ai-code-checker/actions/runs/40330886695)), [Windows packaged P0-H CI PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40330934463). Post-documentation SHA must be verified again.
+- The actual onefile rebuilt Windows EXE confirmed P0-G **1** unmatched CArchive item. P0-H exact PKG-stage metadata result: `PREVIOUS_NO_EXE_TOC_CLAIMS=1`, **`PKG_UNIQUE_NAME_CLAIMS=0`**, `PKG_AMBIGUOUS=0`, **`PKG_NO_CLAIM=1`**. No new build record match. The package build records cannot establish its origin from these two sources; classify as **unresolved**, not as a missing component/defect or approved license.
+- **Stop & Pivot:** two separate TOC metadata scopes (EXE-00 and PKG-00) offer no record for this single entry. Do not repetitively relabel or re-run with no new evidence. Record specific local forensic follow-up only with actual artifact/type information available; prioritize P1-D reproducible scanner-accuracy labeled corpus / conservative Python and JS/TS rules next, without claiming exhaustive coverage or executing scanned code. Licensing and real clean Windows checks remain mandatory before sale.

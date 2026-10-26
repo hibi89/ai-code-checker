@@ -64,3 +64,9 @@ On next `ㄱ` or `[코드체커 깃헙 확인해]`: (1) query latest main SHA/op
 ## P0-H continuation (2026-10-26 KST)
 
 Previous main verified SHA `491348598da42aba431302712d0c257efa5a7b1b`. New branch `feature/p0h-pkg-toc-evidence` adds last-unmatched-entry PKG-00.toc metadata evidence; all actual Windows result counts and legal ownership **PENDING** until latest CI. On next `ㄱ`: check main / feature PR / standard 16-job CI / Windows CI, merge normally only if verified green; update `HANDOFF.md` and `STATUS.md`. Then prioritize independent customer Windows security/privacy/PDF and actual Python/JS/TS scanner accuracy, not further repeated catalog-only work. Local offline product, no Vercel or EXE distribution, customer uploads or paid APIs without explicit approval.
+
+## P0-H verified new-go (2026-10-26 KST)
+
+Current feature [PR #12](https://github.com/hibi89/ai-code-checker/pull/12) `feature/p0h-pkg-toc-evidence` based main `491348598da42aba431302712d0c257efa5a7b1b`. At code SHA `1a5dab52c3d5670004ff61a7b9cf4371f5810844` verified [16/16 standard CI, 126/126 unit tests](https://github.com/hibi89/ai-code-checker/actions/runs/40330934255) and [Windows EXE/P0-H CI PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40330934463). Of 1 P0-G unmatched entry, **0 PKG TOC matches / 1 still unmatched**; neither defect nor owner/license approval proven. P0-H recorded as an evidence-backed no-match and STOP & PIVOT.
+
+Next `ㄱ` / new chat: check final PR #12 SHA and Actions then merge if green, verify main. Thereafter prioritize **P1-D labeled scanner accuracy and conservative offline Python/JS/TS rules**, legal primary notices and genuine consumer Windows/SmartScreen/packet/PDF acceptance. Do not repeatedly run metadata-only provenance attempts without new evidence. No EXE publication, customer upload, paid APIs, repository permission changes or Vercel deployment; seller approval required for launch.
