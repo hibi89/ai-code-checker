@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from email.message import Message
 from pathlib import Path
 from unittest.mock import patch
 
@@ -31,14 +32,19 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(result["result"], "blocked")
 
     def test_license_metadata_is_not_mistaken_for_license_audit(self):
+        msg = Message()
+        msg["Name"] = "pydantic"
+        msg["License-Expression"] = "MIT"
         class DummyDist:
             version = "2.12.5"
-            requires = ["missingpkg>=1; extra == 'optional'"]
-            metadata = {
-                "Name": "pydantic", "License-Expression": "MIT",
-            }
-        report = None
-        with patch("scripts.offline_dependency_inventory.metadata.distribution", return_value=DummyDist()):
+            requires = []
+            metadata = msg
+        # Runtime inventory is only invoked on build workers which install packaging.
+        # Test against a fake non-None parser to avoid adding packaging to
+        # the original Gemini CLI's runtime dependency closure.
+        with patch("scripts.offline_dependency_inventory.Requirement", lambda x: None), patch(
+            "scripts.offline_dependency_inventory.metadata.distribution", return_value=DummyDist()
+        ):
             report = inventory({"pydantic": "2.12.5"})
         self.assertEqual(report["status"], "INVENTORY_ONLY_REVIEW_REQUIRED")
         self.assertEqual(report["components_count"], 1)
@@ -47,8 +53,10 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(report["unresolved"], [])
 
     def test_unknown_license_is_never_assumed_permissive(self):
+        msg = Message()
+        msg["Name"] = "example"
         class MissingLicense:
-            metadata = {"Name": "example"}
+            metadata = msg
         label, origin = _license_field(MissingLicense())
         self.assertEqual(label, "UNKNOWN")
         self.assertEqual(origin, "Metadata-Missing")
