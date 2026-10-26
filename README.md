@@ -83,6 +83,7 @@ AI 응답에서 8개 점검 관점이 빠지거나 중복되면 리포트에 불
 - API 오류 `HTTP 401 UNAUTHENTICATED`는 보통 키가 없거나 유효하지 않거나 만료된 경우입니다. Google AI Studio의 API Keys 화면에서 키 상태·유형과 연결 프로젝트를 확인하고, 오래된 Standard 키라면 Gemini API 제한을 적용하거나 새 키를 발급해 로컬 `.env`의 `GEMINI_API_KEY`만 교체한 뒤 다시 확인하세요. 2026-05-28부터 AI Studio 신규 키는 auth key로 발급되며, 제한이 없는 Standard 키는 거절될 수 있습니다. 키를 저장소·채팅·이슈에 올리지 마세요. [키 유형·관리 안내](https://ai.google.dev/gemini-api/docs/api-key) · [401 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 - API 오류 `HTTP 503 UNAVAILABLE`은 일시적인 서버 과부하나 중단일 수 있습니다. 먼저 잠시 뒤 다시 시도하세요. 이 CLI는 중복 비용을 막기 위해 생성 요청을 자동 재시도하지 않으므로, 반복 호출보다 잠시 기다렸다 한 번 재시도하는 편이 낫습니다. 503만으로 키가 잘못됐다고 판단하지 마세요. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 - API 오류 `429` 또는 `RateLimitError`는 모델·프로젝트별 분당 요청(RPM), 입력 토큰(TPM), 일일 요청(RPD) 한도 중 하나에 걸린 경우일 수 있습니다. [AI Studio 비율 제한](https://aistudio.google.com/rate-limit?timeRange=last-28-days)에서 해당 모델의 초기화 시점을 확인한 뒤 기다리세요. 이 CLI는 자동 재시도하지 않습니다. [Gemini API 한도 안내](https://ai.google.dev/gemini-api/docs/rate-limits) · [오류 코드](https://ai.google.dev/gemini-api/docs/api-errors)
+- `Gemini 응답이 완료되지 않았습니다`는 응답 상태가 `completed`가 아니어서 결과 검증을 중단했다는 뜻입니다. `JSON 문법 검증 실패`는 완료 상태였지만 JSON을 읽을 수 없었던 경우이고, `응답 스키마 검증 실패`는 JSON 문법은 맞지만 필드 형식이 예상과 다른 경우입니다. 이 오류들은 리포트를 만들지 않고 원문 응답도 출력하지 않습니다. 상태·토큰 진단과 실패 요청 사용량은 로컬 로그에 남기며 자동 재시도하지 않습니다.
 - 연결 오류나 타임아웃은 요청 처리 여부를 확인할 수 없을 수 있습니다. 네트워크를 점검하고 Google 사용량을 확인한 뒤 재시도하세요.
 
 ## 검수

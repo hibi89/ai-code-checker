@@ -8,12 +8,12 @@
 
 - **설계 확정:** 40,000원 기본 메뉴, 고객 범위, 운영 흐름, 보안 안내와 출시 기준을 정리했다.
 - **MVP 구현:** 폴더/ZIP/단일 파일/표준 입력, 비밀값 마스킹, 로컬 정적 검사, 단일 Gemini 구조화 분석, 비용 상한, 사용량 로그, 한국어 Markdown 리포트를 구현했다.
-- **기본 검수:** 자동 테스트 41개(Windows에서 40개 통과·POSIX FIFO 검사는 플랫폼상 1개 건너뜀), Python 구문 컴파일, 의존성 검사를 통과했다. 실행 환경은 Windows와 Python 3.11이다. 제한된 로컬 네트워크에서는 새 `pip-audit` 조회가 PyPI에 연결되지 않았지만, 최신 GitHub Actions의 의존성 감사는 통과했다.
+- **기본 검수:** 자동 테스트 45개(Windows에서 44개 통과·POSIX FIFO 검사는 플랫폼상 1개 건너뜀), Python 구문 컴파일, 의존성 검사를 통과했다. 실행 환경은 Windows와 Python 3.11이다. 제한된 로컬 네트워크에서는 새 `pip-audit` 조회가 PyPI에 연결되지 않았지만, 최신 GitHub Actions의 의존성 감사는 통과했다.
 - **교차환경 CI:** Actions 런타임을 Node 24 기반 `setup-python@v7`로 올리고 Ubuntu 24.04·26.04, Windows Server 2025와 Python 3.11~3.15의 15개 조합을 검증했다. Python 3.10은 2026-10-01 보안 지원이 종료되어 고객 환경의 최소 버전을 3.11로 올렸다. 최신 GitHub Actions 실행에서 15개 조합과 `requirements.txt` 의존성 감사 1개, 총 16개 작업이 통과했다. [최신 교차환경 CI 실행](https://github.com/hibi89/ai-code-checker/actions/runs/40289374760) · [Python 3.10 지원 종료 안내](https://www.python.org/downloads/release/python-31022/)
 - **API 키 확인:** 갱신된 로컬 키로 Gemini 모델 목록 조회에 성공했다. 이전 401 인증 오류는 해소된 것으로 보인다. Google 공식 Interactions API 지원 모델 목록에 기본 저가 모델 `gemini-3.1-flash-lite`도 포함된다.
 - **API 호출 경로 갱신:** 사용자가 제공한 AI Studio Quickstart를 반영해 최신 권장 Interactions API로 전환했다. 기본 모델·단일 호출·JSON 스키마·비용 상한은 유지하고 `store=false`를 명시해 재조회 가능한 Interaction 객체 저장을 요청하지 않는다. 이 경로로 실 생성 응답을 받은 적은 아직 없다.
-- **아직 출시 전:** 이전 모델 호출은 503 `UNAVAILABLE`, `ConnectError`, `APIConnectionError`, `ValidationError [?:json_invalid]`로 실패했다. 사용자의 최신 4,096 토큰 합성 호출은 `RateLimitError`로 끝났다. CLI에 모델별 요청·토큰·일일 한도 안내를 추가했고 자동 재시도는 하지 않는다. 정상 구조화 응답·정확도는 아직 검증되지 않았다. [Gemini API 한도 안내](https://ai.google.dev/gemini-api/docs/rate-limits)
-- **사용량 확인:** AI Studio Usage와 Rate Limits 화면을 직접 확인했다. 선택된 `Default Gemini Project`는 무료 등급이며 결제가 설정되지 않은 것으로 보인다. 28일 차트에는 `429 TooManyRequests` 기록이 있으나, 최대 15분의 반영 지연 때문에 마지막 실패 실행과 직접 연결할 수 없다. 모델별 RPM·TPM·RPD 숫자와 로컬 `.env` 키의 연결 프로젝트는 아직 확인되지 않았다. [파일럿 절차](PILOT_EVALUATION.md)
+- **아직 출시 전:** 이전 호출은 503·연결 오류·429 및 `json_invalid`로 끝났고 성공한 AI 리포트는 없다. 4,096 출력 토큰 호출의 `json_invalid`는 부분 응답 가능성이 있으나, 당시 응답 상태를 검사하지 않아 원인은 확정할 수 없다. 이제 상태 선검사, JSON 문법/스키마 오류 구분, 실패 응답 사용량의 로컬 기록을 구현했으며 자동 재시도는 하지 않는다. 실제 응답·정확도는 다음 단 한 번의 파일럿에서 확인해야 한다. [Gemini API 한도 안내](https://ai.google.dev/gemini-api/docs/rate-limits) · [Interactions API](https://ai.google.dev/gemini-api/docs/interactions-overview)
+- **사용량 확인:** AI Studio Usage와 Rate Limits 화면을 직접 확인했다. 선택된 `Default Gemini Project`는 무료 등급이며 결제가 설정되지 않은 것으로 보인다. 28일 차트에는 `429 TooManyRequests` 기록이 있으나, 최대 15분의 반영 지연 때문에 마지막 실패 실행과 직접 연결할 수 없다. 최근 28일 모델별 최대 사용량과 한도는 확인했으며, 사용자 계정의 세 API 키는 같은 프로젝트 이름으로 표시된다. 다만 로컬 `.env` 키의 실제 프로젝트 ID와 실패 순간의 429 원인은 아직 확인되지 않았다. [파일럿 절차](PILOT_EVALUATION.md)
 - `store=false`는 Interactions API 객체 저장을 끄는 설정이며 Zero Data Retention 보장이 아니다. Google Paid tier의 악용 모니터링 보관 안내(최대 55일)는 그대로 적용해 고객 동의 문구와 계정 로그 확인 조건에 포함한다. [Interactions API 저장 안내](https://ai.google.dev/gemini-api/docs/interactions-overview) · [유료 서비스 데이터 처리 안내](https://ai.google.dev/gemini-api/docs/usage-policies)
 - Quickstart 예시의 `gemini-3.8-flash`는 2026-12-31까지 유료 단가가 입력 $0.75·출력 $3.75/백만 토큰으로, 현재 저비용 기본 모델 `gemini-3.1-flash-lite`의 설정 단가 $0.25·$1.50보다 높다. 가성비 목표에 따라 기본 모델은 유지하고, 실제 품질·원가 파일럿 없이 변경하지 않는다. [Gemini 3.8 Flash 모델](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) · [공식 가격표](https://ai.google.dev/gemini-api/docs/pricing)
 - 따라서 **설계와 MVP는 완료**, 크몽 판매 등록은 실제 구조화 응답·정확성·실운영 검증 후 진행한다.
@@ -157,7 +157,7 @@
 - 테스트 파일이 분석 범위에 없으면 “테스트가 없다”고 단정하지 않는다.
 - 근거가 불충분한 점수와 “취약점 없음” 보증은 표시하지 않는다.
 - 공개 샘플 또는 합성 사례에서 알려진 오류·비밀정보·인증 검사 누락·예외 처리를 포함해 재현 검증한다.
-- **현재 검수:** 경로·줄·발췌 일치, 인용·비인용 자격증명 마스킹, 예산 초과 차단, API 실패 처리 등 자동 테스트 36개를 확인했다. AI가 8개 관점 체크리스트를 빠뜨리거나 중복하면 리포트에 불완전 상태를 기록하고 CLI를 성공 종료하지 않도록 보완했다. Windows 로컬에서는 35개 통과, POSIX 전용 FIFO 차단 검사는 건너뛰며 Linux CI에서 실행한다. 폴더 입력은 심볼릭 링크를 따라가지 않고 FIFO 등 일반 파일이 아닌 항목은 열지 않도록 보완했다. 로컬 `pip-audit`은 처음에 구버전 `certifi`·`urllib3`와 도구 `pip`·`setuptools`의 취약점을 찾아 `.venv`만 수정 버전으로 갱신했고, 재검사와 `requirements.txt` 검사는 모두 0건이었다. 저장소 요구사항은 변경하지 않았으며 CI에도 런타임 의존성 감사를 추가했다. 전체 저장소 dry-run에서 `api_key=settings.api_key`를 실제 비밀값으로 잘못 표시하는 오탐과 `AWS_SECRET_ACCESS_KEY` 누락 가능성을 합성 입력으로 찾아 보완하고 회귀 테스트를 추가했다. 명확한 객체 속성 참조는 유지하고 실제 키 패턴은 계속 마스킹한다. 리포트 경로 격리, 로그 90일 정리, 모델 생성 Markdown 링크·이미지 이스케이프, Windows UTF-8 CLI 출력, 401 오류 시 키 설정 안내도 확인했다. 초기 합성 API 요청에서 발생한 401은 키 갱신 후 모델 목록 조회 성공으로 해소된 것으로 보인다. 다만 현재 생성 요청이 503 또는 연결 오류로 실패해 실제 Gemini 응답의 정밀도·재현율은 아직 측정하지 않았다.
+- **현재 검수:** 경로·줄·발췌 일치, 인용·비인용 자격증명 마스킹, 예산 초과 차단, API 실패 처리 등 자동 테스트 45개(Windows에서 44개 통과·POSIX FIFO 검사 1개 건너뜀)를 확인했다. AI가 8개 관점 체크리스트를 빠뜨리거나 중복하면 리포트에 불완전 상태를 기록하고 CLI를 성공 종료하지 않도록 보완했다. Windows 로컬에서는 44개 통과, POSIX 전용 FIFO 차단 검사는 건너뛰며 Linux CI에서 실행한다. 폴더 입력은 심볼릭 링크를 따라가지 않고 FIFO 등 일반 파일이 아닌 항목은 열지 않도록 보완했다. 로컬 `pip-audit`은 처음에 구버전 `certifi`·`urllib3`와 도구 `pip`·`setuptools`의 취약점을 찾아 `.venv`만 수정 버전으로 갱신했고, 재검사와 `requirements.txt` 검사는 모두 0건이었다. 저장소 요구사항은 변경하지 않았으며 CI에도 런타임 의존성 감사를 추가했다. 전체 저장소 dry-run에서 `api_key=settings.api_key`를 실제 비밀값으로 잘못 표시하는 오탐과 `AWS_SECRET_ACCESS_KEY` 누락 가능성을 합성 입력으로 찾아 보완하고 회귀 테스트를 추가했다. 명확한 객체 속성 참조는 유지하고 실제 키 패턴은 계속 마스킹한다. 리포트 경로 격리, 로그 90일 정리, 모델 생성 Markdown 링크·이미지 이스케이프, Windows UTF-8 CLI 출력, 401 오류 시 키 설정 안내도 확인했다. 초기 합성 API 요청에서 발생한 401은 키 갱신 후 모델 목록 조회 성공으로 해소된 것으로 보인다. 다만 현재 생성 요청이 503 또는 연결 오류로 실패해 실제 Gemini 응답의 정밀도·재현율은 아직 측정하지 않았다.
 
 ### 호환성과 안정성
 
@@ -165,7 +165,7 @@
 - MVP가 지원하는 언어·확장자를 명시한다. 나머지 언어는 분석 범위 밖 또는 제한 분석으로 표시한다.
 - API 실패, 타임아웃, 재시도, 모델 미지원, 구조화 결과 오류, 호출 한도 초과를 처리한다.
 - 부분 실패를 전체 성공으로 표시하지 않는다.
-- **현재 검수:** 로컬 Windows/Python 3.11에서 컴파일, `pip check`, 자동 테스트 36개(35개 통과·POSIX 전용 1개 건너뜀)를 확인했다. 최신 GitHub Actions 실행(`fb60ae6`)에서는 Ubuntu 24.04·26.04, Windows Server 2025 × Python 3.11~3.15 테스트 15개와 런타임 의존성 감사 1개가 모두 성공했다. 실제 Gemini 생성 응답과 대표 코드 정확도는 별도 실 API·사람 검수 파일럿에서 확인한다.
+- **현재 검수:** 로컬 Windows/Python 3.11에서 컴파일, `pip check`, 자동 테스트 45개(44개 통과·POSIX 전용 1개 건너뜀)를 확인했다. 최신 GitHub Actions 실행(`fb60ae6`)에서는 Ubuntu 24.04·26.04, Windows Server 2025 × Python 3.11~3.15 테스트 15개와 런타임 의존성 감사 1개가 모두 성공했다. 실제 Gemini 생성 응답과 대표 코드 정확도는 별도 실 API·사람 검수 파일럿에서 확인한다.
 
 ### 비용과 가성비
 
@@ -269,7 +269,7 @@
 |---|---:|---|
 | 3일 MVP 구현 | 3일 | **구현 범위 완료**: 로컬 운영 도구, 기본 리포트, 호출 원가·사용량 제한 |
 | 최초 설계와 구현 대조 | 2일 | **설계 문서 갱신 완료**: 유지/제외/출시 후 후보를 명시 |
-| 보안·정확성·호환성·원가 실검수 | 3일 | **일부 진행**: 로컬 36개 테스트(35개 통과·플랫폼 전용 1개 건너뜀)와 최신 CI 9개 작업 통과. 실 API 생성 응답·정확도 파일럿 남음 |
+| 보안·정확성·호환성·원가 실검수 | 3일 | **일부 진행**: 로컬 45개 테스트(44개 통과·플랫폼 전용 1개 건너뜀)와 최신 CI 16개 작업 통과. 실 API 생성 응답·정확도 파일럿 남음 |
 | 샘플 출력과 크몽 등록 자료 | 1~2일 | 썸네일 시안, 합성 샘플 PDF, 서비스 문구·FAQ 초안 준비. 계정의 데이터 설정·수수료·공개 미리보기 확인 남음 |
 | 전체 계획 | 약 9~10 집중 작업일 | **코드와 설계는 완료. 지금부터 실 API가 복구된 뒤 파일럿·운영 설정·등록 자료 최종 확인까지 약 2~3 집중 작업일로 추정(외부 API 복구 대기시간 제외)** |
 

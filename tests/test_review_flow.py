@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from pydantic import TypeAdapter, ValidationError
 
+import main
 from code_input import bundle_from_text
 from code_input import InputError, InputLimits
 from main import Settings, _configure_console_encoding, _read_stdin_bundle, _save_report, run_cli
@@ -157,6 +158,7 @@ class ReviewFlowTests(unittest.TestCase):
 
     def test_single_structured_request_records_provider_usage(self) -> None:
         response = SimpleNamespace(
+            status="completed",
             output_text=empty_review().model_dump_json(),
             usage=SimpleNamespace(
                 total_input_tokens=1200,
@@ -182,7 +184,8 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertEqual(
             request["generation_config"], {"max_output_tokens": 2048}
         )
-        self.assertEqual(request["response_format"][0]["mime_type"], "application/json")
+        self.assertEqual(request["response_format"]["mime_type"], "application/json")
+        self.assertEqual(request["response_format"]["type"], "text")
         self.assertIsInstance(review, AIReview)
         self.assertEqual(usage.model, "gemini-3.1-flash-lite")
         self.assertEqual(usage.input_tokens, 1200)
@@ -190,6 +193,79 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertAlmostEqual(usage.estimated_cost_usd or 0, 0.000825)
         self.assertGreater(estimate.max_estimated_cost_usd, 0)
         self.assertEqual(warnings, [])
+
+    def test_incomplete_interaction_fails_before_parsing_and_keeps_safe_usage(self) -> None:
+        response = SimpleNamespace(
+            status="incomplete",
+            output_text="PRIVATE_PARTIAL_RESPONSE",
+            usage=SimpleNamespace(
+                total_input_tokens=1200,
+                total_output_tokens=4096,
+                total_thought_tokens=200,
+                total_tokens=5496,
+            ),
+        )
+        interactions = FakeInteractions(response)
+        client = SimpleNamespace(interactions=interactions)
+
+        with self.assertRaises(ReviewError) as captured:
+            analyze_bundle(bundle_from_text("print('synthetic')\n"), api_key="test-only", client=client)
+
+        message = str(captured.exception)
+        self.assertIn("status=incomplete", message)
+        self.assertIn("output_tokens=4096", message)
+        self.assertIn("thought_tokens=200", message)
+        self.assertNotIn("PRIVATE_PARTIAL_RESPONSE", message)
+        self.assertEqual(len(interactions.calls), 1)
+        self.assertIsNotNone(captured.exception.usage)
+
+    def test_completed_invalid_json_reports_safe_diagnostics_and_usage(self) -> None:
+        response = SimpleNamespace(
+            status="completed",
+            output_text='{"summary":"PRIVATE_PARTIAL_RESPONSE',
+            usage=SimpleNamespace(
+                total_input_tokens=1200,
+                total_output_tokens=50,
+                total_thought_tokens=5,
+                total_tokens=1255,
+            ),
+        )
+        interactions = FakeInteractions(response)
+        client = SimpleNamespace(interactions=interactions)
+
+        with self.assertRaises(ReviewError) as captured:
+            analyze_bundle(bundle_from_text("print('synthetic')\n"), api_key="test-only", client=client)
+
+        message = str(captured.exception)
+        self.assertIn("JSON 문법 검증 실패", message)
+        self.assertIn("status=completed", message)
+        self.assertIn("json_invalid", message)
+        self.assertIn("output_chars=", message)
+        self.assertNotIn("PRIVATE_PARTIAL_RESPONSE", message)
+        self.assertEqual(len(interactions.calls), 1)
+        self.assertEqual(captured.exception.usage.output_tokens, 55)
+
+    def test_completed_schema_error_is_distinguished_from_invalid_json(self) -> None:
+        response = SimpleNamespace(
+            status="completed",
+            output_text='{"summary": 123}',
+            usage=SimpleNamespace(
+                total_input_tokens=1200,
+                total_output_tokens=5,
+                total_thought_tokens=0,
+                total_tokens=1205,
+            ),
+        )
+        interactions = FakeInteractions(response)
+        client = SimpleNamespace(interactions=interactions)
+
+        with self.assertRaises(ReviewError) as captured:
+            analyze_bundle(bundle_from_text("print('synthetic')\n"), api_key="test-only", client=client)
+
+        self.assertIn("응답 스키마 검증 실패", str(captured.exception))
+        self.assertIn("string_type", str(captured.exception))
+        self.assertNotIn("123", str(captured.exception))
+        self.assertIsNotNone(captured.exception.usage)
 
     def test_api_failure_does_not_retry_or_echo_request_contents(self) -> None:
         class FailingInteractions:
@@ -422,7 +498,7 @@ class ReviewFlowTests(unittest.TestCase):
             with (
                 patch("main.load_settings", return_value=settings),
                 patch("main.analyze_bundle", return_value=(review, usage, estimate, [])),
-                patch("reviewer.append_usage_log"),
+                patch("main.append_usage_log"),
                 redirect_stdout(output),
                 redirect_stderr(output),
             ):
@@ -435,6 +511,46 @@ class ReviewFlowTests(unittest.TestCase):
             self.assertIn("AI 응답의 8개 관점 체크리스트가 불완전", output.getvalue())
             self.assertIn("AI 관점 응답 형식: 미완료", report_path.read_text(encoding="utf-8"))
             self.assertNotIn("검수가 끝났습니다", output.getvalue())
+
+    def test_cli_logs_usage_when_provider_response_cannot_be_parsed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "demo.py"
+            source.write_text("print('synthetic')\n", encoding="utf-8")
+            settings = Settings(
+                api_key="test-only",
+                model="gemini-3.1-flash-lite",
+                input_price=0.25,
+                output_price=1.50,
+                max_output_tokens=2048,
+                max_estimated_cost_usd=0.05,
+            )
+            usage = TokenUsage(
+                "gemini-3.1-flash-lite", 1200, 55, 1255, 0.0003825, "test"
+            )
+            error = ReviewError(
+                "Gemini JSON 문법 검증 실패: status=completed, error_codes=json_invalid",
+                usage=usage,
+            )
+            output = io.StringIO()
+            with (
+                patch("main.load_settings", return_value=settings),
+                patch("main.analyze_bundle", side_effect=error),
+                patch("main.append_usage_log") as log_usage,
+                redirect_stdout(output),
+                redirect_stderr(output),
+            ):
+                result = run_cli([
+                    str(source), "--confirm-upload", "--order-ref", "SYNTHETIC-01"
+                ])
+
+            self.assertEqual(result, 2)
+            self.assertIn("검수를 완료하지 못했습니다", output.getvalue())
+            log_usage.assert_called_once_with(
+                usage,
+                path=main._usage_log_path(),
+                order_ref="SYNTHETIC-01",
+            )
 
     def test_report_escapes_model_generated_markdown_links_and_images(self) -> None:
         injected = "![pixel](https://tracker.example/pixel.png) [click](https://tracker.example/)"

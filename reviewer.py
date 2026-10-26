@@ -44,6 +44,10 @@ SYSTEM_INSTRUCTION = """
 class ReviewError(RuntimeError):
     """Raised when review cannot safely produce a structured result."""
 
+    def __init__(self, message: str, *, usage: TokenUsage | None = None) -> None:
+        super().__init__(message)
+        self.usage = usage
+
 
 USAGE_LOG_RETENTION_DAYS = 90
 
@@ -226,6 +230,57 @@ def _read_usage(
     )
 
 
+def _interaction_status(response: Any) -> str:
+    """Return a known Interactions API status without echoing arbitrary values."""
+    raw_status = getattr(response, "status", None)
+    value = getattr(raw_status, "value", raw_status)
+    if not isinstance(value, str):
+        value = getattr(raw_status, "name", None)
+    normalized = value.lower() if isinstance(value, str) else ""
+    if normalized in {
+        "completed",
+        "incomplete",
+        "in_progress",
+        "requires_action",
+        "failed",
+        "cancelled",
+    }:
+        return normalized
+    return "unknown"
+
+
+def _interaction_token_counts(response: Any) -> tuple[int | None, int | None]:
+    """Return safe output/thought token counts for diagnostics."""
+    metadata = getattr(response, "usage", None)
+    if metadata is None:
+        metadata = getattr(response, "usage_metadata", None)
+    if metadata is None:
+        return None, None
+
+    def safe_count(name: str) -> int | None:
+        value = getattr(metadata, name, None)
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+            return value
+        return None
+
+    return safe_count("total_output_tokens"), safe_count("total_thought_tokens")
+
+
+def _safe_validation_codes(error: PydanticValidationError) -> list[str]:
+    """Expose validation error types only; omit response, code, and input values."""
+    codes = {
+        detail.get("type")
+        for detail in error.errors(
+            include_input=False,
+            include_context=False,
+            include_url=False,
+        )
+        if isinstance(detail.get("type"), str)
+        and re.fullmatch(r"[a-z_]{1,40}", detail["type"])
+    }
+    return sorted(codes)[:8] or ["invalid"]
+
+
 def analyze_bundle(
     bundle: CodeBundle,
     *,
@@ -265,22 +320,57 @@ def analyze_bundle(
             model=model,
             input=prompt,
             system_instruction=SYSTEM_INSTRUCTION,
-            response_format=[{
+            response_format={
                 "type": "text",
                 "mime_type": "application/json",
                 "schema": AIReview.model_json_schema(),
-            }],
+            },
             generation_config={"max_output_tokens": max_output_tokens},
             store=False,
         )
+
+        duration_ms = int((time.monotonic() - started_at) * 1000)
+        usage = _read_usage(
+            response,
+            model,
+            input_usd_per_million,
+            output_usd_per_million,
+            duration_ms,
+        )
+        status = _interaction_status(response)
+        output_tokens, thought_tokens = _interaction_token_counts(response)
+        if status != "completed":
+            raise ReviewError(
+                "Gemini 응답이 완료되지 않았습니다: "
+                f"status={status}, output_tokens={output_tokens}, "
+                f"thought_tokens={thought_tokens}. 리포트를 만들지 않았으며 자동 재시도하지 않았습니다.",
+                usage=usage,
+            )
+
         parsed = getattr(response, "parsed", None)
         if isinstance(parsed, AIReview):
             review = parsed
         else:
             output_text = getattr(response, "output_text", None)
             if not isinstance(output_text, str) or not output_text.strip():
-                raise ReviewError("Gemini가 구조화된 텍스트 결과를 반환하지 않았습니다.")
-            review = AIReview.model_validate_json(output_text)
+                raise ReviewError(
+                    "Gemini 구조화 응답이 비어 있습니다: "
+                    f"status={status}, output_tokens={output_tokens}, "
+                    f"thought_tokens={thought_tokens}.",
+                    usage=usage,
+                )
+            try:
+                review = AIReview.model_validate_json(output_text)
+            except PydanticValidationError as error:
+                codes = ",".join(_safe_validation_codes(error))
+                response_kind = "JSON 문법" if "json_invalid" in codes else "응답 스키마"
+                raise ReviewError(
+                    f"Gemini {response_kind} 검증 실패: status={status}, "
+                    f"error_codes={codes}, output_chars={len(output_text)}, "
+                    f"output_tokens={output_tokens}, thought_tokens={thought_tokens}. "
+                    "응답 원문은 출력하지 않았으며 리포트를 만들지 않았습니다.",
+                    usage=usage,
+                ) from None
     except ReviewError:
         raise
     except Exception as error:
@@ -289,14 +379,6 @@ def analyze_bundle(
             f"AI 분석 요청이 실패했습니다: {_safe_error_label(error)}{hint}"
         ) from error
 
-    duration_ms = int((time.monotonic() - started_at) * 1000)
-    usage = _read_usage(
-        response,
-        model,
-        input_usd_per_million,
-        output_usd_per_million,
-        duration_ms,
-    )
     warnings: list[str] = []
     if usage.estimated_cost_usd is None:
         warnings.append("API가 사용량 정보를 반환하지 않아 실제 토큰 원가를 계산할 수 없습니다.")

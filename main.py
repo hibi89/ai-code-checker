@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from code_input import CodeBundle, InputError, InputLimits, bundle_from_text, load_path
 from reporting import convert_ai_findings, render_report, review_completeness_issues
-from reviewer import ReviewError, analyze_bundle, build_prompt, estimate_request_cost
+from reviewer import ReviewError, analyze_bundle, append_usage_log, build_prompt, estimate_request_cost
 from static_checks import run_static_checks
 
 
@@ -283,8 +283,6 @@ def run_cli(argv: list[str] | None = None) -> int:
         ai_findings = convert_ai_findings(ai_review, bundle)
 
         try:
-            from reviewer import append_usage_log
-
             append_usage_log(
                 usage,
                 path=_usage_log_path(),
@@ -316,6 +314,15 @@ def run_cli(argv: list[str] | None = None) -> int:
         return 0
 
     except (InputError, ReviewError, ValueError, OSError) as error:
+        if isinstance(error, ReviewError) and error.usage is not None:
+            try:
+                append_usage_log(
+                    error.usage,
+                    path=_usage_log_path(),
+                    order_ref=args.order_ref,
+                )
+            except (OSError, ValueError):
+                print("실패한 AI 응답의 사용량을 로컬 로그에 기록하지 못했습니다.", file=sys.stderr)
         print(f"검수를 완료하지 못했습니다: {error}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
