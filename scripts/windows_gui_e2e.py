@@ -69,15 +69,24 @@ def main() -> int:
                 except Exception:
                     pass
 
-            def until(predicate, label: str, then) -> None:
-                if time.monotonic() > deadline:
-                    fail("TIMEOUT " + label)
+            def until(predicate, label: str, then, started=None) -> None:
+                started = time.monotonic() if started is None else started
+                if time.monotonic() - started > 12 or time.monotonic() > deadline:
+                    snapshot = (
+                        " busy=" + str(window.busy)
+                        + " preview=" + str(window.preview_request is not None)
+                        + " scan_button=" + str(window.scan_button["state"])
+                        + " ttk_disabled=" + str(window.scan_button.instate(["disabled"]))
+                        + " state=" + window.state_var.get()
+                        + " queue=" + str(window.queue.qsize())
+                    )
+                    fail("TIMEOUT " + label + snapshot)
                     return
                 try:
                     if predicate():
                         then()
                     else:
-                        window.root.after(30, lambda: until(predicate, label, then))
+                        window.root.after(30, lambda: until(predicate, label, then, started))
                 except Exception as exc:
                     fail(label + " " + type(exc).__name__ + ": " + str(exc))
 
@@ -124,10 +133,7 @@ def main() -> int:
                         return False
                     if expected == "blocked":
                         return "실패/차단" in window.state_var.get()
-                    return (
-                        window.preview_request is not None
-                        and window.scan_button["state"] == "normal"
-                    )
+                    return window.preview_request is not None
 
                 def after_preview() -> None:
                     if expected == "blocked":
@@ -140,8 +146,14 @@ def main() -> int:
                         results.append("blocked input rejected; stale report not reopenable")
                         advance()
                         return
-                    if window.scan_button["state"] != "normal":
-                        fail(name + ": scan button disabled after preview: " + str(window.scan_button["state"]))
+                    if window.scan_button.instate(["disabled"]):
+                        fail(
+                            name + ": scan button truly disabled after preview:"
+                            + " cget=" + str(window.scan_button["state"])
+                            + " preview=" + str(window.preview_request is not None)
+                            + " busy=" + str(window.busy)
+                            + " state=" + window.state_var.get()
+                        )
                         return
                     window.scan_button.invoke()
 
