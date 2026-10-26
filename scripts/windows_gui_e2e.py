@@ -140,7 +140,7 @@ def main() -> int:
                         if window.preview_request is not None:
                             fail("blocked input was preview-approved")
                             return
-                        if window.open_button["state"] != "disabled" or window.last_result is not None:
+                        if not window.open_button.instate(["disabled"]) or window.last_result is not None:
                             fail("blocked input left stale prior HTML result openable")
                             return
                         results.append("blocked input rejected; stale report not reopenable")
@@ -178,8 +178,8 @@ def main() -> int:
                         if name == "zip" and result.limited != 1:
                             fail("generic-only JS file not marked limited")
                             return
-                        if window.open_button["state"] != "normal":
-                            fail(name + ": open HTML button unavailable")
+                        if window.open_button.instate(["disabled"]):
+                            fail(name + ": open HTML button truly disabled")
                             return
                         with patch("os.startfile") as open_local:
                             window.open_button.invoke()
