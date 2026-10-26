@@ -34,7 +34,8 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install fixed binary wheels only on CI runner (not in product)
-        run: python -m pip install --only-binary=:all: -r requirements-parser-probe.txt
+        run: |
+          python -m pip install --only-binary=:all: -r requirements-parser-probe.txt
       - name: CI-only JS, TS, TSX syntax parser smoke and license metadata
         run: python -m scripts.probe_js_ts_parser
       - name: Synthetic parser-probe boundary tests
