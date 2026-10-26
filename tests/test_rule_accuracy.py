@@ -42,6 +42,35 @@ class RuleAccuracyTests(unittest.TestCase):
         self.assertEqual(report.status, "complete")
         self.assertEqual(report.verified_count, 2)
 
+    def test_import_shadow_suppresses_false_positive(self):
+        cases = (
+            "import subprocess as sp\nsp = other\nsp.run(cmd, shell=True)\n",
+            "from pickle import loads as loader\nloader = other\nloader(data)\n",
+            "import requests as req\ndef check(req):\n    req.get(url, verify=False)\n",
+            "import subprocess as sp\n[sp.run(cmd, shell=True) for sp in group]\n",
+            "def f(exec):\n    exec(code)\n",
+        )
+        for code in cases:
+            with self.subTest(code=code):
+                report = build_report(scan_text(code, filename="fixture.py"))
+                self.assertEqual(report.findings, ())
+
+    def test_positive_before_rebinding_is_preserved(self):
+        source = "import subprocess as sp\nsp.run(cmd, shell=True)\nsp = other\nsp.run(cmd, shell=True)\n"
+        report = build_report(scan_text(source, filename="fixture.py"))
+        self.assertEqual(
+            [(item.rule_id, item.finding.start_line) for item in report.findings],
+            [("PY-SHELL", 2)],
+        )
+
+    def test_unshadowed_function_call_keeps_module_provenance(self):
+        source = "import subprocess as sp\ndef f():\n    sp.run(cmd, shell=True)\n"
+        report = build_report(scan_text(source, filename="fixture.py"))
+        self.assertEqual(
+            [(item.rule_id, item.finding.start_line) for item in report.findings],
+            [("PY-SHELL", 3)],
+        )
+
     def test_js_ts_do_not_claim_ast_analyzer(self):
         for filename, code in (("x.js", "fetch(url);\n"), ("x.ts", "let a: number = 1;\n")):
             scan = scan_text(code, filename=filename)
