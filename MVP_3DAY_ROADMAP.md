@@ -1,7 +1,7 @@
 # CODE CHECKER v2 — 3일 MVP 우선 개발·최종물 도달 로드맵
 
 - 확정: 2026-10-26 KST, 사용자 지시를 반영한 단계별 작업 기준.
-- 상태: **일정/진행 방식 승인. Day 1 오프라인 검사 코어 main 병합·CI 성공, Day 2 보고서 feature 구현·76 unittest 및 Actions 16/16 검증 성공(코드 SHA 7103c67); PR #3 최종 통합 확인 필요.** 2026-10-26 KST 확인. 자세한 최신 현황은 [STATUS.md](STATUS.md), 재개 절차는 [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md).
+- 상태: **일정/진행 방식 승인. Day 1 오프라인 검사 코어 main 병합·CI 성공, Day 2 보고서 PR #3 main 병합 완료(7a5e78d), final feature Actions 16/16 PASS·76 unittest PASS. main 문서 커밋/CI는 실제 HEAD 재확인.** 2026-10-26 KST 확인. 자세한 최신 현황은 [STATUS.md](STATUS.md), 재개 절차는 [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md).
 - 3일 = 집중 개발일 3회 목표(고정 납품 보증 아님). 무리한 품질 축소나 보안 우회는 금지.
 - **순서 고정:** ① 3일 MVP → ② 최종 제품 설계도와 격차 비교하며 기능 채움 → ③ 안정성·보안성 등 다각 보강 → ④ 실서비스 검증 뒤 크몽 상품화.
 
