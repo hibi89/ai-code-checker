@@ -292,5 +292,32 @@ def launch() -> int:
     return 0
 
 
+def packaged_smoke_test() -> int:
+    """Synthetic-only packaged EXE smoke test, not a GUI interaction test."""
+    import tempfile
+    from pathlib import Path
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="code-checker-smoke-") as folder:
+            result = run_scan(
+                ScanRequest("paste", text="eval('1+1')\n", language="python"),
+                Path(folder) / "reports", "synthetic-smoke",
+            )
+            if (
+                result.status != "complete" or result.findings < 1
+                or result.verified < 1
+                or not result.html_path.is_file()
+                or not result.markdown_path.is_file()
+            ):
+                return 1
+    except Exception:
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
+        raise SystemExit(packaged_smoke_test())
+    if len(sys.argv) != 1:
+        raise SystemExit(2)
     raise SystemExit(launch())
