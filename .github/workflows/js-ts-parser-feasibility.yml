@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'scripts/probe_js_ts_parser.py'
+      - 'scripts/prototype_js_ts_adapter.py'
+      - 'scripts/evaluate_js_ts_prototype.py'
+      - 'tests/test_js_ts_adapter_contract.py'
       - 'tests/test_js_ts_parser_probe.py'
       - 'requirements-parser-probe.txt'
       - '.github/workflows/js-ts-parser-feasibility.yml'
@@ -11,6 +14,9 @@ on:
   pull_request:
     paths:
       - 'scripts/probe_js_ts_parser.py'
+      - 'scripts/prototype_js_ts_adapter.py'
+      - 'scripts/evaluate_js_ts_prototype.py'
+      - 'tests/test_js_ts_adapter_contract.py'
       - 'tests/test_js_ts_parser_probe.py'
       - 'requirements-parser-probe.txt'
       - '.github/workflows/js-ts-parser-feasibility.yml'
@@ -38,6 +44,8 @@ jobs:
           python -m pip install --only-binary=:all: -r requirements-parser-probe.txt
       - name: CI-only JS, TS, TSX syntax parser smoke and license metadata
         run: python -m scripts.probe_js_ts_parser
+      - name: Evaluate independent JS/TS/TSX syntax-only candidate fixtures
+        run: python -m scripts.evaluate_js_ts_prototype
       - name: Synthetic parser-probe boundary tests
         run: python -m unittest discover -s tests -p test_js_ts_parser_probe.py -v
 
