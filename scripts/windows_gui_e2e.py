@@ -131,7 +131,10 @@ def main() -> int:
                         if window.preview_request is not None:
                             fail("blocked input was preview-approved")
                             return
-                        results.append("blocked input rejected")
+                        if window.open_button["state"] != "disabled" or window.last_result is not None:
+                            fail("blocked input left stale prior HTML result openable")
+                            return
+                        results.append("blocked input rejected; stale report not reopenable")
                         advance()
                         return
                     if window.scan_button["state"] != "normal":
