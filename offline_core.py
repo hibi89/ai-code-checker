@@ -35,7 +35,7 @@ LANGUAGE_SUFFIX = {
 }
 _HEADER = re.compile(r"===== FILE: (.+) =====\Z")
 _RESERVED_PREFIX = "===== FILE:"
-_ESCAPED_PREFIX = "\\===== FILE:"
+_ESCAPED_PREFIX = r"\===== FILE:"
 ScanStatus = Literal["complete", "partial", "blocked", "cancelled"]
 FileStatus = Literal["analyzed", "limited", "failed", "excluded", "unsupported"]
 

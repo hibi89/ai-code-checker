@@ -23,6 +23,18 @@ class OfflineCoreTests(unittest.TestCase):
         self.assertTrue(any(f.start_line == 1200 and "동적 코드 실행" in f.title for f in result.findings))
         self.assertEqual(result.origin_for("long.py", 1200), ("long.txt", 1200))
 
+    def test_real_txt_file_path_python_full_scan_and_unmodified(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "customer.txt"
+            code = "print('ok')\\n" * 1199 + "eval('1+1')\\n"
+            source.write_text(code, encoding="utf-8")
+            before = source.read_bytes()
+            result = scan_path(source, language="python")
+            self.assertEqual(source.read_bytes(), before)
+            self.assertEqual(result.status, "complete")
+            self.assertEqual(result.bundle.files[0].line_count, 1200)
+            self.assertEqual(result.origin_for("customer.py", 1200), ("customer.txt", 1200))
+
     def test_txt_unknown_language_marks_limited_not_clean(self) -> None:
         result = scan_text("eval(user_input)\n", filename="unclassified.txt")
         self.assertEqual(result.status, "partial")

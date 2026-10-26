@@ -12,6 +12,20 @@
 
 하나의 AI 모델이 보안·신뢰성·테스트·구조·유지보수·성능·자원관리·복잡도/비용의 8개 관점을 확인합니다. 서로 독립된 8개 AI나 사람 리뷰어가 검토하는 서비스는 아닙니다.
 
+## Offline v2 core — Day 1 developer preview
+
+The owner-approved v2 product is still under development. The standalone offline scanner core is now available as `offline_core.py`. **This is a developer-only preview, not a customer-ready Windows program or a human-reviewed security audit.**
+
+```powershell
+# No Gemini API key / --confirm-upload required. Metadata-only JSON in terminal.
+python offline_core.py .\\assets\\pilot-safe.zip
+python offline_core.py .\\path\\to\\code.txt --language python
+```
+
+Offline v2 accepts ZIP/folder/single source and single TXT; delimited multi-file TXT uses `===== FILE: relative/path.ext =====`. Python gets the existing local AST checks; other languages currently receive only generic patterns, marked **limited**. Metadata status is **partial** if any enumerated file was excluded, unsupported, failed or covered only by generic checks. Exit code 0 means all eligible files passed the *configured parsing/rule execution*, **not** that code is secure; partial returns 3 and blocked input 2.
+
+Current local v2 limits: 200 files, 1 MiB per file and 8 MiB total, explicitly subject to testing and not marketed as universal project-size support. The old Gemini CLI below is unchanged and has separate limits. HTML/PDF and Windows GUI are planned for Day 2/3; see [current status](STATUS.md) and [roadmap](MVP_3DAY_ROADMAP.md).
+
 ## 기능
 
 - 폴더, ZIP, 단일 파일, 표준 입력 지원
