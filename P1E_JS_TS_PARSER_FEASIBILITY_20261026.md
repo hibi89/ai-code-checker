@@ -31,3 +31,11 @@ Only after observing live Ubuntu + Windows CI, report exact outcomes. If the whe
 ### CI evidence
 
 Pending exact GitHub final branch SHA/workflow results.
+
+## Actual two-OS CI confirmation — 2026-10-26 KST
+
+- Parser probe code SHA `4e4cd29bd511a7811098251fedceaaec16004db5`; [GitHub Actions 40341166881](https://github.com/hibi89/ai-code-checker/actions/runs/40341166881) **Windows 2025 and Ubuntu 24.04: 2/2 SUCCESS**. Each job installed the three exact-version prebuilt binary wheels, parsed 12 synthetic samples (**9 accepted, 3 malformed rejected**), and passed three scoped unit tests. Explicit tested grammars: JS, TS, TSX, including UTF-8 non-ASCII and JSX examples.
+- The installed package metadata of `tree-sitter==0.26.0` advertised MIT via Python package classifier; JavaScript `0.25.0` and TypeScript `0.23.2` advertised MIT via license field. Each installed distribution had **one license-named path**. The original contents and downstream redistribution NOTICE text were **not reviewed or approved**; license metadata is only preliminary evidence. Original source rights and commercial status unchanged.
+- Initial CI failure [40340542447](https://github.com/hibi89/ai-code-checker/actions/runs/40340542447) was a YAML scalar quoting issue in `--only-binary=:all:`; corrected. Next failure was an overly narrow license metadata equality test, not wheel/grammar incompatibility; updated recognition of license field/classifier and verified both OS. Do not remove these error histories.
+- **Decision:** standalone grammar feasibility established, **DO NOT yet bundle** the parser into the product Windows EXE until dependency licenses/notices, static linking/packaging, incremental EXE size, plugin trust and security-rule accuracy have independent approval. Actual existing JS/TS coverage remains `limited`. Do not represent syntax parsing as security detection. Follow-on decision: small optional feature integration prototype with explicit fail-closed unsupported status, no customer product release.
+- The latest handoff-document commit changes feature SHA; re-verify CI before merge. Physical consumer Windows, Defender/SmartScreen/OS network, Korean PDF visuals and original CPython/Tcl/Tk/VC/PyInstaller legal notice chains remain UNVERIFIED.

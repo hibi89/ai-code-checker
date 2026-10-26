@@ -172,3 +172,8 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 ## Phase2 P1-E JS/TS feasibility branch (2026-10-26 KST)
 
 - Last verified main `bd4e7041a813fc599aa7cf51ae6d68158c64466c`; [main Tests 16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40337436335). New `feature/p1e-parser-probe` compares regex/Node TypeScript/Tree-sitter; implements **CI-only** pinned syntax parser test for JS/TS/TSX and checks package metadata, never runs customer code. Documentation: [P1-E parser feasibility](P1E_JS_TS_PARSER_FEASIBILITY_20261026.md). Outcomes pending real two-OS CI. Product `requirements-offline-build.txt` and JS/TS `limited` status unchanged. Customer EXE release unapproved.
+
+## P1-E verified JS/TS grammar feasibility — CI-only (2026-10-26 KST)
+
+- [PR #15](https://github.com/hibi89/ai-code-checker/pull/15), parser code SHA `4e4cd29bd511a7811098251fedceaaec16004db5`. [Separate parser workflow 40341166881](https://github.com/hibi89/ai-code-checker/actions/runs/40341166881) **Windows 2025 1/1 + Ubuntu 24.04 1/1 PASS**: fixed wheels Tree-sitter 0.26.0/JS 0.25.0/TS 0.23.2, **12 syntax fixtures** (9 valid, 3 malformed), 3 adapter-boundary tests each. Installed license-named paths 1/package, MIT declared in package metadata only, NOT approved commercial NOTICE/distribution. Main product dependency and EXE unchanged; JS/TS still `limited`.
+- Initial workflow invalid YAML and overly strict license-string checks were corrected and actual 2-OS CI now pass. Final feature PR/head regular Tests CI requires independent verification before merge; physical clean Windows/privacy/PDF and notices remain blocked. Vercel N/A.
