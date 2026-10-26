@@ -43,3 +43,11 @@ On authorized development Windows after installing `requirements-offline-build.t
 `python -m unittest discover -s tests -v`
 
 Next: check GitHub CI logs for actual binary manifest count, nested PYZ count, runtime flags and installed license-file count; if successful, mark **inventory gathered / legal NOTICE still pending**. If failing, inspect trace locally without exposing binary/customer contents. No release, no paid API usage or source execution.
+
+## Actual CI findings — 2026-10-26
+
+Verified latest feature `1ac85f82845e7d8b90a813d0935e3a47cb6ffed0`: [Windows packaged Actions 40318937450](https://github.com/hibi89/ai-code-checker/actions/runs/40318937450) PASS. **1018 CArchive entries**, **544 embedded PYZ module names**, Python shared runtime DLL present, native code present and Tcl/Tk marker present. **12 installed build environment Python distributions**, **30 candidate installed license-text files** with SHA256 evidence; 30 does not mean embedded in EXE. EXE SHA-256 and detailed local JSON exist only in the ephemeral CI build workspace; no binary/manifest artifact uploaded.
+
+95th–100th synthetic tests are not implied: actual Python unittest count **98 PASS**, standard CI **16/16 PASS** at [40318937393](https://github.com/hibi89/ai-code-checker/actions/runs/40318937393).
+
+[PR #8](https://github.com/hibi89/ai-code-checker/pull/8) **merged** to main at `c3ca5df250ea81e0bb523ca3f2da2e7e1eb8bd3f`. Commit-level main CI should be checked separately. This stage confirms inspection of real EXE binary components, **not license compliance or product release acceptance**.
