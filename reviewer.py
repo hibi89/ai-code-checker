@@ -90,7 +90,7 @@ def _safe_error_hint(error: Exception) -> str:
         or type(error).__name__ == "RateLimitError"
     ):
         return (
-            "Gemini API 요청 또는 토큰 한도에 걸렸을 수 있습니다. AI Studio의 비율 제한에서 "
+            " Gemini API 요청 또는 토큰 한도에 걸렸을 수 있습니다. AI Studio의 비율 제한에서 "
             "현재 모델 한도와 초기화 시점을 확인한 뒤 기다리세요. 자동 재시도는 하지 않았습니다."
         )
     if code == 401 or status == "UNAUTHENTICATED":
