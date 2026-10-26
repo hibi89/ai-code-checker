@@ -25,7 +25,7 @@ class OfflineReportTests(unittest.TestCase):
         self.assertEqual(report.status, "complete")
         self.assertEqual(report.verified_count, 1)
         self.assertEqual(report.findings[0].rule_id, "PY-DYNAMIC-EXEC")
-        self.assertIn("main.py:2", render_markdown(report))
+        self.assertIn("main.py:2", render_html(report))
         self.assertIn("eval", render_html(report))
         self.assertIn("Content-Security-Policy", render_html(report))
         self.assertNotIn("<script", render_html(report))
@@ -43,7 +43,7 @@ class OfflineReportTests(unittest.TestCase):
         )
         report = build_report(scan)
         self.assertEqual(report.status, "complete")
-        self.assertIn("src/main.py:2 (원본 combined.txt:3)", render_markdown(report))
+        self.assertIn("src/main.py:2 (원본 combined.txt:3)", render_html(report))
         self.assertEqual(report.findings[0].origin_line, 3)
 
     def test_unsupported_and_failed_files_cannot_be_clean(self) -> None:
