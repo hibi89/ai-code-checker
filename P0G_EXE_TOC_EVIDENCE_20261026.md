@@ -22,7 +22,7 @@ Approach B is selected within already-approved offline/source-preserving investi
 - Every pending CArchive item is reported as **unique EXE packaging TOC claim**, **ambiguous**, or **no EXE TOC claim**. *None* confers vendor identity, copyright proof or redistributable NOTICE.
 - `tests/test_exe_toc_provenance.py`: 8 synthetic tests for safe TOC parsing, exact/missing/ambiguous counts, bad SHA/row accounting, release gates, duplicate names, attempted expression injection, unsafe names, oversized TOC.
 - Windows portable CI builds a fresh unsigned EXE, runs P0-D/E/F, then P0-G against `.build-windows/CodeCheckerOffline/EXE-00.toc`. Evidence JSON stays local in ignored `.build-windows/exe-toc-evidence.json`; only aggregate counts are logged.
-- Status at creation: **PR #11 opened; standard and Windows workflow results pending**. Re-check HEAD and CI, do not infer PASS. Update this section with actual counts after successful Windows CI.
+- Verified feature pre-handoff-doc SHA `49583688f99e44486c83167fbc5d571c0851fb91`: [standard CI 16/16 PASS, 119 unittest](https://github.com/hibi89/ai-code-checker/actions/runs/40328196934) and [Windows packaged CI PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40328196858). Real 12 pending names: **11 unique exact-name EXE TOC record claims; 0 ambiguous; 1 with no EXE TOC record**. No owner/license certification. Re-check final docs SHA and post-merge CI.
 
 ## Remaining release gates
 
