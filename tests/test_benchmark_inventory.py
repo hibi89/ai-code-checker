@@ -26,6 +26,16 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertFalse(result["rss_measured"])
                 self.assertTrue(result["report_html_bytes"] > 100)
 
+    def test_fixture_bytes_are_platform_independent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cases = fixtures(root, full=False)
+            txt = cases["txt_1200"][0].read_bytes()
+            folder = cases["folder_200_12k"][0]
+            self.assertEqual(len(txt), 12002)
+            self.assertNotIn(b"\r\n", txt)
+            self.assertEqual((folder / "module_000.py").read_bytes(), b"number = 1\n" * 60)
+
     def test_201_file_limit_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             result = boundary_cases(Path(tmp))
