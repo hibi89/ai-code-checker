@@ -37,4 +37,12 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 4. Any paid spending, external customer code transfer, key/API usage, privacy/permission changes, new private repo or launch requires explicit owner approval.
 
 ## 10. Timestamp, code baseline, verification scope
-2026-10-26 KST (exact minute not recorded). Main source evidence f0c2570; current Phase2 documents are feature-branch proposed work; do not claim their PR merged until confirmed. Current verification is GitHub CI/synthetic. No live customer acceptance. 
+2026-10-26 KST (exact minute not recorded). Main source evidence f0c2570; current Phase2 documents are feature-branch proposed work; do not claim their PR merged until confirmed. Current verification is GitHub CI/synthetic. No live customer acceptance.
+
+## Phase2 P0-A completion addendum (2026-10-26 KST)
+
+- **GitHub:** [PR #5](https://github.com/hibi89/ai-code-checker/pull/5) merged at `2ab40c2e06638cac8aca15a2fd50aa7941336f1f`; feature head `5afd848da250e7b351ace82937b08275139c42f8` CI 16/16 PASS, 89 unit tests PASS. Windows EXE synthetic smoke at the same head PASS.
+- **Files:** `BLUEPRINT_GAP_MATRIX_20261026.md`, `offline_coverage.py`, `offline_core.py`, `desktop_core.py`, `offline_report.py`, `tests/test_pruned_coverage.py`. Original v1 loader unchanged. Rollback through PR revert or prior `main` f0c2570.
+- **Behavior:** excluded/pruned directory names are inventoried without entering them; child file count UNKNOWN; folder scan `partial`, local GUI preflight and Korean reports show exclusions. No API/paid service/extra runtime dependency.
+- **Remaining:** real clean Windows GUI click, PDF print, packet capture, Defender/SmartScreen, performance and licensing are UNVERIFIED, no release. No Vercel.
+- **Next `ㄱ`:** confirm current main + post-merge CI and latest docs HEAD; create next feature branch for P0-B Windows GUI/print/privacy verification or P0-C synthetic benchmarks as supported by tools, and keep untested acceptance gates explicitly unverified. Update STATUS and HANDOFF on further substantive progress.
