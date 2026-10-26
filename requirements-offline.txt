@@ -1,0 +1,3 @@
+# Local GUI developer/runtime dependencies only; no Gemini/google-genai required.
+# Pinning is for the development candidate. Audit and refresh before a signed release.
+pydantic==2.12.5
