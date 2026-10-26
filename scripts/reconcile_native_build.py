@@ -39,7 +39,8 @@ def _traverse(value, result: list, visited: list[int]):
         raise ValueError("PyInstaller Analysis TOC too complex")
     if isinstance(value, (tuple, list)):
         if (len(value) == 3 and isinstance(value[0], str)
-                and isinstance(value[1], str) and value[2] in SOURCE_TYPES):
+                and isinstance(value[1], str) and isinstance(value[2], str)
+                and value[2] in SOURCE_TYPES):
             dest, src, kind = value
             result.append((normalize(dest), Path(src), kind))
             if len(result) > MAX_RECORDS:
