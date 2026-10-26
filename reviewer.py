@@ -104,7 +104,13 @@ def _safe_error_hint(error: Exception) -> str:
         )
     if code == 503 or status == "UNAVAILABLE":
         return " Gemini 서비스의 일시적 과부하나 중단일 수 있으니 잠시 기다린 뒤 재시도하세요."
-    if type(error).__name__ in {"ConnectError", "ConnectionError", "APITimeoutError", "TimeoutError"}:
+    if type(error).__name__ in {
+        "APIConnectionError",
+        "ConnectError",
+        "ConnectionError",
+        "APITimeoutError",
+        "TimeoutError",
+    }:
         return (
             " Gemini API 연결 또는 응답 대기 중 네트워크 오류입니다. 연결을 확인하세요. "
             "요청 처리 여부가 불확실하면 반복 시도 전에 Google 사용량을 확인하세요."

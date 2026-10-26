@@ -66,6 +66,16 @@ class ReviewFlowTests(unittest.TestCase):
         self.assertIn("초기화 시점", hint)
         self.assertNotIn("PRIVATE_PROVIDER_MESSAGE", hint)
 
+    def test_api_connection_error_warns_that_request_outcome_is_uncertain(self) -> None:
+        class APIConnectionError(Exception):
+            pass
+
+        hint = _safe_error_hint(APIConnectionError("PRIVATE_PROVIDER_MESSAGE"))
+        self.assertIn("네트워크 오류", hint)
+        self.assertIn("요청 처리 여부가 불확실", hint)
+        self.assertIn("Google 사용량을 확인", hint)
+        self.assertNotIn("PRIVATE_PROVIDER_MESSAGE", hint)
+
     def test_validation_error_label_shows_fields_without_echoing_values(self) -> None:
         with self.assertRaises(ValidationError) as captured:
             TypeAdapter(int).validate_python("DO_NOT_ECHO_SYNTHETIC_OUTPUT")
