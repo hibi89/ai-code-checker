@@ -25,3 +25,5 @@ Date: 2026-10-26 KST. Baseline main 65a30e968cd6a329124cd696720ebe156ef7ae6f, pr
 ## Next work unit
 
 After feature + standard and research CI prove green, merge normally and verify main; then prepare local Windows opt-in prototype package/NOTICE/size assessment before switching any customer JS/TS coverage from limited to analyzed. Do not falsely claim that grammar feasibility is feature integration.
+## Verified final PR merge — 2026-10-26 KST
+P1-F feature `4429ae9c798950b3d13769d1dac85aaf696ff321` passed [standard Tests 16/16](https://github.com/hibi89/ai-code-checker/actions/runs/40343693225) and [research Windows+Ubuntu 2/2](https://github.com/hibi89/ai-code-checker/actions/runs/40343693332); 17 synthetic grammar-pattern cases TP8 FP0 FN0. [PR #16](https://github.com/hibi89/ai-code-checker/pull/16) merged into main `9188a2a3f2df9780e546f5508d26564471caae0d`. JS/TS *still limited* in customer product; no native wheel included in Windows EXE. Original license/NOTICE, end-user acceptance and real-world detection accuracy unverified; final docs SHA main CI separately check.
