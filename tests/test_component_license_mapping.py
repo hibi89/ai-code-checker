@@ -97,7 +97,7 @@ class ComponentOwnershipTests(unittest.TestCase):
             root = Path(tmp)
             rel = Path("pyinstaller-6.22.3.dist-info/licenses/COPYING.txt")
             license_file = root / rel
-            license_file.parent.mkdir()
+            license_file.parent.mkdir(parents=True)
             original = b"Sample LICENSE text preserving exact\n  original indentation.\n"
             license_file.write_bytes(original)
 
@@ -124,7 +124,7 @@ class ComponentOwnershipTests(unittest.TestCase):
             root = Path(tmp)
             rel = Path("pyinstaller-6.22.3.dist-info/LICENSE")
             path = root / rel
-            path.parent.mkdir()
+            path.parent.mkdir(parents=True)
             path.write_text("modified after scan", encoding="utf-8")
 
             class Dist:
