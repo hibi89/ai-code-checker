@@ -35,3 +35,11 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 - Stable recovery point: `main` f0c2570 (PR #4 merged + CI PASS). Never force push, remove historical Gemini source or expose customer data.
 - Next **ㄱ** or **[코드체커 깃헙 확인해]**: check branch current SHA/open PR/CI; if Phase2 P0-A passes, merge PR non-force; verify main post-merge CI; then proceed to Windows E2E and measurable coverage/benchmark. Any unrun GUI, packet, PDF, antivirus checks must stay UNVERIFIED.
 - Follow `HANDOFF.md`, `AGENTS.md`, `REQUIREMENTS.md`, final blueprint, and GAP matrix. Update handoff after relevant merge.
+
+## Phase2 P0-A merged and verified (2026-10-26 KST)
+
+- [PR #5 merged](https://github.com/hibi89/ai-code-checker/pull/5) into **main `2ab40c2e06638cac8aca15a2fd50aa7941336f1f`** from feature head `5afd848da250e7b351ace82937b08275139c42f8`.
+- Feature final-head [Actions 16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40310261361) with **89 Python unit tests PASS** (85 baseline + 4 new); [Windows packaged EXE smoke PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40310322743).
+- Ignore/pruned directories are now listed as **directory metadata only**; their contained files are UNKNOWN, not enumerated. Overall folder scan becomes partial when any subtree pruned. This avoids falsely implying a complete review of all project folders; original read-only input and v1 Gemini CLI preserved.
+- The post-merge main CI for 2ab40c2 should be checked separately. Documentation commits later than this merge change HEAD again.
+- Next target: P0-B real Windows GUI interactions, offline packet observation, PDF printing, Unicode paths and Defender/SmartScreen, then P0-C measured benchmarks and license inventory. **Do not sell until acceptance.**
