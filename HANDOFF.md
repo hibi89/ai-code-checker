@@ -1,35 +1,34 @@
-# CODE CHECKER — HANDOFF (10 required items)
+# CODE CHECKER — HANDOFF (10-point)
 
-Updated: 2026-10-26 KST (exact clock time not captured). Read: HANDOFF.md -> STATUS.md -> AGENTS.md -> REQUIREMENTS.md -> FINAL_PRODUCT_BLUEPRINT.md -> MVP_3DAY_ROADMAP.md -> INPUT_SPEC_V2.md -> source/tests.
+Updated 2026-10-26 KST; actual main merge SHA 473beb5003aec71eac44861992d2a34bc48dd27f. Refresh current branch SHA before any work.
+Read HANDOFF.md -> STATUS.md -> AGENTS.md -> REQUIREMENTS.md -> FINAL_PRODUCT_BLUEPRINT.md -> MVP_3DAY_ROADMAP.md -> INPUT_SPEC_V2.md -> actual code/tests.
 
 ## 1. Goal / confirmed requirements / technology
-Approved product: offline-first Windows code-risk checker (TXT, ZIP, delimited multi-file TXT, folders, paste), no required AI API/server fees, repeated local use, Korean HTML/Markdown report and browser PDF print. 3 focused days MVP target, then blueprint gap completion, then stability/security hardening, then Kmong. Existing Python >=3.11 CLI and code_input/static_checks reused. Not a comprehensive security certificate.
+Approved Windows local offline code-risk checker, TXT/ZIP/combined TXT/folder/paste, Korean HTML/Markdown and browser Print-to-PDF, optional human report. No required API/server/account or recurring fee. Delivery: 3-day MVP -> blueprint gap fill -> broad hardening -> Kmong. Existing Python 3.11+ CLI and Pydantic-based models remain, optional Gemini legacy path separate.
 
-## 2. Completed and rationale
-Day1 developer-preview `offline_core.py` and synthetic `tests/test_offline_core.py` implemented on `feature/offline-core` from main `4c1c100`. Design chose separate local facade rather than rewriting working Gemini CLI; no API retry, secrets or customer code. SourceOrigin maps virtual file line to original TXT; FileCoverage exposes unexamined/limited files.
+## 2. Completed functionality and decisions
+Day1 additive offline_core.py (SourceOrigin, FileCoverage, OfflineScan, scan_path, scan_text), metadata-only developer CLI, reused code_input.py safety and static_checks.py Python AST. Delimited multi-file TXT validates markers/paths and preserves source line mappings; single TXT requires language for AST. Public MIT existing code retained intact; no restart from scratch. PR #2 merged.
 
-## 3. Tests / exact commands / success/failure / unverified
-`python -m unittest discover -s tests -v` plus `python -m py_compile offline_core.py` and `python offline_core.py assets/pilot-safe.zip` (offline CLI smoke). GitHub workflow executes unit tests and old CLI dry-run; new module is imported by tests.
-First feature SHA `118ff8da69ab3e00a18b0420dbd560040195d721`: Linux test run 61/62 PASS, 1 FAIL due invalid synthetic Python escaped-header fixture. Corrected by enclosing marker within a Python string; SHA `6aea33852d40e296d44980a37cb9c9de0c994f9a` had **16/16 GitHub Actions jobs success** (15 test jobs + 1 audit). Additional direct TXT-path test and SyntaxWarning cleanup added with this documentation commit; check latest CI before merger.
-No container checkout: network DNS failed. Actual customer Windows EXE, GUI, PDF, complete source accuracy, Windows SmartScreen, privacy traffic monitor remain unverified. No real Gemini generated report historically.
+## 3. Tests, commands, count, evidence
+Offline check: python -m unittest discover -s tests -v; python offline_core.py assets/pilot-safe.zip; python offline_core.py sample.txt --language python. GitHub Actions feature 30b5b17: 16/16 jobs success, Linux test log 63 tests; main merged commit 473beb5003aec71eac44861992d2a34bc48dd27f: 16/16 jobs success. Cases: 1,200-line TXT, 12-file ZIP, 200-file 12,000-line synthetic project, safe/unsafe paths, provenance, masked secrets and input non-execution. No live customer data, Gemini request, Windows binary or external service tests.
 
-## 4. Complete / active / pending / blocked
-Day1 core complete as an implemented prototype with existing CI proof, awaiting current head CI+PR merge. Day2 report, Day3 GUI, design-gap phase, hardening and listing pending. No production release. No blocker needing user local action for documentation/testing.
+## 4. Completed / active / pending / blocked
+Day1 core DONE as an integrated developer preview. Day2 report not started; Day3 Windows GUI not started; blueprint gaps, full security hardening and Kmong delivery pending. Not a finished application, no customer sale.
 
-## 5. Errors / cause / attempts / prohibited repeats / alternatives
-First CI failed on test expectation not production scan; change was meaningful and verified in next CI. Prior Gemini 503, rate limit, invalid JSON, APIConnectionError were not a proven live fix; do not auto-retry. Do not run API when developing offline mode. Running untrusted customer code, installing its dependencies, or leaking raw code is prohibited.
+## 5. Errors / root causes / attempted methods / avoid / alternatives
+Initial 118ff8d failed 1 of 62 tests: escaped header was inserted as invalid Python source; fix used triple quoted valid Python. Subsequent 43e4583 failed single added test: fixture contained literal backslash-n instead of newlines; corrected in 30b5b17. No unresolved regression in latest main CI. Historical Gemini 503, 429, JSON-invalid, connection errors are not relevant to offline flow; do not rerun unapproved paid APIs. Do not run customer-provided code or config/plugins.
 
-## 6. Repo / branch / SHA / principal paths
-Public MIT: https://github.com/hibi89/ai-code-checker, working branch `feature/offline-core`, parent main `4c1c10069c3ac20a3342648e3877f1aa1b5fca5f`. Previous pristine v1 main `8c72a6f`. Current feature head MUST be fetched after this document commit; do not assume it equals `6aea338`. Key files: offline_core.py, tests/test_offline_core.py, code_input.py, static_checks.py; docs in main root.
+## 6. GitHub repo / branches / SHA / paths
+Public repo https://github.com/hibi89/ai-code-checker ; main SHA 473beb5003aec71eac44861992d2a34bc48dd27f, initial Day1 base 4c1c10069c3ac20a3342648e3877f1aa1b5fca5f, original 8c72a6f. Day1 branch feature/offline-core; next feature/offline-report-ui created only when starting Day2. Files: offline_core.py, tests/test_offline_core.py, code_input.py, static_checks.py, review_models.py, README.md, STATUS.md, HANDOFF.md. This docs commit SHA must be fetched from GitHub after updating (self reference omitted).
 
-## 7. Production / execution / environment
-No Vercel or live URL, local CLI only; deployment status **N/A**, GUI **NOT IMPLEMENTED**. Standalone command `python offline_core.py file.txt --language python`, no account/API, metadata summary JSON. Windows Python interpreter required for this preview; portable package is future work.
+## 7. Production URL / Vercel / environment / commands
+No Vercel, web deployment or production service, status NOT APPLICABLE. Current developer tool needs Python and installed runtime dependencies; Windows packaged GUI unimplemented. Commands above; report generator is planned for Day2.
 
-## 8. Originals / backup / secrets / protected paths
-Original v1 source preserved by additive module; recovery main before work `4c1c100`, old v1 `8c72a6f`. No real customer files, .env/API keys, raw API/model text, proprietary non-public code stored. Public GitHub MIT remains; private code requires explicit approval.
+## 8. Originals / backups / secrets and forbidden edits
+Original v1 remains in history, source untouched by v2 Day1. Never publish .env, customer code, real API keys, provider output or confidential paid packaging modules to public MIT repo. Local customer source must remain unchanged and offline; future private repository would need separate user approval.
 
-## 9. Next work priorities / acceptance / approvals
-Verify current feature CI and merge PR safely to main; next `ㄱ` create `feature/offline-report-ui` on updated main. Day2: file/path/line/evidence verification, deduplicate findings, Korean self-contained HTML+Markdown, explicit partial/cancel states, no source/code execution, tests synthetic safe vs vulnerable. Day3 GUI/portable only after report. External API/cost, new private repo, public release, permissions or live customer data require prior approval.
+## 9. Next priority, procedure, acceptance, approval
+On user ㄱ: read latest HEAD and files; create feature/offline-report-ui from main; implement Day2 Korean self-contained HTML and Markdown report on OfflineScan, deduplicate findings and verify file/line/excerpt; show partial/unsupported/failed, escape HTML/Markdown, atomic no-overwrite output and synthetic safe-vulnerable regression. Merge PR only after CI. Day3 follows with basic Windows GUI and candidate packager. Extra cost, real data external upload, private repo, permissions changes or selling require consent.
 
-## 10. Update KST / evidence scope / doc basis
-Date 2026-10-26 KST. Current docs commit SHA is intentionally not embedded; always inspect GitHub current head, PR CI, main SHA. Evidence includes GitHub workflow success at `6aea338`; final docs/test commit CI must be separately checked. No local Windows/E2E hardware evidence or actual customer use.
+## 10. Update time / evidence limitations / document base
+2026-10-26 KST (exact clock time not recorded). Verified main 473beb5003aec71eac44861992d2a34bc48dd27f and GitHub Actions 16/16. Current documentation commit later than main SHA above, so fetch actual HEAD after this update. GitHub CI is not independent clean Windows GUI, privacy traffic, or real customer use verification.
