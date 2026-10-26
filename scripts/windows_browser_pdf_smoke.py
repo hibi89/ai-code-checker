@@ -43,7 +43,7 @@ def main() -> int:
         target.mkdir()
         scan = run_scan(
             ScanRequest("paste", text="x = 1\neval('1+1')\n", language="python"),
-            target, "한국어 오프라인 보고서",
+            target, "synthetic-print",
         )
         html = scan.html_path.read_text(encoding="utf-8")
         if "코드체커 오프라인 진단 보고서" not in html:
