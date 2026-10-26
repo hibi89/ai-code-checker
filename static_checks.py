@@ -45,20 +45,140 @@ def _finding(
     )
 
 
-def _module_imports(tree: ast.Module) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
-    """Module-level import names only: do not infer arbitrary objects' provenance."""
-    modules = {"subprocess": set(), "pickle": set(), "requests": set()}
-    functions = {"subprocess": set(), "pickle": set(), "requests": set()}
-    for stmt in tree.body:
-        if isinstance(stmt, ast.Import):
-            for alias in stmt.names:
-                if alias.name in modules:
-                    modules[alias.name].add(alias.asname or alias.name)
-        elif isinstance(stmt, ast.ImportFrom) and stmt.level == 0:
-            if stmt.module in functions:
-                for alias in stmt.names:
-                    functions[stmt.module].add((alias.name, alias.asname or alias.name))
-    return modules, functions
+class _ImportResolver:
+    """Conservative module binding chronology plus lexical shadow checks.
+
+    Only direct module imports identify sensitive APIs. Uncertain rebinding
+    invalidates identity instead of guessing the runtime value of an alias.
+    """
+
+    _SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef,
+               ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
+    def __init__(self, tree: ast.Module) -> None:
+        self.parents = {child: parent for parent in ast.walk(tree)
+                        for child in ast.iter_child_nodes(parent)}
+        self.events: dict[str, list[tuple[int, int, tuple[str, str] | None]]] = {}
+        self.locals: dict[ast.AST, set[str]] = {}
+
+        def bind(name: str, node: ast.AST, origin: tuple[str, str] | None = None) -> None:
+            self.events.setdefault(name, []).append(
+                (getattr(node, "lineno", 0), getattr(node, "col_offset", 0), origin))
+
+        def walk(node: ast.AST, *, direct: bool = False) -> None:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                bind(node.name, node)
+                return
+            if isinstance(node, (ast.Lambda, ast.ListComp, ast.SetComp, ast.DictComp,
+                                 ast.GeneratorExp)):
+                return
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    local = alias.asname or alias.name.split(".")[0]
+                    origin = ((alias.name, "__module__")
+                              if direct and alias.name in {"subprocess", "pickle", "requests"}
+                              else None)
+                    bind(local, node, origin)
+                return
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    if alias.name == "*":
+                        for existing in tuple(self.events):
+                            bind(existing, node)
+                    else:
+                        local = alias.asname or alias.name
+                        pkg = node.module if node.level == 0 else None
+                        origin = ((pkg, alias.name)
+                                  if direct and pkg in {"subprocess", "pickle", "requests"}
+                                  else None)
+                        bind(local, node, origin)
+                return
+            if isinstance(node, ast.ExceptHandler) and node.name:
+                bind(node.name, node)
+            if isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name:
+                bind(node.name, node)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+                bind(node.id, node)
+            for child in ast.iter_child_nodes(node):
+                walk(child)
+
+        for statement in tree.body:
+            walk(statement, direct=True)
+        for events in self.events.values():
+            events.sort(key=lambda value: (value[0], value[1]))
+
+    def local_names(self, scope: ast.AST) -> set[str]:
+        if scope in self.locals:
+            return self.locals[scope]
+        names: set[str] = set()
+
+        def visit(node: ast.AST) -> None:
+            if node is not scope and isinstance(node, self._SCOPES):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    names.add(node.name)
+                return
+            if isinstance(node, ast.arg):
+                names.add(node.arg)
+            elif isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+                names.add(node.id)
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    if alias.name != "*":
+                        names.add(alias.asname or alias.name.split(".")[0])
+            elif isinstance(node, ast.ExceptHandler) and node.name:
+                names.add(node.name)
+            elif isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name:
+                names.add(node.name)
+            elif isinstance(node, (ast.Global, ast.Nonlocal)):
+                names.update(node.names)
+            for child in ast.iter_child_nodes(node):
+                visit(child)
+
+        visit(scope)
+        self.locals[scope] = names
+        return names
+
+    def _candidate(self, alias: str, call: ast.Call) -> tuple[str, str] | None:
+        nested = False
+        parent = self.parents.get(call)
+        while parent is not None:
+            if isinstance(parent, self._SCOPES):
+                nested = True
+                if alias in self.local_names(parent):
+                    return None
+            parent = self.parents.get(parent)
+        events = self.events.get(alias, ())
+        if nested and any(origin is None for _, _, origin in events):
+            return None  # Execution order of later global writes is unknown.
+        earlier = [row for row in events
+                   if (row[0], row[1]) < (call.lineno, call.col_offset)]
+        return earlier[-1][2] if earlier else None
+
+    def imported(self, call: ast.Call, package: str, names: set[str]) -> bool:
+        target = call.func
+        if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
+            return (target.attr in names and
+                    self._candidate(target.value.id, call) == (package, "__module__"))
+        if isinstance(target, ast.Name):
+            return self._candidate(target.id, call) in {
+                (package, original) for original in names
+            }
+        return False
+
+    def builtin(self, call: ast.Call, name: str) -> bool:
+        if not isinstance(call.func, ast.Name) or call.func.id != name:
+            return False
+        events = self.events.get(name, ())
+        if any((line, col) < (call.lineno, call.col_offset)
+               for line, col, _ in events):
+            return False
+        parent = self.parents.get(call)
+        while parent is not None:
+            if isinstance(parent, self._SCOPES):
+                if name in self.local_names(parent) or events:
+                    return False
+            parent = self.parents.get(parent)
+        return True
 
 
 _SQL_START = re.compile(
@@ -93,14 +213,7 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
         ))
         return findings
 
-    modules, functions = _module_imports(tree)
-
-    def imported_call(node: ast.AST, package: str, names: set[str]) -> bool:
-        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
-            return node.value.id in modules[package] and node.attr in names
-        if isinstance(node, ast.Name):
-            return any(original in names and local == node.id for original, local in functions[package])
-        return False
+    resolver = _ImportResolver(tree)
 
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -108,7 +221,7 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
         line_number = getattr(node, "lineno", None)
         function_name = node.func.id if isinstance(node.func, ast.Name) else None
         attribute_name = node.func.attr if isinstance(node.func, ast.Attribute) else None
-        if function_name in {"eval", "exec"}:
+        if function_name in {"eval", "exec"} and resolver.builtin(node, function_name):
             findings.append(_finding(
                 source, "HIGH", "security", f"동적 코드 실행 호출: {function_name}",
                 line_number,
@@ -123,7 +236,7 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
             and keyword.value.value is True
             for keyword in node.keywords
         )
-        if shell_true and imported_call(node.func, "subprocess", _SUBPROCESS_CALLS):
+        if shell_true and resolver.imported(node, "subprocess", _SUBPROCESS_CALLS):
             findings.append(_finding(
                 source, "HIGH", "security", "셸 명령을 문자열로 실행함",
                 line_number,
@@ -132,7 +245,7 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
                 90,
             ))
 
-        if imported_call(node.func, "pickle", {"load", "loads"}):
+        if resolver.imported(node, "pickle", {"load", "loads"}):
             findings.append(_finding(
                 source, "HIGH", "security",
                 "신뢰할 수 없는 데이터의 pickle 역직렬화 가능성",
@@ -144,7 +257,7 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
 
         # Generic verify=False text matching on Python caused string/comment FPs.
         # Only recognize explicit requests module/from-import HTTP calls.
-        if imported_call(node.func, "requests", _REQUESTS_CALLS) and any(
+        if resolver.imported(node, "requests", _REQUESTS_CALLS) and any(
             kw.arg == "verify" and isinstance(kw.value, ast.Constant)
             and kw.value.value is False for kw in node.keywords
         ):
