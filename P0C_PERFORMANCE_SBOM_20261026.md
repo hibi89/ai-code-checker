@@ -34,3 +34,20 @@ The Windows workflow additionally runs `pip-audit -r requirements-offline-build.
 ## Decision and next acceptance gate
 
 Measured runs create a reproducible development baseline, not a commercial SLA. Once both Ubuntu/Windows benchmarks and Windows installed-dependency/CVE check succeed, freeze evidence in STATUS/HANDOFF after CI and compare any later figures. Next priority is license-text and actual packaged-EXE SBOM audit, realistic Windows clean-device/security acceptance, then deeper Python rules and JS/TS coverage.
+
+## Measured CI baseline with LF-normalized identical fixtures (2026-10-26 KST)
+
+The synthetic fixtures originally used platform-default text newlines; this caused different byte counts on Windows versus Linux. Changed all fixture creation to explicit LF (`newline='\n'`). Evidence from code commit `fe71b439d50a1d194f9a50c4e6c4180b07130c8a`, [Phase2 benchmark CI run 40317040322](https://github.com/hibi89/ai-code-checker/actions/runs/40317040322). Figures below are a single CI observation, not performance guarantees.
+
+| Fixture (same bytes across OS) | Bytes | Linux wall seconds | Windows wall seconds | Linux traced MiB | Windows traced MiB |
+|---|---:|---:|---:|---:|---:|
+| TXT 1,200 lines | 12,002 | 0.0888 | 0.1217 | 2.907 | 2.906 |
+| ZIP 12 × 100 lines | 13,200 decompressed | 0.0700 | 0.0862 | 0.292 | 0.292 |
+| Folder 200 × 60 lines | 132,000 | 0.6912 | 0.8835 | 1.165 | 1.170 |
+| Folder 200 × 60 lines, long comments | 6,043,800 | 1.7263 | 1.9216 | 11.607 | 11.608 |
+
+Every scenario checked complete, all expected eligible files/lines, and successful HTML+Markdown report generation. 201 supported source files -> blocked, not truncated. Tracemalloc may increase CPU overhead and does not include native RSS; Linux/Windows hosted hardware and filesystem differ. Tests make no claim about customer-machine exact speed or 8+ MiB project support.
+
+**Dependency inventory:** Windows build roots Pydantic 2.12.5 + PyInstaller 6.22.3, **12 installed Python distribution records**, 0 missing license metadata entries, 0 unresolved declared dependencies, 0 mismatched pinned roots on this CI runner. This does not establish actual embedded binaries/components or applicable license conditions. `pip-audit` reported **No known vulnerabilities found** for pinned Python build dependency set *at the time of this CI lookup*. Does not cover native DLLs, AV reputation or unknown vulnerabilities.
+
+Status: **PERFORMANCE BASELINE CI PROVED + PRELIMINARY DEPENDENCY METADATA/CVE CHECK CI PROVED**, **NOT commercial redistribution license approval**. Remaining: packaged executable binary component enumeration + full license texts/NOTICE attribution, independent clean Windows/SmartScreen/OS-level network and PDF visual verification, memory RSS and representative corpus/repeatability measurements.
