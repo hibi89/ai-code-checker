@@ -18,7 +18,7 @@ Owner-approved plan: 3 focused MVP days → gap review vs final blueprint → br
 
 ## 4. Done / in progress / pending / blocked
 - Day1: DONE, merged and CI green.
-- Day2: FEATURE IMPLEMENTED, validated code SHA 7103c67 green; [PR #3](https://github.com/hibi89/ai-code-checker/pull/3) opened as draft, docs and final merge/main CI pending at time of authoring.
+- Day2: MERGED [PR #3](https://github.com/hibi89/ai-code-checker/pull/3) into main at `7a5e78d8dca2bb678636b71be9d278fe2d137df2`; final feature head `b6b4ca05b7d833c75a09e56cc82466ba907b8a79` Actions 16/16 PASS. Post-merge main run queued at first observation.
 - Day3: NOT STARTED. Windows input selection UI, launch report, optional PyInstaller candidate and clean-device verification.
 - Final blueprint gap fill, security/product polish, Kmong: NOT STARTED. Sale prohibited until gates.
 
@@ -42,11 +42,16 @@ Owner-approved plan: 3 focused MVP days → gap review vs final blueprint → br
 - Report may contain redacted source snippets and paths; customers must store/delete locally. Atomic pair commit cannot guarantee two-file transaction after an abrupt process kill; future hardening.
 
 ## 9. Next priorities, procedure, success and approvals
-1. Verify latest `feature/offline-report-ui` PR #3 and its **final head CI** (not only old code SHA). If successful, mark ready, merge non-force into `main`, and verify new main SHA + CI.
-2. Update `STATUS.md`, `HANDOFF.md` after merge with actual SHA; avoid obsolete “Day2 not started” note.
-3. Next user's **ㄱ**: Day3 fresh `feature/windows-portable` from real current main. Implement minimum Windows-friendly local UI and package candidate. No claim of working EXE without Windows clean-device E2E.
-4. Preserve source and APIs; offline, no account/paid model calls. Permissions/visibility change, private repo, customer upload, selling or paying costs still need explicit authorization.
+1. PR #3 is merged to main (`7a5e78d`). Check latest HEAD, post-merge CI and docs-only subsequent commits before declaring final CI green.
+2. Next user **ㄱ**: start Day3 fresh `feature/windows-portable` from current main. Implement Windows-friendly local UI + portable candidate; perform synthetic validation. No EXE completion without clean Windows E2E.
+3. Later reconcile blueprint coverage, input hardening and privacy/accuracy/packaging acceptance. No commercial release before verification.
+4. Preserve original Gemini CLI and source; paid model, permission/visibility change, customer upload, new private repo or selling requires explicit approval.
 
 ## 10. Timestamp, evidence scope, documentation baseline
-- Written **2026-10-26 KST**, exact clock minute not claimed. Current Day2 docs based on verified code SHA `7103c67`, initial Day2 main base `6fb334a`, PR #3. The docs commit SHA self-reference is intentionally omitted; **always fetch current remote HEAD**.
+- Updated **2026-10-26 KST**, exact clock minute not claimed. Day2 merged main SHA `7a5e78d`; final feature PR head `b6b4ca05` CI 16/16 PASS. Post-merge main CI pending when first checked; docs commit SHA self-reference omitted. **Always fetch current remote HEAD and CI**.
 - Verification: 16/16 CI and 76 unit tests on synthetic fixtures only. Browser and Windows product tests remain UNVERIFIED. The product remains PARTIAL COMPLETE despite report module code success.
+
+## Post-merge addendum (2026-10-26 KST)
+- Source merge: `7a5e78d8dca2bb678636b71be9d278fe2d137df2`, [PR #3](https://github.com/hibi89/ai-code-checker/pull/3).
+- Feature latest head: `b6b4ca05b7d833c75a09e56cc82466ba907b8a79`, [Actions 16/16 PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40305785030). Tests include 76 Python unittest passes, no API calls.
+- Merge-to-main [Action 40306061874](https://github.com/hibi89/ai-code-checker/actions/runs/40306061874) was queued at initial verification; its result and any later documentation commit CI must be re-checked.
