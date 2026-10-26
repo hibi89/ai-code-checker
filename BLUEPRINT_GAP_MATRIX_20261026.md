@@ -1,0 +1,72 @@
+# CODE CHECKER v2 — Phase 2 Final Blueprint Gap Matrix
+
+Updated 2026-10-26 KST. Baseline **main merge `f0c257058f43298167e6777f315db01ae294fd86`**, Day 3 PR #4 merged. This is an evidence-based engineering gap audit, NOT certification of a production product. Reference: FINAL_PRODUCT_BLUEPRINT.md, REQUIREMENTS.md, INPUT_SPEC_V2.md, ARCHITECTURE_V2.md, current code and GitHub Actions. Check live SHA/CI again when resuming.
+
+## Status meanings
+
+- **IMPLEMENTED / CI TESTED**: code and synthetic/runner tests exist. Not equivalent to clean consumer Windows behavior.
+- **PARTIAL**: some technical path exists, with a known contract/verification gap.
+- **UNVERIFIED**: plausible implementation but missing direct test or operational evidence.
+- **MISSING**: code/feature not yet provided.
+- **EXCLUDED / DEFERRED**: intentionally out of scope for initial offline local product.
+
+## Acceptance-oriented audit
+
+| # | Blueprint requirement | Current implementation / concrete evidence | Gap/state | Priority & proof needed |
+|---|---|---|---|---|
+| 1 | ZIP, TXT, delimited TXT, folder, paste, source file | offline_core.scan_path / scan_text; desktop_core; desktop_ui | IMPLEMENTED / CI TESTED | P0: actual GUI click on Windows and corrupt input QA |
+| 2 | Safe ingress, redaction, no source execution | code_input safe readers, static_checks Python AST; 85 synthetic CI tests | PARTIAL | P0: adversarial ZIP/path/binary/large input and Windows filesystem edge cases |
+| 3 | Full discovered/eligible/analyzed/excluded manifest | OfflineScan.coverage; desktop_core preflight | **PARTIAL: ignored directories are pruned by loader; contained items not enumerated** | **P0: explicit subtree-pruned markers and counts vs unknown child count; never claim full repo** |
+| 4 | Scan states complete, partial, blocked, cancelled | complete/partial object; blocked CLI error code; GUI exceptions | PARTIAL; cancellation absent, blocked not persisted as report object | P1: explicit cancel, timeout and fail-closed outcome |
+| 5 | Single TXT Python choice and exact origin mapping | _language_virtual_path, SourceOrigin, synthetic 1,200 lines | IMPLEMENTED / CI TESTED | P1: UTF-8 BOM, huge texts and Unicode real Windows QA |
+| 6 | Delimited TXT strict grammar and source map | _split_delimited_txt, duplicate/path escape tests | IMPLEMENTED / CI TESTED | P1: malformed headers, lines and secret-redaction boundary QA |
+| 7 | Python AST risk rules incl. exec, SQL, pickle, shell | static_checks.py | PARTIAL: small rule set, no dataflow or project analysis | P1: measure false negatives/positives with labeled synthetic corpus |
+| 8 | JS/TS syntax and risk adapter | generic-patterns-only marked limited | MISSING: language-specific adapter | P1: select verified parser/tool with safe config, licensing and zero code exec |
+| 9 | Analyzer/rule IDs and severity | offline_report.py fixed known-title map, severity sort | PARTIAL: rules identified by title, not stable engine IDs; basic severity only | P1: use engine-level stable IDs and tests through report |
+| 10 | Finding evidence cross-check and redacted excerpts | build_report validates path/line/excerpt against masked bundle | IMPLEMENTED / CI TESTED | P1: adversarial citation and multiline tests; a matched excerpt is not proof of defect |
+| 11 | Human required / pattern-only certainty differentiation | Report disclaimer, invalid citation partial | PARTIAL: no contextual verification workflow | P2: evidence status and human reviewer add-on tracked separately |
+| 12 | Dedup and severity priorities | offline_report.build_report | IMPLEMENTED / CI TESTED | P2: rule-level conflict handling and false-positive suppression |
+| 13 | Korean standalone HTML and Markdown | self-contained HTML/CSP, Markdown sanitizer, local filenames | IMPLEMENTED / CI TESTED | P0: browser render and print/PDF actual Windows verification |
+| 14 | Dashboard breakdown (language, rule, severity) | per-file coverage and finding cards/counts | PARTIAL: no proper rule/language/severity summary KPI visualization | P1: Korean report summary charts/tables, no JS/CDN, accessible print |
+| 15 | Re-run/compare results | unlimited local sequential scans and distinct reports | PARTIAL: no explicit comparison of historical runs | P2: local user-chosen report comparisons without retention/telemetry |
+| 16 | Desktop workflow | Tk source picker, paste, preview, worker scan, HTML open | IMPLEMENTED / headless CI TESTED | **P0: actual GUI click/render, Unicode, failed/partial paths on clean Windows** |
+| 17 | Progress and cancellation | status changes before/after task, no live progress/cancel | MISSING detailed progress/cancel | P1: bounded queue, progress events, cancellation preserving inputs |
+| 18 | Portable Windows EXE | PyInstaller onefile unsigned candidate; Windows 2025 Actions packaged --self-test PASS | PARTIAL | **P0: clean offline Windows/Defender/SmartScreen, start/run/uninstall** |
+| 19 | Offline/network privacy guarantee | no remote analyzer in offline path; socket mock unit tests; no telemetry/assets | UNVERIFIED actual network capture | **P0: isolated-network packet/endpoint observation on Windows customer flow** |
+| 20 | Source data handling, retention/delete | no overwrite, local report only, documented deletion | PARTIAL: no in-app report erase control, synced-folder risk | P1: explicit local cleanup and user-controlled output path guardrails |
+| 21 | Scale + memory/latency bounds | v2 limits 200 eligible files / 1 MiB per file / 8 MiB total; synthetic 12k-line test | PARTIAL: no repeatable Windows multi-MB throughput/memory benchmark | P0: benchmark and publish only measured throughput/limits |
+| 22 | Source-file protection and write errors | input read-only; write_report temporary + hard-link no-clobber | PARTIAL: forced exit can leave one of pair; cloud paths not blocked | P1: output integrity/recovery and path error matrix |
+| 23 | Dependencies, licenses, provenance | Windows candidate pinned Pydantic/PyInstaller, pip-audit for legacy requirements | PARTIAL | P0: transitive component SBOM, notices, CVE audit and bundling licenses before sale |
+| 24 | Commercial offer/pricing 49k/99k/40k | owner-approved hypotheses in blueprint | UNVERIFIED demand/support costs; NO sales yet | P2: clean product QA, documented service terms, seller approval |
+| 25 | 8 independent AI council / guaranteed auto fixes / SaaS | explicitly excluded | EXCLUDED | No work in core product |
+
+## Critical baseline limitations (MUST remain visible)
+
+- **Day 3 CI proof:** 16/16 standard workflow matrix, 85 synthetic unit tests, Windows candidate EXE built with synthetic --self-test. This is not a GUI visual test, packet-capture privacy proof, or market-quality certification.
+- **No tested paid service:** software can be run repeatedly without AI API, but development labor, signing, hardware, packaging and transaction fees are not zero.
+- **Misleading coverage risk:** loader may prune ignored directories without enumerating their contents. Do not treat covered path count as a count of every filesystem item.
+- **Not a comprehensive security review:** small Python AST rules; JS/TS generic patterns only, no runtime, no independent AI council.
+- **Public MIT repo:** existing source not proprietary and no user customer data/real keys/paid commercial secrets permitted in commits.
+
+## Prioritized implementation blocks
+
+| Order | Work package | Acceptance check (synthetic, CI, then Windows) |
+|---|---|---|
+| P0-A | **Coverage truthfulness:** expose ignored/pruned subtree metadata without recursive reads, revise report/preview counts, fail partial rather than full-code false confidence | ignored directory fixture, symlink subtree, ZIP non-readable entries, partial flag, no customer code leaked |
+| P0-B | **Actual Windows UI E2E and offline observation** | automated or human actual GUI launch/click, file selection, report HTML print, Windows Defender + network capture; record unsupported gates |
+| P0-C | **Benchmark and dependency/license gates** | measured file/byte/runtime/memory and hashes/SBOM; only tested limits advertised |
+| P1-D | **Rule depth + JS/TS adapter** | fixed rule IDs, parser selection and no untrusted config execution; labeled precision/recall |
+| P1-E | **Report/dashboard UX, progress and cancellation** | severity/rule/language summaries, per-file progress, clear cancel/partial and safe report deletion |
+
+## Design evaluation for Phase2 immediate action
+
+| Option | Performance | Direct API/build cost | Maintainability/risk |
+|---|---|---|---|
+| A. Expand third-party analyzers immediately (Ruff/Bandit/JS) | More rules once integrated, heavier install/start | API=0 but more bundle/download/build work | Higher licensing/config/execution boundary risk; current coverage truth problem persists |
+| **B. Fix scan manifest/coverage and instrument synthetic Windows QA first** | Preserves lightweight core and establishes performance evidence | No AI calls or new runtime library required | Minimal source impact, directly reduces misleading complete/partial claims; recommended now |
+
+**Decision:** option B first; no material feature reduction. Phase2 starts with coverage truthful accounting on a new feature branch, then follows P0-B/C. New external dependencies, paid APIs, user data upload and repository access changes still require separate explicit owner approval.
+
+## Rollback / boundaries / next handoff
+
+Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294fd86`; preserve it. No force push; all fixes feature branch → tests → PR → main and STATUS/HANDOFF refresh. Product not Vercel deployed. Real customer delivery remains NOT READY.

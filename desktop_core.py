@@ -13,6 +13,7 @@ from typing import Literal
 from code_input import InputError, bundle_from_text, load_path
 from offline_core import OFFLINE_LIMITS, _split_delimited_txt, scan_path, scan_text
 from offline_report import build_report, write_report
+from offline_coverage import list_pruned_subtrees
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class InputPreview:
     generic_files: int
     paths: tuple[str, ...]
     warnings: tuple[str, ...]
+    pruned_subtrees: tuple[str, ...] = ()
 
     def display(self) -> str:
         summary = (
@@ -41,6 +43,7 @@ class InputPreview:
             f"분석 후보 파일: {self.files}개 / 제외·미지원: {self.excluded}개\n"
             f"읽은 자료: {self.bytes:,} bytes / {self.lines:,}줄\n"
             f"검사 예정 범위: Python AST {self.python_files}개 / 일반 패턴만 {self.generic_files}개\n"
+            f"탐색 제외된 폴더: {len(self.pruned_subtrees)}개 (내부 파일 수 미확인)\n"
         )
         if self.paths:
             summary += "파일 예시:\n" + "\n".join("  " + item for item in self.paths[:12]) + "\n"
@@ -64,12 +67,14 @@ class ScanResult:
     verified: int
     html_path: Path
     markdown_path: Path
+    pruned_subtrees: int = 0
 
     def display(self) -> str:
         return (
             f"보고서 상태: {self.status}\n"
             f"발견 {self.files}개 / Python 분석 {self.analyzed}개 / 제한 {self.limited}개 / "
             f"실패 {self.failed}개 / 제외 {self.excluded}개 / 미지원 {self.unsupported}개\n"
+            f"탐색 제외 폴더 {self.pruned_subtrees}개 (내부 파일 수는 미확인)\n"
             f"위험 후보 {self.findings}건 / 근거 일치 {self.verified}건\n"
             f"HTML: {self.html_path.name}\nMarkdown: {self.markdown_path.name}\n"
             "complete도 코드의 안전성을 보증하지 않습니다."
@@ -120,12 +125,14 @@ def inspect_input(request: ScanRequest) -> InputPreview:
                 sum(not item.path.lower().endswith((".py", ".pyi")) for item in bundle.files),
                 tuple(item.path for item in bundle.files), tuple(bundle.warnings),
             )
+    pruned = list_pruned_subtrees(request.source, limits=OFFLINE_LIMITS) if kind == "folder" else ()
     return InputPreview(
         kind, len(bundle.files), len(bundle.excluded_paths), bundle.source_bytes,
         sum(item.line_count for item in bundle.files),
         sum(item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python") for item in bundle.files),
         sum(not (item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python")) for item in bundle.files),
         tuple(item.path for item in bundle.files), tuple(bundle.warnings),
+        pruned,
     )
 
 
@@ -147,4 +154,5 @@ def run_scan(
         report.status, counts["enumerated"], counts["analyzed"], counts["limited"],
         counts["failed"], counts["excluded"], counts["unsupported"],
         len(report.findings), report.verified_count, html_path, markdown_path,
+        counts["pruned_subtrees"],
     )
