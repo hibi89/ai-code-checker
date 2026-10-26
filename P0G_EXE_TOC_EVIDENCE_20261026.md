@@ -37,3 +37,9 @@ python -m scripts.reconcile_exe_toc --prior .build-windows/native-provenance.jso
 ```
 
 Do not overwrite existing local evidence; use a fresh ignored build directory for each reproduction.
+
+## Verified integration record (2026-10-26 KST)
+
+- P0-G code plus eight tests merged by [PR #11](https://github.com/hibi89/ai-code-checker/pull/11) into main SHA `cdf23e171a59258e2659fb72c634a44eea687065` from feature `59e79133514e9b4d5b55ce915835c1735acd4317`.
+- [Final feature Tests 16/16 PASS, 119 unittests](https://github.com/hibi89/ai-code-checker/actions/runs/40328799451) and [Windows EXE E2E/P0G evidence PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40328799432): EXE TOC exact-name unique claims **11**, ambiguous **0**, no claim **1**. No claim means insufficient build metadata, not necessarily missing code or a licensing violation.
+- Original merged SHA main Actions run [40329090414](https://github.com/hibi89/ai-code-checker/actions/runs/40329090414) initially queued; check later HEAD and run outcome. No customer release approved.
