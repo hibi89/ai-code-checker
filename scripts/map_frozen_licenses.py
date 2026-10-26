@@ -15,7 +15,12 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from packaging.utils import canonicalize_name
+try:
+    from packaging.utils import canonicalize_name
+except ImportError:
+    def canonicalize_name(name: str) -> str:
+        # Standard CI also runs legacy Python installations without packaging.
+        return re.sub(r"[-_.]+", "-", name).lower()
 
 
 MAX_LICENSE_TEXT_BYTES = 1024 * 1024
