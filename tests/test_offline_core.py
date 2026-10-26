@@ -49,8 +49,9 @@ class OfflineCoreTests(unittest.TestCase):
     def test_multi_file_marker_escape_survives(self) -> None:
         text = (
             "===== FILE: main.py =====\n"
-            "# example\n"
+            "example = '''\n"
             "\\===== FILE: example.py =====\n"
+            "'''\n"
             "print('done')\n"
         )
         result = scan_text(text, filename="combined.txt")
