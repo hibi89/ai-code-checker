@@ -54,8 +54,19 @@ def _assert_metadata() -> dict[str, dict[str, object]]:
             raise AssertionError("Parser probe version drift: " + package)
         declared = (dist.metadata.get("License-Expression")
                     or dist.metadata.get("License") or "").strip()
-        if not re.fullmatch(r"(?i)MIT(?: License)?", declared):
-            raise AssertionError("Unexpected parser license metadata: " + package)
+        classifiers = dist.metadata.get_all("Classifier", []) or []
+        # Packaging METADATA may use a full MIT license body rather than the
+        # short SPDX string. Check only advertised license identifiers, never
+        # treat wheel metadata as legal redistribution clearance.
+        evidence = (
+            "spdx-or-license-field" if re.search(r"(?i)\\bMIT\\b", declared[:350])
+            else "classifier" if any(
+                "License :: OSI Approved :: MIT License" in value
+                for value in classifiers
+            ) else None
+        )
+        if evidence is None:
+            raise AssertionError("No MIT license claim found in parser metadata: " + package)
         files = list(dist.files or [])
         # A wheel metadata flag does not prove all legal notices are shipped.
         license_candidates = sum(
@@ -65,7 +76,8 @@ def _assert_metadata() -> dict[str, dict[str, object]]:
         )
         observed[package] = {
             "version": installed,
-            "declared_license": declared,
+            "declared_license": "MIT (packaging claim only)",
+            "license_metadata_evidence": evidence,
             "installed_license_named_paths": license_candidates,
             "notice_approval": False,
             "customer_exe_included": False,
