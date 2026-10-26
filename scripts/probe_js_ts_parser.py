@@ -59,7 +59,7 @@ def _assert_metadata() -> dict[str, dict[str, object]]:
         # short SPDX string. Check only advertised license identifiers, never
         # treat wheel metadata as legal redistribution clearance.
         evidence = (
-            "spdx-or-license-field" if re.search(r"(?i)\\bMIT\\b", declared[:350])
+            "spdx-or-license-field" if re.search(r"(?i)\bMIT\b", declared[:350])
             else "classifier" if any(
                 "License :: OSI Approved :: MIT License" in value
                 for value in classifiers
