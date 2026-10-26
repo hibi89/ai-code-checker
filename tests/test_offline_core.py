@@ -26,7 +26,7 @@ class OfflineCoreTests(unittest.TestCase):
     def test_real_txt_file_path_python_full_scan_and_unmodified(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             source = Path(temp) / "customer.txt"
-            code = "print('ok')\\n" * 1199 + "eval('1+1')\\n"
+            code = "print('ok')\n" * 1199 + "eval('1+1')\n"
             source.write_text(code, encoding="utf-8")
             before = source.read_bytes()
             result = scan_path(source, language="python")
