@@ -15,7 +15,7 @@
 - Day1: 오프라인 입력·정적 검사 코어 [PR #2](https://github.com/hibi89/ai-code-checker/pull/2) main 병합. 합성 1,200줄 TXT, 12파일 ZIP, 200파일 12,000줄 등 CI PASS.
 - Day2: `feature/offline-report-ui`에서 `offline_report.py` + `tests/test_offline_report.py` + `DAY2_REPORT_GUIDE.md` 추가. 독립 HTML/CSP, Markdown, 출처·줄·발췌 재검증, partial 검증 실패, 중복 제거, 원자적 no-clobber 파일 출력. 기존 AI 보고서 변경 없음.
 - 검증된 Day2 코드 SHA `7103c6768ac3dc7899856b38c23c86d2c39befed`, [Actions 16/16 PASS / 전체 76 unittest PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40305312358). 이 SHA 이후 문서가 추가됐으므로 **최종 브랜치 HEAD 및 CI 재검증이 필수**.
-- 작업 PR: [#3](https://github.com/hibi89/ai-code-checker/pull/3). 이 문서 작성 시 PR 병합 전. `main`의 Day2 시작 기준 SHA `6fb334a8215d42babfd4748eb020657b148b27ba`.
+- 작업 PR: [#3 병합](https://github.com/hibi89/ai-code-checker/pull/3). 병합 `main` SHA `7a5e78d8dca2bb678636b71be9d278fe2d137df2`. 이후 문서 SHA는 최신 GitHub 조회 필요.
 - 아직 미구현/미검증: Windows GUI·EXE·고객 PC 실행·실제 PDF 인쇄·네트워크 관찰·상업 출시·비-Python 전문 분석. **코드 모듈 CI 성공을 최종 상품 완성이라고 주장하지 않습니다.**
 
 ## 다음 실제 작업
