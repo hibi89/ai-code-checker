@@ -11,3 +11,7 @@ reports/
 tmp/
 patch_main.py
 remove_mime.py
+
+# Unsigned local packaging candidates and PyInstaller intermediates
+.build-windows/
+dist-windows/
