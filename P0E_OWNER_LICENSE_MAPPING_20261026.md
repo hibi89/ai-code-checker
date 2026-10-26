@@ -34,3 +34,12 @@ Date: 2026-10-26 KST. This work improves the **evidence for a human legal review
 ## Interpretation
 
 PASS means: **the built EXE manifest has an exhaustively recorded name-based ownership-candidate classification and original installed license text candidates in a local, hash-checked draft.** It does NOT mean final legal license compliance, binary hash-level provenance, complete CPython/Tcl/Tk/VC notices, or readiness to publish and sell. Next scope: direct native-file provenance/missing license resolution and real Windows product acceptance before owner-authorized commercialization.
+
+## Observed Windows CI results and proof status (2026-10-26 KST)
+
+- Source head `73341809baf06b30d5472dcb8dfeacaa7a2b03ec`: [Windows integration CI 40321463677](https://github.com/hibi89/ai-code-checker/actions/runs/40321463677) **PASS**. [Regular CI 40321463525](https://github.com/hibi89/ai-code-checker/actions/runs/40321463525) **16/16 PASS**, **104 unittest PASS**. [PR #9](https://github.com/hibi89/ai-code-checker/pull/9) merged main at `765ed9d4a9f183e749dfd78d0dc185d73694c609`. Always verify post-merge main separately.
+- **1,562/1,562 names classified** (1,018 CArchive, 544 PYZ). Classification is by NAME only, not hash-level binary ownership or legally confirmed attribution.
+- Identified *7 installed package ownership candidates*: `annotated-types`, `packaging`, `pydantic`, `pydantic-core`, `setuptools`, `typing-extensions`, `typing-inspection`. These are *candidates* only, not seven legally confirmed EXE component owners.
+- Category counts: 276 CPython stdlib name candidates, 923 Tcl/Tk filename/resource candidates, 261 installed Python package name claims, 1 installed native exact-relative-filename candidate, 1 CPython runtime filename candidate, 8 first-party name candidates, **67 unresolved native/system binaries**, **25 unresolved archive resources/bootloader items**.
+- **26 installed original license files** gathered locally into `NOTICE_REVIEW_DRAFT.md` and checked against P0-D SHA256 evidence; 0 missing/undecodable on this runner. Draft is explicitly `NOT FOR DISTRIBUTION`. No EXE/customer code/source, bundled manifests or draft license files were uploaded.
+- The remaining 92 unresolved names and every binary owner/version/license proof remain manual-review tasks. No claim that 26 license originals are the required 26 notices or included in the EXE. `CUSTOMER_RELEASE_ALLOWED=False`, `LEGAL_NOTICE_REVIEW=REQUIRED`.
