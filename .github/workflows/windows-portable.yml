@@ -9,6 +9,8 @@ on:
       - 'scripts/windows_browser_pdf_smoke.py'
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/map_frozen_licenses.py'
+      - 'scripts/reconcile_native_build.py'
+      - 'tests/test_native_build_provenance.py'
       - 'tests/test_component_license_mapping.py'
       - 'scripts/offline_dependency_inventory.py'
       - 'tests/test_frozen_exe_audit.py'
@@ -55,6 +57,11 @@ jobs:
       - name: Enforce unresolved license and customer-release gates
         run: |
           python -c "import json; from pathlib import Path; p=Path('.build-windows/ownership-candidates.json'); m=json.loads(p.read_text(encoding='utf-8')); a=json.loads(Path('.build-windows/frozen-exe-evidence.json').read_text(encoding='utf-8')); assert m['all_items_accounted_for_in_metadata']; assert m['total_rows']==a['archive']['top_level_count']+a['archive']['pyz_module_count']; assert m['candidate_dist_count']>0; assert m['license_text_draft']['staged_original_license_files']>0; assert m['license_compliance_certified'] is False; assert m['customer_release_ready'] is False; assert m['third_party_notice_ready_to_distribute'] is False; print('LOCAL_OWNER_CANDIDATES_PRESENT_DISTRIBUTION_BLOCKED')"
+      - name: Reconcile remaining native and resource names to local build source records
+        run: python -m scripts.reconcile_native_build --mapping .build-windows/ownership-candidates.json --analysis-toc .build-windows/CodeCheckerOffline/Analysis-00.toc --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/native-provenance.json
+      - name: Enforce original unresolved accounting and non-commercial gates
+        run: |
+          python -c "import json; from pathlib import Path; a=json.loads(Path('.build-windows/ownership-candidates.json').read_text(encoding='utf-8')); p=json.loads(Path('.build-windows/native-provenance.json').read_text(encoding='utf-8')); assert p['previous_unresolved_archive_entries']==a['unresolved_count']; assert p['all_entries_counted']; assert p['build_toc_paths_not_exposed']; assert p['source_path_not_a_license_or_vendor_proof']; assert p['customer_release_ready'] is False; assert p['legal_notice_approved'] is False; print('NATIVE_BUILD_PROVENANCE_EVIDENCE_LOCAL_ONLY')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
         run: |
