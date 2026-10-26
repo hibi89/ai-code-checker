@@ -24,7 +24,7 @@ def fixtures(parent: Path, *, full: bool = True):
     """Generate fixed patterns, 0 source code execution, no personal files."""
     paths = {}
     text = parent / "synthetic_1200.txt"
-    text.write_text("value = 1\n" * 1199 + "eval('1+1')\n", encoding="utf-8")
+    text.write_text("value = 1\n" * 1199 + "eval('1+1')\n", encoding="utf-8", newline="\n")
     paths["txt_1200"] = (text, "python", 1, 1200, "complete")
 
     archive_path = parent / "synthetic_12.zip"
