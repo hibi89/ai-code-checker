@@ -236,3 +236,16 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. **Security/backup:** Public GitHub contains only synthetic sources and metadata-only reports. License named paths 1 per installed package with MIT metadata; original files/notice obligations **not verified**, no customer code or binaries uploaded or paid API called.
 9. **Next approval/priority:** Verify final PR CI and normal merge then main CI. Next distinct milestone: integrate optional syntax-aware JS/TS adapter only after dependency/NOTICE and Windows EXE size/trust/security testing, independently labeled JS/TS rule benchmarks, and actual consumer Windows/Defender/SmartScreen/packet/PDF visual acceptance. No commercialization without owner approval.
 10. **Verified 2026-10-26 KST:** Parser CI 40341166881 at code SHA 4e4cd29bd511... only; JS/TS actual product status limited and release unapproved. Rerun after docs changes is separate evidence.
+
+## P1-E final 10-point transfer — 2026-10-26 KST
+
+1. Objective: offline 0-required-AI Windows Code Checker with source preservation; JS/TS/TSX grammar syntax feasibility only, not security analyzer integration.
+2. Approach: compared unreliable regex and Node TypeScript runtime; selected Tree-sitter with separately pinned binary wheels in CI-only research, no production EXE changes.
+3. Actual verified: feature SHA `fdae1c6463da606e0377a277992081c12a4d9173`, [standard Tests 16/16](https://github.com/hibi89/ai-code-checker/actions/runs/40341532660), [Windows+Ubuntu parser 2/2](https://github.com/hibi89/ai-code-checker/actions/runs/40341532563) PASS; 9/9 valid syntax, 3/3 malformed rejected, 3 boundary unit tests per OS. Real customer security accuracy not established.
+4. Git state: [PR #15](https://github.com/hibi89/ai-code-checker/pull/15) merged `main` at `33d20ee5ffc94e72ee4f81d6b6c76ea5a60b46b9`. Final docs SHA/CI need live verification.
+5. Errors: original CI YAML unquoted :all: scalar failed before jobs; fixed. License metadata assumed exact MIT but real packages used both classifiers and license fields; fixed and verified on both OS, not legal approval.
+6. Repo/paths: `hibi89/ai-code-checker` `scripts/probe_js_ts_parser.py`, `tests/test_js_ts_parser_probe.py`, `requirements-parser-probe.txt`, `.github/workflows/js-ts-parser-feasibility.yml`, `P1E_JS_TS_PARSER_FEASIBILITY_20261026.md`. Rollback baseline main `bd4e7041a813fc599aa7cf51ae6d68158c64466c`.
+7. No Vercel/Production; research-only workflow installs fixed wheels then runs parser smoke. Packaged customer EXE unchanged.
+8. Synthetic fixtures only in public repo; do not upload customer code, EXE or secrets. Package metadata MIT and one license-named installed path each; original LICENSE/NOTICE redistribution still unverified.
+9. Next GO: prototype optional syntax aware adapter with explicit limited/failed coverage, independent JS/TS labeled rules; vet original license/NOTICE, PyInstaller Windows bundled size/security, actual consumer Windows AV/OS packet/PDF acceptance before release.
+10. Verified scope date 2026-10-26 KST; CI is syntactic parser feasibility only; main docs/merge CI needs recheck. No paid API or customer release authorized.
