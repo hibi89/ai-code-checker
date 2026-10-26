@@ -1,0 +1,43 @@
+name: Windows portable candidate smoke
+
+on:
+  pull_request:
+    paths:
+      - 'desktop_core.py'
+      - 'desktop_ui.py'
+      - 'offline_core.py'
+      - 'offline_report.py'
+      - 'code_input.py'
+      - 'static_checks.py'
+      - 'review_models.py'
+      - 'requirements-offline-build.txt'
+      - 'scripts/build_windows_portable.ps1'
+      - '.github/workflows/windows-portable.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-exe-smoke:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install pinned packaging dependencies
+        run: python -m pip install -r requirements-offline-build.txt
+      - name: Build EXE and run synthetic offline smoke
+        shell: pwsh
+        run: ./scripts/build_windows_portable.ps1
+      - name: Confirm EXE exists and print digest
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -LiteralPath 'dist-windows/CodeCheckerOffline.exe')) { throw 'EXE not produced' }
+          Get-FileHash -LiteralPath 'dist-windows/CodeCheckerOffline.exe' -Algorithm SHA256
+
+# No artifact upload: public repo, unsigned candidate, Windows GUI E2E not verified.
