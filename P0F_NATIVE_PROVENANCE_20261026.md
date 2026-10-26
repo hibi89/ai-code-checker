@@ -25,3 +25,13 @@
 `python -m scripts.reconcile_native_build --mapping .build-windows/ownership-candidates.json --analysis-toc .build-windows/CodeCheckerOffline/Analysis-00.toc --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/native-provenance.json`
 
 The commands operate only on a user-authorized, **locally built application** and local package provenance. Do not publish intermediate files; the output is diagnostic.
+
+
+## Verified Windows build results and merge (2026-10-26 KST)
+
+- Feature code HEAD `200236091b7b75130bbe010c2478d92b695a0c43` [Windows packaged Actions 40323280024](https://github.com/hibi89/ai-code-checker/actions/runs/40323280024) PASS. [Standard 16/16 CI PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40323280004) with **111 unittest PASS**. [PR #10](https://github.com/hibi89/ai-code-checker/pull/10) merged into `main` at **`c59f3dc807a11f48949f081263877bf4533467c9`**.
+- Previous P0-E unresolved list: **92 CArchive names**, comprising **67 native/system binaries** and **25 archive resources/bootloader**. P0-F matched **80** to unique file paths recorded in the current PyInstaller Analysis build TOC, and identified **12** without a unique Analysis claim.
+- **67/67 previously unresolved native/system binaries** had a recorded build-source file whose raw SHA-256 equals the actual decompressed CArchive bytes. **13** additional non-native resources also had a unique Analysis source record, but P0-F intentionally did not byte-compare these. **12** remaining archive resources/bootloader entries had no Analysis source claim (not automatically a defect or missing license).
+- The 67 native exact byte matches strongly establish *build-file provenance only*. They do not prove vendor/copyright owner, commercial redistribution right, signing, code reputation, Python/Tcl/Tk/VC license attribution completeness, or full customer NOTICE suitability.
+- The record includes no absolute filesystem/source path, does not upload binary/source/license drafts, performs no code execution, and keeps `customer_release_ready=False` and `legal_notice_approved=False`.
+- Next: examine the **12** unmatched resource/bootloader rows with PyInstaller EXE/PYZ bootloader-specific metadata; verify origin and required notices with original texts; secure clean end-user Windows evidence and analyzer accuracy. Never claim 67 'licenses resolved' because they are only exact build byte matches.
