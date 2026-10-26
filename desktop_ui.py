@@ -15,7 +15,7 @@ from pathlib import Path
 from desktop_core import ScanRequest, ScanResult, inspect_input, run_scan
 
 
-def launch() -> int:
+def launch(on_ready=None) -> int:
     try:
         import tkinter as tk
         from tkinter import filedialog, messagebox, scrolledtext, ttk
@@ -122,8 +122,12 @@ def launch() -> int:
 
         def _clear_preview(self) -> None:
             self.preview_request = None
+            # A new source or changed input invalidates the previous result.
+            # Keep stale HTML from being mistaken for this source's scan.
+            self.last_result = None
             if not self.busy:
                 self.scan_button.configure(state="disabled")
+                self.open_button.configure(state="disabled")
 
         def _paste_modified(self, _event=None) -> None:
             if self.paste_text.edit_modified():
@@ -243,7 +247,9 @@ def launch() -> int:
                     if operation == "error":
                         error_type, message = payload
                         self.preview_request = None
+                        self.last_result = None
                         self.scan_button.configure(state="disabled")
+                        self.open_button.configure(state="disabled")
                         self.state_var.set("실패/차단 — 검사 완료로 처리하지 않았습니다.")
                         self._show(f"처리 실패 ({error_type})\n{message}\n\n원본 자료는 변경하지 않았습니다.")
                     elif operation == "preview":
@@ -287,7 +293,11 @@ def launch() -> int:
     except tk.TclError:
         print("GUI unavailable: desktop display initialization failed.", file=sys.stderr)
         return 2
-    CodeCheckerWindow(root)
+    window = CodeCheckerWindow(root)
+    if on_ready is not None:
+        # Explicit opt-in injection for synthetic Windows Tk integration tests.
+        # Production launch never calls it.
+        root.after(0, lambda: on_ready(window))
     root.mainloop()
     return 0
 
@@ -315,7 +325,31 @@ def packaged_smoke_test() -> int:
     return 0
 
 
+def packaged_gui_smoke_test() -> int:
+    """Check real Tk initialization in the packaged process, no project data."""
+    try:
+        import tkinter as tk
+        from tkinter import ttk
+
+        root = tk.Tk()
+        try:
+            root.title("CodeCheckerOffline synthetic Tk smoke")
+            button = ttk.Button(root, text="synthetic")
+            button.pack()
+            root.update_idletasks()
+            root.update()
+            if not button.winfo_exists() or not root.winfo_exists():
+                return 1
+        finally:
+            root.destroy()
+    except Exception:
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 2 and sys.argv[1] == "--gui-smoke":
+        raise SystemExit(packaged_gui_smoke_test())
     if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
         raise SystemExit(packaged_smoke_test())
     if len(sys.argv) != 1:

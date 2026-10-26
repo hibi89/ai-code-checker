@@ -5,6 +5,8 @@ on:
     paths:
       - 'desktop_core.py'
       - 'desktop_ui.py'
+      - 'scripts/windows_gui_e2e.py'
+      - 'scripts/windows_browser_pdf_smoke.py'
       - 'offline_core.py'
       - 'offline_report.py'
       - 'code_input.py'
@@ -31,6 +33,10 @@ jobs:
           python-version: '3.13'
       - name: Install pinned packaging dependencies
         run: python -m pip install -r requirements-offline-build.txt
+      - name: Exercise real Tk widgets on Windows runner (synthetic)
+        run: python -m scripts.windows_gui_e2e
+      - name: Browser print self-contained Korean HTML to PDF (synthetic)
+        run: python -m scripts.windows_browser_pdf_smoke
       - name: Build EXE and run synthetic offline smoke
         shell: pwsh
         run: ./scripts/build_windows_portable.ps1
@@ -40,4 +46,4 @@ jobs:
           if (-not (Test-Path -LiteralPath 'dist-windows/CodeCheckerOffline.exe')) { throw 'EXE not produced' }
           Get-FileHash -LiteralPath 'dist-windows/CodeCheckerOffline.exe' -Algorithm SHA256
 
-# No artifact upload: public repo, unsigned candidate, Windows GUI E2E not verified.
+# No artifact upload: public repo, unsigned candidate; scripted GUI / headless PDF are not clean-device/user/visual/packet QA.

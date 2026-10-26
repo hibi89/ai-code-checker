@@ -40,3 +40,14 @@ PyInstaller has a commercial-use packaging exception, but final licenses/attribu
 Expected --self-test exit code 0 means a temporary synthetic paste can be scanned and a verified offline report written. GUI startup/display or actual button interaction remains UNVERIFIED by the automated test.
 
 Required prelaunch checks: source/ZIP/folder/paste actions on clean Windows, limits and exclusions, partial/status error display, unicode paths, package Defender checks, physical offline network capture, browser PDF, report cleanup, performance & memory, licensing and refund/support policy. Do not label the product complete until these are verified.
+
+## Phase2 P0-B Windows GUI and browser QA update (2026-10-26)
+
+A Windows hosted GitHub runner has now **actually instantiated a Tk window** and invoked the project's widgets for local TXT/ZIP/folder/paste/blocked flows, and used headless Microsoft Edge to print synthetic HTML to a `%PDF-` PDF (96,799 bytes). See [WINDOWS_GUI_PDF_EVIDENCE_20261026.md](WINDOWS_GUI_PDF_EVIDENCE_20261026.md). This expands the previous developer-only synthetic smoke; it does NOT turn the EXE into a customer-ready signed app.
+
+Manual/developer reproduction on Windows with approved prerequisites:
+
+    python -m scripts.windows_gui_e2e
+    python -m scripts.windows_browser_pdf_smoke
+
+Packaged GUI root startup can be checked locally with `dist-windows/CodeCheckerOffline.exe --gui-smoke`, and synthetic scanner with `--self-test`. Real mouse/keyboard, clean consumer system, Defender/SmartScreen, OS network capture and actual browser Print dialogue remain untested. Reports/PDF/temporary source in these tests are synthetic and are not uploaded.
