@@ -30,6 +30,8 @@ class InputPreview:
     excluded: int
     bytes: int
     lines: int
+    python_files: int
+    generic_files: int
     paths: tuple[str, ...]
     warnings: tuple[str, ...]
 
@@ -38,6 +40,7 @@ class InputPreview:
             f"입력 종류: {self.kind}\n"
             f"분석 후보 파일: {self.files}개 / 제외·미지원: {self.excluded}개\n"
             f"읽은 자료: {self.bytes:,} bytes / {self.lines:,}줄\n"
+            f"검사 예정 범위: Python AST {self.python_files}개 / 일반 패턴만 {self.generic_files}개\n"
         )
         if self.paths:
             summary += "파일 예시:\n" + "\n".join("  " + item for item in self.paths[:12]) + "\n"
@@ -111,13 +114,17 @@ def inspect_input(request: ScanRequest) -> InputPreview:
                 raise InputError("통합 TXT는 파일별 확장자를 사용하므로 언어 자동을 선택하세요.")
             bundle, _origins, additional = parsed
             return InputPreview(
-                "multi-txt", len(bundle.files), len(additional) + len(bundle.excluded_paths),
+                "multi-txt", len(bundle.files), len(additional),
                 bundle.source_bytes, sum(item.line_count for item in bundle.files),
+                sum(item.path.lower().endswith((".py", ".pyi")) for item in bundle.files),
+                sum(not item.path.lower().endswith((".py", ".pyi")) for item in bundle.files),
                 tuple(item.path for item in bundle.files), tuple(bundle.warnings),
             )
     return InputPreview(
         kind, len(bundle.files), len(bundle.excluded_paths), bundle.source_bytes,
         sum(item.line_count for item in bundle.files),
+        sum(item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python") for item in bundle.files),
+        sum(not (item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python")) for item in bundle.files),
         tuple(item.path for item in bundle.files), tuple(bundle.warnings),
     )
 
