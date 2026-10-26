@@ -43,3 +43,13 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 - Ignore/pruned directories are now listed as **directory metadata only**; their contained files are UNKNOWN, not enumerated. Overall folder scan becomes partial when any subtree pruned. This avoids falsely implying a complete review of all project folders; original read-only input and v1 Gemini CLI preserved.
 - The post-merge main CI for 2ab40c2 should be checked separately. Documentation commits later than this merge change HEAD again.
 - Next target: P0-B real Windows GUI interactions, offline packet observation, PDF printing, Unicode paths and Defender/SmartScreen, then P0-C measured benchmarks and license inventory. **Do not sell until acceptance.**
+
+## Phase2 P0-B Windows GUI/Edge PDF CI evidence (2026-10-26 KST)
+
+- PR [#6](https://github.com/hibi89/ai-code-checker/pull/6) feature branch `feature/windows-gui-pdf-e2e`: **Windows CI code SHA `d6e4005998edeafc5a1c262281f29a747d3582c7` passed** GitHub Actions [Windows smoke](https://github.com/hibi89/ai-code-checker/actions/runs/40313412431) and standard 16/16 CI at [40313412364](https://github.com/hibi89/ai-code-checker/actions/runs/40313412364). Verify latest docs HEAD, PR merge and post-merge CI separately.
+- `desktop_ui.py`: explicit test-only hook to instantiate actual Tk UI, packaged `--gui-smoke`, and fix that clears stale open-report state on source changes/failure. Existing Gemini CLI stays unchanged.
+- `scripts/windows_gui_e2e.py`: real Tk event loop + scripted controls for Unicode TXT, mixed ZIP, policy-pruned folder, paste and blocked path traversal; local reports, partial statuses and mocked local HTML opener PASS. Python socket connect attempts during synthetic GUI test: zero under fail-closed monkeypatch.
+- `scripts/windows_browser_pdf_smoke.py`: Windows hosted Microsoft Edge headless printed self-contained HTML to a 96,799-byte PDF, `%PDF-` signature PASS; Unicode path tested. PDF NOT uploaded or visually inspected.
+- Packaged Tk GUI startup and EXE offline synthetic scan both PASS on Windows CI; EXE remains unsigned, not distributed.
+- Distinguish these PASSes from still **UNVERIFIED** independent customer's Windows GUI physical interaction, browser interactive Print, Korean PDF visual glyph rendering, Defender/SmartScreen, Windows packet-capture, and commercial license/release gates.
+- Next: validate PR #6 final SHA/CI then merge if green; verify main after merge. Afterwards Phase2 P0-C repeatable benchmark + transitive bundled license audit. Detailed evidence: [WINDOWS_GUI_PDF_EVIDENCE_20261026.md](WINDOWS_GUI_PDF_EVIDENCE_20261026.md).
