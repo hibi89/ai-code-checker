@@ -69,7 +69,7 @@ AI 응답에서 8개 점검 관점이 빠지거나 중복되면 리포트에 불
 
 기본값은 최대 50개 파일, 파일당 128 KiB, 프로젝트 전체 512 KiB, ZIP 20 MiB입니다. .git, 가상환경, 의존성·빌드 폴더, 잠금 파일, 키·인증서, .env 계열 파일은 제외됩니다. UTF-8 텍스트만 읽으며 Python, JavaScript/TypeScript, Java, Go, Rust, C/C++, C#, PHP, Ruby, Swift/Kotlin, SQL, 셸, 일반 설정 파일 등을 지원합니다.
 
-기본 모델은 `gemini-3.1-flash-lite`입니다. `.env.example`의 입력·출력 단가는 Google Gemini API Standard 유료 등급의 2026-10-26 목록 가격 기준입니다. 예를 들어 입력 10,000 토큰과 출력 2,048 토큰이면 약 $0.0056 (환율 1달러=1,324.45원 가정 시 약 8원)입니다. 기본 요청당 사전 원가 상한은 $0.05이며, 실제 청구액은 토큰 수·환율·세금·계정 조건에 따라 달라집니다. 다른 모델을 지정하면 입력·출력 단가도 함께 바꾸세요. 고객 코드를 처리하는 판매 운영에는 무료 등급을 사용하지 않고, Google의 유료 등급과 데이터 처리 조건을 확인하세요. [Gemini API 가격](https://ai.google.dev/gemini-api/docs/pricing) · [모델 정보](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite)
+기본 모델은 `gemini-3.1-flash-lite`입니다. `.env.example`의 입력·출력 단가는 Google Gemini API Standard 유료 등급의 2026-10-26 목록 가격 기준입니다. 예를 들어 입력 10,000 토큰과 출력 4,096 토큰이면 약 $0.0087 (환율 1달러=1,324.45원 가정 시 약 12원)입니다. 기본 요청당 사전 원가 상한은 $0.05이며, 실제 청구액은 토큰 수·환율·세금·계정 조건에 따라 달라집니다. 다른 모델을 지정하면 현재 유료 등급의 입력·출력 단가를 `.env`에 모두 명시해야 합니다. 기본 모델이 아닌데 단가가 빠지면 비용 과소 추정을 막기 위해 API 요청을 중단합니다. 사전 견적은 유료 등급 목록 가격으로 계산하므로 무료 등급 실제 청구액과 다를 수 있습니다. 고객 코드를 처리하는 판매 운영에는 무료 등급을 사용하지 않고, Google의 유료 등급과 데이터 처리 조건을 확인하세요. [Gemini API 가격](https://ai.google.dev/gemini-api/docs/pricing) · [모델 정보](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite)
 
 ## 보안 및 한계
 

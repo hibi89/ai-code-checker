@@ -14,6 +14,7 @@ from typing import Any
 
 from google import genai
 from google.genai import types
+from pydantic import ValidationError as PydanticValidationError
 
 from code_input import CodeBundle
 from review_models import AIReview, TokenUsage
@@ -50,6 +51,25 @@ USAGE_LOG_RETENTION_DAYS = 90
 def _safe_error_label(error: Exception) -> str:
     """Expose a bounded status hint without echoing provider diagnostics or code."""
     label = type(error).__name__
+    if isinstance(error, PydanticValidationError):
+        locations: list[str] = []
+        for detail in error.errors(include_input=False)[:4]:
+            parts: list[str] = []
+            for part in detail.get("loc", ()):
+                if isinstance(part, int) and 0 <= part < 10_000:
+                    parts.append(str(part))
+                elif isinstance(part, str) and re.fullmatch(
+                    r"[A-Za-z_][A-Za-z0-9_]{0,39}", part
+                ):
+                    parts.append(part)
+                else:
+                    parts.append("?")
+            error_type = detail.get("type", "")
+            if not isinstance(error_type, str) or not re.fullmatch(r"[a-z_]{1,40}", error_type):
+                error_type = "invalid"
+            locations.append(f"{'.'.join(parts) or '?'}:{error_type}")
+        if locations:
+            label += " [" + ", ".join(locations) + "]"
     code = getattr(error, "code", None)
     if isinstance(code, int) and 400 <= code < 600:
         label += f" (HTTP {code})"

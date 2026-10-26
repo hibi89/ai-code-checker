@@ -55,7 +55,18 @@ def _int_setting(name: str, default: int) -> int:
 def load_settings() -> Settings:
     load_dotenv()
     model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
-    max_output_tokens = _int_setting("MAX_OUTPUT_TOKENS", 2048)
+    input_price_setting = os.getenv("GEMINI_INPUT_USD_PER_MILLION")
+    output_price_setting = os.getenv("GEMINI_OUTPUT_USD_PER_MILLION")
+    if model != DEFAULT_MODEL and (
+        not input_price_setting or not input_price_setting.strip()
+        or not output_price_setting or not output_price_setting.strip()
+    ):
+        raise ValueError(
+            "기본 모델이 아닌 모델을 사용할 때는 현재 유료 등급 단가에 맞춰 "
+            "GEMINI_INPUT_USD_PER_MILLION과 GEMINI_OUTPUT_USD_PER_MILLION을 "
+            ".env에 모두 설정해야 합니다. 비용 과소 추정을 막기 위해 요청을 중단했습니다."
+        )
+    max_output_tokens = _int_setting("MAX_OUTPUT_TOKENS", 4096)
     max_estimated_cost_usd = _float_setting("MAX_ESTIMATED_COST_USD", 0.05)
     if not 256 <= max_output_tokens <= 8192:
         raise ValueError("MAX_OUTPUT_TOKENS는 256~8192 범위여야 합니다.")

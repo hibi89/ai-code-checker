@@ -11,15 +11,23 @@
 
 2026-10-26 새 키 확인 결과: `models.list()`에 성공했고 `gemini-3.1-flash-lite`가 생성 모델 목록에 표시됐다. 다만 취약 ZIP 분석은 이 모델에서 503 `UNAVAILABLE`로 두 차례 실패했고, 공식 Quickstart의 `gemini-3.8-flash` 생성 호출도 Interactions API 타임아웃 및 GenerateContent 503으로 끝났다. 이후 안전한 합성 ZIP(2개 파일, 839 bytes)과 취약 합성 ZIP(2개 파일, 576 bytes)으로 각각 한 번 더 시도했지만 모두 `ConnectError`가 발생했다. 마지막 취약 ZIP 요청의 사전 최대 원가 추정은 `$0.004834`였고, 성공 응답·토큰 사용량을 받지 못해 실제 처리/청구 여부는 확인할 수 없다. Google 사용량 화면을 확인하기 전에는 추가 요청을 보내지 않는다. 성공한 AI 리포트나 사용 토큰 값은 아직 없다. 3.8 Flash는 현재 기본 Flash-Lite보다 단가가 높아 이 서비스의 기본 모델로 바꾸지 않았다. Google의 오류 설명은 503을 일시적 과부하 또는 서비스 중단으로 분류한다. [Google API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 
-위 생성 실패 기록 이후 CLI 호출 경로를 Google이 새 프로젝트에 권장하는 Interactions API로 전환했다. 같은 `gemini-3.1-flash-lite`·JSON 스키마·원가 한도를 쓰며, `store=false`를 명시한다. 이 업데이트된 CLI로는 아직 실 API 파일럿을 하지 않았다. 마지막 `ConnectError` 요청의 사용량/청구를 Google AI Studio에서 확인한 뒤 아래 두 합성 ZIP을 각각 한 번만 실행한다. [Interactions API 지원 모델·저장 설정](https://ai.google.dev/gemini-api/docs/interactions-overview) · [구조화 출력](https://ai.google.dev/gemini-api/docs/structured-output)
+위 생성 실패 기록 이후 CLI 호출 경로를 Google이 새 프로젝트에 권장하는 Interactions API로 전환했다. 기본값은 `gemini-3.1-flash-lite`·JSON 스키마·원가 한도이며, `store=false`를 명시한다. 전환 후 합성 취약 ZIP으로 두 차례 실 호출했으나 한 번은 `APIConnectionError`, 한 번은 `ValidationError [?:json_invalid]`로 끝나 성공한 리포트가 없다. [Interactions API 지원 모델·저장 설정](https://ai.google.dev/gemini-api/docs/interactions-overview) · [구조화 출력](https://ai.google.dev/gemini-api/docs/structured-output)
 
-2026-10-26 재확인: 현재 열려 있는 AI Studio 문서 탭은 API 키/대시보드 링크를 Google 로그인 화면으로 보낸다. 기존 브라우저 세션에는 사용량 화면이 열려 있지 않으며, 계정 로그인이나 키 화면 열람은 진행하지 않았다. 따라서 이전 `ConnectError`의 실제 과금 여부와 Paid 프로젝트 설정은 여전히 미확인이다. 사용량을 확인할 수 있는 로그인 세션에서 먼저 기존 요청의 기록을 대조한 다음에만 아래 유료 실 API 파일럿을 진행한다. 이때도 합성 ZIP 두 건 외에는 전송하지 않는다.
+2026-10-26 사용자가 공유한 AI Studio 화면에서 선택된 `Default Gemini Project`는 무료 등급이고 결제가 설정되지 않은 것을 확인했다. 다만 로컬 `.env`의 API 키가 해당 프로젝트에 연결됐는지, 이후 실패 요청이 사용량 그래프에 반영됐는지는 대조하지 않았다. 사용량 데이터는 최대 15분 늦게 반영될 수 있다.
+
+2026-10-26 Interactions API 파일럿에서 합성 취약 ZIP(2개 파일, 576 bytes)을 한 번 호출했으나 `APIConnectionError`로 끝나 AI 응답과 토큰 사용량을 받지 못했다. 이때 로컬 `.env` 모델은 `gemini-3.6-flash`였고 단가 설정은 비어 있었다. CLI가 기본 모델인 `gemini-3.1-flash-lite`의 단가로 `$0.004834`를 계산한 과소 추정 문제를 발견했다. 비기본 모델이면 입력·출력 단가를 명시하기 전 요청을 막도록 코드를 보완하고, 로컬 `.env`에는 2026-10-26 공식 Standard 유료 단가(입력 $0.75·출력 $3.75/백만 토큰)를 추가했다. Google 가격표에 따르면 `gemini-3.6-flash`의 무료 등급 입력·출력 가격은 무료지만, 사전 견적은 유료 등급 단가를 사용한다. 연결 오류 후에는 중복 호출하지 않았다. 생성 응답·정확도·토큰·이번 요청 사용량은 계속 미확인이다. [Google Gemini API 가격](https://ai.google.dev/gemini-api/docs/pricing)
+
+가격 안전장치 보완 뒤 드라이런 재확인: 취약 ZIP **$0.012965**, 안전 ZIP **$0.013171**의 유료 등급 예상 상한을 출력했고, 두 번 모두 외부 전송과 AI 호출이 없었다. 무료 등급 프로젝트의 청구액이 아니라, Paid 등급으로 바뀌어도 과소 추정하지 않도록 유료 목록 가격으로 계산한 값이다.
+
+기본 출력 상한을 4,096 토큰으로 올린 뒤 드라이런을 다시 실행했다. 현재 로컬 `.env`의 `gemini-3.6-flash`와 공식 유료 단가 기준 예상 상한은 취약 ZIP **$0.020644**, 안전 ZIP **$0.020851**이다. 두 실행 모두 외부 전송·AI 호출이 없었다.
+
+오류 진단용 합성 취약 ZIP 호출도 `ValidationError [?:json_invalid]`로 종료됐다. 민감한 응답 문자열이나 소스는 출력하지 않고 Pydantic 오류 위치만 표시하도록 했다. 이전 요청의 출력 상한은 2,048 토큰이었을 수 있어 기본 상한을 4,096으로 올렸지만, 이 설정으로 실 API 응답을 다시 검증하지 않았다. 오류가 반복될 경우 원본 응답을 기록하지 말고 모델 상태·응답 완료 상태·사용량 메타데이터만 분리해 확인한다.
 
 예제 코드는 합성이며 실행하지 않는다. CLI는 코드를 실행하지 않고 텍스트로만 읽는다. 다만 실제 분석은 선택한 파일을 Google Gemini API로 전송하므로, 전송을 허용할 때만 아래 명령을 실행한다.
 
 ## 실행 순서
 
-1. Google AI Studio의 결제 활성화 프로젝트와 유효한 키를 확인하고 로컬 `.env`의 `GEMINI_API_KEY`만 갱신한다. 키는 GitHub·채팅·로그에 붙이지 않는다.
+1. 합성 파일럿은 AI Studio에서 무료 등급으로 쓸 수 있는 모델과 연결된 키를 사용한다. 고객 코드는 무료 등급으로 전송하지 않는다. 고객 데이터 파일럿은 결제 활성화 유료 프로젝트와 데이터 처리 조건을 먼저 확인한다. 키는 GitHub·채팅·로그에 붙이지 않는다.
 2. 아래의 드라이런으로 두 ZIP이 50개 파일·512 KiB·요청당 미화 0.05달러 한도 안에 있는지 확인한다. 드라이런은 외부 전송을 하지 않는다.
 
    ```powershell

@@ -10,12 +10,20 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from pydantic import TypeAdapter, ValidationError
+
 from code_input import bundle_from_text
 from code_input import InputError, InputLimits
 from main import Settings, _configure_console_encoding, _read_stdin_bundle, _save_report, run_cli
 from reporting import convert_ai_findings, render_report, review_completeness_issues, verify_ai_citation
 from review_models import AIReview, AIReviewFinding, PerspectiveCheck, TokenUsage
-from reviewer import ReviewError, analyze_bundle, append_usage_log, estimate_request_cost
+from reviewer import (
+    ReviewError,
+    _safe_error_label,
+    analyze_bundle,
+    append_usage_log,
+    estimate_request_cost,
+)
 
 
 PERSPECTIVES = [
@@ -47,6 +55,15 @@ class FakeInteractions:
 
 
 class ReviewFlowTests(unittest.TestCase):
+    def test_validation_error_label_shows_fields_without_echoing_values(self) -> None:
+        with self.assertRaises(ValidationError) as captured:
+            TypeAdapter(int).validate_python("DO_NOT_ECHO_SYNTHETIC_OUTPUT")
+
+        label = _safe_error_label(captured.exception)
+        self.assertIn("ValidationError", label)
+        self.assertIn("int_parsing", label)
+        self.assertNotIn("DO_NOT_ECHO_SYNTHETIC_OUTPUT", label)
+
     def test_console_streams_are_reconfigured_for_utf8_when_supported(self) -> None:
         class ReconfigurableStream:
             def __init__(self):
