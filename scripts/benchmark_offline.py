@@ -36,7 +36,7 @@ def fixtures(parent: Path, *, full: bool = True):
     small = parent / "synthetic_200"
     small.mkdir()
     for n in range(200):
-        (small / f"module_{n:03d}.py").write_text("number = 1\n" * 60, encoding="utf-8")
+        (small / f"module_{n:03d}.py").write_text("number = 1\n" * 60, encoding="utf-8", newline="\n")
     paths["folder_200_12k"] = (small, None, 200, 12000, "complete")
 
     if full:
@@ -48,7 +48,7 @@ def fixtures(parent: Path, *, full: bool = True):
         assert len(source.splitlines()) == 60
         assert len(source.encode("utf-8")) > 30_000
         for n in range(200):
-            (multi / f"module_{n:03d}.py").write_text(source, encoding="utf-8")
+            (multi / f"module_{n:03d}.py").write_text(source, encoding="utf-8", newline="\n")
         paths["folder_multimeg_200_12k"] = (multi, None, 200, 12000, "complete")
     return paths
 
@@ -97,7 +97,7 @@ def boundary_cases(parent: Path):
     folder = parent / "synthetic_201"
     folder.mkdir()
     for n in range(201):
-        (folder / f"file_{n:03d}.py").write_text("print('ok')\n", encoding="utf-8")
+        (folder / f"file_{n:03d}.py").write_text("print('ok')\n", encoding="utf-8", newline="\n")
     try:
         scan_path(folder)
     except InputError:
