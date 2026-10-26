@@ -211,3 +211,15 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Backup/data/security: rollback baseline c5df010b7b52643cab214989f50f2948795cb6cd (before P1-D2); all customer source, secrets, binary build evidence and unapproved notices stay local/ignored. No new paid AI, automated remote upload or altered repository permissions.
 9. Next authorized ㄱ work: vetted JS/TS local parser feasibility (dependencies/licensing/Windows size), strengthen independent correctness cases and original licenses, then owner Windows GUI/privacy/Defender/PDF acceptance. Commercial publication/EXE distribution requires owner approval.
 10. Timestamp 2026-10-26 KST; completed scope GitHub feature CI + CI runner packaged smoke, not end-user. Re-fetch main post-document CI before claiming it green.
+## P1-E active feature: JS TS syntax parser feasibility — 10-point handoff (2026-10-26 KST)
+
+1. Goal: zero-mandatory-API Windows offline source checker, preserve Python AST and JS/TS limited until genuine supported parser/rules are shipped.
+2. Choice: rejected broad regex as unreliable and Node TypeScript compiler as heavier runtime; selected pinned `tree-sitter`, JavaScript and TypeScript native grammars only in CI. No product build or security claims.
+3. Tests: 12 synthetic JS/TS/TSX fixtures with valid/malformed, Unicode byte-length and JSX; 3 stdlib-mocked unit methods. Separate Ubuntu/Windows Python 3.13 binary-wheel probe and standard 16-job CI.
+4. State: branch `feature/p1e-parser-probe`, base main `bd4e7041a813fc599aa7cf51ae6d68158c64466c`; feature commit and CI pending at authoring. No end-user JS/TS parser shipped.
+5. Risks/limits: version-specific parser ABI, Windows PyInstaller import complexity, original notices, binary size, source-execution boundaries, malformed input and dataflow remain unverified. Do not silently flip `limited` to analyzed.
+6. Repo/paths: `hibi89/ai-code-checker`; `scripts/probe_js_ts_parser.py`, `tests/test_js_ts_parser_probe.py`, `requirements-parser-probe.txt`, `.github/workflows/js-ts-parser-feasibility.yml`, `P1E_JS_TS_PARSER_FEASIBILITY_20261026.md` plus docs. Baseline main is safe rollback.
+7. Deployment: none; local Windows unsigned EXE candidate, no Vercel URL. Run `python -m scripts.probe_js_ts_parser` only after fixed binary-wheel CI install; `python -m unittest discover -s tests -p test_js_ts_parser_probe.py -v` without third parties.
+8. Privacy/security: do not upload customer sources/binaries/licenses to public GitHub; hand-authored fixtures only. CI downloads fixed wheels, does not execute user code. No AI API or user spend, permissions or visibility change.
+9. Next: verify actual parser smoke Ubuntu/Windows and default suite + PR, fix specific compatibility issues if present; normal merge after green, verify main. Next product integration only after owner NOTICE approval and PyInstaller size/hidden-import smoke; verify actual retail Windows security/packet/PDF gates before commercialization.
+10. Timestamp 2026-10-26 KST; no P1-E CI results claimed before observation. Previous main 16/16 passed; actual package license metadata read is not redistribution approval.
