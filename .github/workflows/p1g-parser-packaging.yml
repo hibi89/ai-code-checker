@@ -1,0 +1,63 @@
+name: P1G Windows native parser packaging and original license audit
+
+on:
+  push:
+    paths:
+      - 'scripts/p1g_notice_inventory.py'
+      - 'scripts/p1g_native_exe_entry.py'
+      - 'scripts/p1g_native_package_probe.ps1'
+      - 'tests/test_p1g_notice_inventory.py'
+      - '.github/workflows/p1g-parser-packaging.yml'
+      - 'P1G_NATIVE_NOTICE_EVIDENCE_20261026.md'
+  pull_request:
+    paths:
+      - 'scripts/p1g_notice_inventory.py'
+      - 'scripts/p1g_native_exe_entry.py'
+      - 'scripts/p1g_native_package_probe.ps1'
+      - 'tests/test_p1g_notice_inventory.py'
+      - '.github/workflows/p1g-parser-packaging.yml'
+      - 'P1G_NATIVE_NOTICE_EVIDENCE_20261026.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-wheel-license-text:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install pinned native wheels only in CI
+        run: |
+          python -m pip install --only-binary=:all: -r requirements-parser-probe.txt
+      - name: Read actual installed wheel LICENSE texts without publishing them
+        run: python -m scripts.p1g_notice_inventory
+      - name: Synthetic standard-library regression tests
+        run: python -m unittest discover -s tests -p test_p1g_notice_inventory.py -v
+
+  windows-probe-exe-size:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install fixed native wheels and pinned PyInstaller in disposable CI
+        run: |
+          python -m pip install --only-binary=:all: -r requirements-parser-probe.txt
+          python -m pip install pyinstaller==6.22.3
+      - name: Compare source-only baseline and native grammar research EXE sizes
+        shell: pwsh
+        run: ./scripts/p1g_native_package_probe.ps1
+
+# No binary, original license text or NOTICE upload. Does not modify actual
+# CodeCheckerOffline.exe; retail legal/privacy/AV/GUI gates remain unresolved.
