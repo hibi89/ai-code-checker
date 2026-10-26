@@ -249,3 +249,15 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Synthetic fixtures only in public repo; do not upload customer code, EXE or secrets. Package metadata MIT and one license-named installed path each; original LICENSE/NOTICE redistribution still unverified.
 9. Next GO: prototype optional syntax aware adapter with explicit limited/failed coverage, independent JS/TS labeled rules; vet original license/NOTICE, PyInstaller Windows bundled size/security, actual consumer Windows AV/OS packet/PDF acceptance before release.
 10. Verified scope date 2026-10-26 KST; CI is syntactic parser feasibility only; main docs/merge CI needs recheck. No paid API or customer release authorized.
+
+## P1-F latest 10-point handoff (2026-10-26 KST)
+1. Goal: zero-required-API offline Windows source checker, cautious JS/TS syntax analysis research without executing or uploading customer code.
+2. Choice: separate opt-in Tree-sitter AST grammar prototype, not immediate customer EXE integration. Two syntactic candidates direct eval and new Function; no exploit/vulnerability truth claim.
+3. Tests observed: code SHA `6897da20193e936a3aed663fa8968a6a217727a4`; native research [40343388339](https://github.com/hibi89/ai-code-checker/actions/runs/40343388339) Windows+Ubuntu 2/2 PASS, 17 synthetic JS/TS/TSX cases TP8 FP0 FN0. Final doc SHA default CI yet to be verified; stdlib-only new contract tests do not need wheels.
+4. Status: feature `feature/p1f-js-ts-adapter-probe`, [PR #16](https://github.com/hibi89/ai-code-checker/pull/16) open at this document's creation; base main `65a30e968cd6a329124cd696720ebe156ef7ae6f`. Verify branch/head/actions then non-force merge green.
+5. Limits: syntax-only patterns can be shadowed; no semantic source-dataflow, runtime behavior or broad vulnerability detection, JS/TS customer status limited. Parser node and input-size failure bounded, optional grammar missing explicit, malformed syntax no findings.
+6. Files: `scripts/prototype_js_ts_adapter.py`, `scripts/evaluate_js_ts_prototype.py`, `tests/test_js_ts_adapter_contract.py`, `.github/workflows/js-ts-parser-feasibility.yml`, `P1F_JS_TS_ADAPTER_20261026.md`, STATUS/HANDOFF/RESUME. Read repo live, do not assume SHA.
+7. Environment/deploy: dedicated research Windows + Ubuntu CI pinned wheels; default 16 matrix Python unittest without wheels. Product unsigned local Windows EXE unchanged; no Vercel URL.
+8. Security/backups: prior main rollback SHA above. No real customer source, API keys or local EXE/notice sources on public repo; no AI spend or privilege/visibility changes.
+9. Next: merge after final research and standard CI, verify main; optional Windows packaging size+license original NOTICE+fail-closed product pilot before changing JS/TS coverage; real consumer Windows/Defender/SmartScreen/OS packets/PDF visual still require evidence and owner commercial approval.
+10. Recorded KST 2026-10-26. Only curated CI syntax metric and two-OS research scope validated, not sale/license or production readiness.
