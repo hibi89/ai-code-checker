@@ -53,3 +53,12 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 - Packaged Tk GUI startup and EXE offline synthetic scan both PASS on Windows CI; EXE remains unsigned, not distributed.
 - Distinguish these PASSes from still **UNVERIFIED** independent customer's Windows GUI physical interaction, browser interactive Print, Korean PDF visual glyph rendering, Defender/SmartScreen, Windows packet-capture, and commercial license/release gates.
 - Next: validate PR #6 final SHA/CI then merge if green; verify main after merge. Afterwards Phase2 P0-C repeatable benchmark + transitive bundled license audit. Detailed evidence: [WINDOWS_GUI_PDF_EVIDENCE_20261026.md](WINDOWS_GUI_PDF_EVIDENCE_20261026.md).
+
+## P0-B integrated into main (2026-10-26 KST)
+
+- [PR #6](https://github.com/hibi89/ai-code-checker/pull/6) merged at **`2294cfc458c104fbfa20dd452e87009696dcf15c`** from feature head `57486ecd4fbe0a07e75e3e14439deed60c882b08`.
+- Final feature head [16/16 standard CI PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40313874119) and [Windows GUI/Edge PDF/EXE smoke PASS](https://github.com/hibi89/ai-code-checker/actions/runs/40313878754). CI of merge commit and later documentation commits requires live verification.
+- Verified Windows Server 2025 synthetic UI flow, packaged Tk startup, source/paste/ZIP/folder/blocked states, Unicode paths, local opener mock, synthetic Edge headless PDF signature and 96,799-byte file. Python socket monkeypatch found no attempted connections in this synthetic GUI run; not a network packet capture.
+- **Unverified launch gates:** physical clean customer's Windows PC and human GUI, browser interactive Print dialog, PDF glyph/layout visual check, OS network capture, Defender/SmartScreen/reputation, optional packaging code signing, transitive license/SBOM/commercial terms.
+- **Next approved work:** Phase2 P0-C automated scale/performance + dependency/license inventory, with separate real-Windows acceptance pending. No public EXE upload, Vercel deployment, paid APIs or commercial sale.
+- Resume sources: [WINDOWS_GUI_PDF_EVIDENCE_20261026.md](WINDOWS_GUI_PDF_EVIDENCE_20261026.md), [BLUEPRINT_GAP_MATRIX_20261026.md](BLUEPRINT_GAP_MATRIX_20261026.md).
