@@ -20,6 +20,7 @@ from review_models import AIReview, AIReviewFinding, PerspectiveCheck, TokenUsag
 from reviewer import (
     ReviewError,
     _safe_error_label,
+    _safe_error_hint,
     analyze_bundle,
     append_usage_log,
     estimate_request_cost,
@@ -55,6 +56,15 @@ class FakeInteractions:
 
 
 class ReviewFlowTests(unittest.TestCase):
+    def test_rate_limit_error_suggests_checking_ai_studio_limits(self) -> None:
+        class RateLimitError(Exception):
+            pass
+
+        hint = _safe_error_hint(RateLimitError("PRIVATE_PROVIDER_MESSAGE"))
+        self.assertIn("비율 제한", hint)
+        self.assertIn("초기화 시점", hint)
+        self.assertNotIn("PRIVATE_PROVIDER_MESSAGE", hint)
+
     def test_validation_error_label_shows_fields_without_echoing_values(self) -> None:
         with self.assertRaises(ValidationError) as captured:
             TypeAdapter(int).validate_python("DO_NOT_ECHO_SYNTHETIC_OUTPUT")

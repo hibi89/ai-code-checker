@@ -82,6 +82,7 @@ AI 응답에서 8개 점검 관점이 빠지거나 중복되면 리포트에 불
 - 고객 코드는 클라우드 동기화 폴더 밖에서 처리하세요. 판매 운영 시 작업 사본·리포트 사본·임시 파일을 납품 후 7일 안에 직접 삭제해야 합니다. Google 측 보관은 별도입니다.
 - API 오류 `HTTP 401 UNAUTHENTICATED`는 보통 키가 없거나 유효하지 않거나 만료된 경우입니다. Google AI Studio의 API Keys 화면에서 키 상태·유형과 연결 프로젝트를 확인하고, 오래된 Standard 키라면 Gemini API 제한을 적용하거나 새 키를 발급해 로컬 `.env`의 `GEMINI_API_KEY`만 교체한 뒤 다시 확인하세요. 2026-05-28부터 AI Studio 신규 키는 auth key로 발급되며, 제한이 없는 Standard 키는 거절될 수 있습니다. 키를 저장소·채팅·이슈에 올리지 마세요. [키 유형·관리 안내](https://ai.google.dev/gemini-api/docs/api-key) · [401 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
 - API 오류 `HTTP 503 UNAVAILABLE`은 일시적인 서버 과부하나 중단일 수 있습니다. 먼저 잠시 뒤 다시 시도하세요. 이 CLI는 중복 비용을 막기 위해 생성 요청을 자동 재시도하지 않으므로, 반복 호출보다 잠시 기다렸다 한 번 재시도하는 편이 낫습니다. 503만으로 키가 잘못됐다고 판단하지 마세요. [Gemini API 오류 안내](https://ai.google.dev/gemini-api/docs/api-errors)
+- API 오류 `429` 또는 `RateLimitError`는 모델·프로젝트별 분당 요청(RPM), 입력 토큰(TPM), 일일 요청(RPD) 한도 중 하나에 걸린 경우일 수 있습니다. [AI Studio 비율 제한](https://aistudio.google.com/rate-limit?timeRange=last-28-days)에서 해당 모델의 초기화 시점을 확인한 뒤 기다리세요. 이 CLI는 자동 재시도하지 않습니다. [Gemini API 한도 안내](https://ai.google.dev/gemini-api/docs/rate-limits) · [오류 코드](https://ai.google.dev/gemini-api/docs/api-errors)
 - 연결 오류나 타임아웃은 요청 처리 여부를 확인할 수 없을 수 있습니다. 네트워크를 점검하고 Google 사용량을 확인한 뒤 재시도하세요.
 
 ## 검수
