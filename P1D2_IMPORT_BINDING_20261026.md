@@ -22,3 +22,8 @@ Baseline: main c5df010b7b52643cab214989f50f2948795cb6cd (16/16 standard CI PASS)
 ## Release protection
 
 No raw customer code or EXE is committed/uploaded; no paid AI API, external source execution, user data transfer or Vercel deployment. No commercial release. Original third-party NOTICE review, actual clean Windows GUI/Defender/SmartScreen/packet capture/Korean PDF visual review are UNVERIFIED. User approval required for any release or spend.
+
+## Verified feature CI and final merge (2026-10-26 KST)
+- Final feature head ef5038f25f98514c931f7bd524b669ce1d4721cf, PR #14 merged into main 545b751871b377cf52f245abb8efc6e602bd2682.
+- Tests run 40336933987 16/16 jobs PASS, 135/135 unittests PASS, Windows EXE synthetic run 40336934413 PASS, performance/SBOM run 40336933977 3/3 PASS. Captured Python 48 fixed fixture cases TP17 FP0 FN3, only synthetic precision100%, recall85%. 2 JS/TS status probes excluded.
+- Real-world accuracy and all commercial legal/privacy and genuine customer Windows gates still NOT VERIFIED. This documentation commit needs independently confirmed main SHA/CI; do not mistake packaging CI for human acceptance.
