@@ -1,43 +1,38 @@
-# Code Checker Status
+# CODE CHECKER — STATUS (source of truth)
 
-Updated: 2026-10-26 KST (time not recorded)
-Repository: hibi89/ai-code-checker (public, MIT)
-Default branch: main
-Main baseline SHA (observed before planning): 8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab
-Planning branch: plan/offline-zero-cost-v2
+Updated: 2026-10-26 KST; status snapshot from GitHub after latest design review.
+Repository: https://github.com/hibi89/ai-code-checker | Public / MIT | baseline main before docs: `8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab`.
+Planning branch baseline: `plan/offline-zero-cost-v2` at `72f546db2157f58a9ac1c6e901778d1f99067ced` before this documentation update. Always query actual HEAD for current SHA.
 
-## Verified existing implementation
-- CLI existing code handles file/folder/ZIP, filters, redaction, limited Python AST checks, Gemini single Interactions structured call, cost guard and Markdown report.
-- Existing published plan is **report-only**, human-reviewed, with customer NOT receiving software.
-- Existing input default max 50 files / 512 KiB, proposal to remove the 500-lines paid scope restriction does not change CLI code.
-- Latest baseline commit had GitHub Actions 16 of 16 jobs passed (15 OS/Python tests plus dependency audit), as observed 2026-10-26.
-- Existing file PILOT_EVALUATION.md records failed 503/429/json_invalid/APIConnectionError, no confirmed successful real Gemini analysis report.
-- Current product is NOT ready for verified customer sales, despite offline unit test/CI results.
+## Decisions approved (not completed product)
+- **FINAL_PRODUCT_BLUEPRINT.md**: offline Windows repeat-use software, ZIP/TXT/combined TXT/folder/paste, source-safe static scanning, Korean local HTML/Markdown/print-to-PDF; no mandatory recurring server/API charges; optional human report and opt-in AI mode.
+- **MVP_3DAY_ROADMAP.md**: 3 focused day MVP target -> blueprint gap filling -> broad security/reliability/performance/privacy/quality hardening -> verified Windows delivery and Kmong listing.
+- Old 500-line commercial limit removed from **new software plan**; actual v1 CLI max 50 files / total 512KiB still in code. v2 1,200/12,000-line tests and >=200-file benchmark planned, not implemented.
+- Approved to document roadmap on `main` via PR; separate release, paid usage, external upload, permissions, repository privacy and new private repo still require prior approval.
 
-## New proposed direction
-- Offline-first portable program sale, no mandatory API or account; separate optional seller-assisted report.
-- Product targets and price hypotheses in REQUIREMENTS.md / ARCHITECTURE_V2.md / PRODUCT_STRATEGY_V2.md.
-- This planning branch changes documentation ONLY; no engine/UI/binary/CI policy implemented or tested.
-- Main remains unchanged. No new private repo, API request, third-party service or fee authorized.
-- Windows portable build, PDF printing, offline network isolation, Python+JS/TS coverage and vendor support requirements UNVERIFIED.
+## Verified existing code and QA
+- v1 code: Python CLI with file/folder/ZIP input, safe filtering/masking, limited Python AST rules, Gemini Interactions single-call optional cloud review and Markdown reporting; **does not yet include Windows v2 GUI or standalone binary**.
+- TXT exists as generic input but not reliably routed to Python AST; combined multi-file TXT reconstruction not implemented.
+- Historical local QA: 46 tests / 45 pass / 1 POSIX-only skip on Windows from source documentation. GitHub Actions for planning branch at `72f546d`: completed success; no new v2 source test in this task.
+- Real Gemini output pilot: no confirmed successful report; historical RateLimitError, JSON-invalid and APIConnectionError. No fresh paid API call authorized.
 
-## Work status
-- Complete: baseline repository and CI inspection, current API failure assessment, zero-cost alternatives / legal-tool research, planning branch and documents.
-- In progress: owner review of offline-first product pivot.
-- Blocked pending approval: material product change, code/CI refactor, any private code repository.
-- Not started: real packaged app, clean Windows install test, market listing, payment, release.
-- Next package (after approval): lock offline MVP acceptance and implement safe local scan gate on feature/offline-core; run synthetic offline regression, no Gemini usage.
+## Work board
+| Stage | State | Proof needed |
+|---|---|---|
+| Product vision / milestones / GitHub docs | APPROVED & DOCUMENTED | GitHub docs commit/PR and main HEAD verify |
+| Stage 1 Day 1 offline core | NOT STARTED | Synthetic input + manifest + baseline regression |
+| Stage 1 Day 2 findings/report | NOT STARTED | Offline Python scan → correct Korean HTML |
+| Stage 1 Day 3 basic Windows UX | NOT STARTED | Real Windows run or honestly mark unverified |
+| Stage 2 blueprint gaps | NOT STARTED | Feature-by-feature gap and test matrix |
+| Stage 3 hardening | NOT STARTED | Windows, offline network, security, false positives |
+| Stage 4 Kmong launch | NOT STARTED | Human buyer trial, packaging, support and listing approval |
 
-## Security, storage, and deployment
-- Production URL/Vercel: not applicable (local CLI; no existing production service verified).
-- Private .env and real keys remain on local owner machine, never in repo.
-- Historical sample ZIPs are synthetic; no real customer code is authorized for testing.
-- CI uses public standard runners; private CI quota is separate if private distribution is later approved.
+## Recovery / branch strategy
+- Source backup/recovery point: original `main` commit `8c72a6f`. Documentation change must not rewrite or delete original CLI.
+- `plan/offline-zero-cost-v2`: docs planning branch, to be merged to main with PR after verification.
+- Do not create future branches prematurely; on the first `ㄱ` implementation turn, create `feature/offline-core` from observed current main.
+- No server/Vercel deployment; local product only. Production URL/production deployment SHA **not applicable**.
+- Public repository: neither customer source nor secrets nor proprietary future commercial implementation modules.
 
-## Divergence notice
-Original PRODUCT_PLAN_KMONG.md still describes a report-delivery service; this v2 proposal would change primary product to offline customer-operated software. Do not silently treat proposal as implemented/approved.
-
-## Latest proposal refinement — TXT and ZIP ingest (2026-10-26 KST)
-- Added [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md): single TXT with explicit language mapping, marked multi-file TXT, ZIP/folder/paste, exact coverage counters, path-safety gates, synthetic 1,200/12,000-line tests.
-- Checked current baseline behavior: `.txt` and ZIP already accepted by `code_input.py`; multi-file TXT reconstruction is not implemented. `static_checks.py` only applies Python AST to `.py` and `.pyi`, so ordinary TXT currently gets only generic local checks. No new source/UI/binary changes or tests were executed.
-- v2 input and scale guarantees remain unimplemented and unverified. `main` unchanged; design branch only. No Gemini call.
+## Next immediate task
+Start Phase 1 Day 1: manifest/virtual source normalization for TXT ZIP folder/paste, source mapping, partial-scan handling, synthetic 1,200-line sample and tests. Use no Gemini API, paid providers or actual customer code.

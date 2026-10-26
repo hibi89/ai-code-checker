@@ -1,4 +1,4 @@
-# Code Checker v2 — Offline-First Architecture (Proposal)
+# Code Checker v2 — Offline-First Architecture (Target Approved; Implementation Pending)
 
 ## Alternatives considered
 A. Existing Gemini-first, report-only service: fastest to operate but provider/network dependence, uncertain structured output and recurring requests; buyer cannot reuse.
@@ -36,9 +36,9 @@ C. Eight independent AI agents: deeper deliberative potential, but nonzero calls
 - Build/release artifacts never contain raw customer code or secrets.
 
 ## Repository plan
-- `main`: existing public MIT CLI, unchanged until owner approves v2 merge; preserve historical documentation.
+- `main`: approved documentation baseline and working public MIT CLI; preserve historical implementation. Owner approved docs integration and MVP-first approach 2026-10-26; production code migrates through tested feature PRs only.
 - `plan/offline-zero-cost-v2`: architecture/governance/proposed requirements and handoff only (this branch).
-- Later work branches ONLY once approved: `feature/offline-core`, `feature/offline-report`, `feature/windows-portable`, `qa/offline-launch-gates`. Do not create them prematurely.
+- Future implementation branches on actual need: `feature/offline-core`, `feature/offline-report-ui`, `feature/windows-portable`, `hardening/prelaunch`; create one at a time when work begins. Use PR/CI; no force pushes.
 - GitHub Actions: on default branch currently runs a 15-case OS/Python matrix plus dependency audit; propose a lean PR smoke matrix and release-only full matrix after approval. No production keys or Gemini calls in CI.
 - Public standard GitHub hosted Actions runtime is free, while GitHub Free private hosted quota is 2,000 minutes/month; other storage/large runner costs remain possible.
 - A public branch cannot conceal proprietary code; a separate private product code repository would require owner approval and CI quota planning. Do NOT create another repo without permission.
@@ -52,3 +52,8 @@ ZIP/folder, single TXT, delimited multi-file TXT and pasted code all produce nor
 Raw TXT uses exactly one source file with selected language; it cannot imply dependencies. Delimited TXT has explicit header lines `===== FILE: relative/path.ext =====`, strict parsing and collision handling. ZIP preserves relative paths, validates archive metadata and content limits, and is never unpacked as an executable project.
 
 A result gate operates on all eligible files, not merely the existence of some findings. Large input must be fully processed within proven limits or marked `partial`/`blocked`. Do not claim comprehensive security analysis from file enumeration. Exact grammar, errors and test cases in [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md).
+
+## Binding product and delivery references
+- [FINAL_PRODUCT_BLUEPRINT.md](FINAL_PRODUCT_BLUEPRINT.md) is the approved target vision; v2 source is not implemented yet.
+- [MVP_3DAY_ROADMAP.md](MVP_3DAY_ROADMAP.md) details 3-day MVP and later gap/hardening/launch gates.
+- [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md) is normative for TXT / ZIP / folders / paste and exact coverage reporting.

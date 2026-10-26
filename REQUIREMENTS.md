@@ -1,6 +1,6 @@
-# Code Checker v2 — Requirements / Owner Decision Pending
+# Code Checker v2 — Requirements / Owner-Approved Product Direction
 
-Date: 2026-10-26 KST. Status: PROPOSED. This document does not authorize changing product code or merging to main.
+Date: 2026-10-26 KST. Status: OWNER-APPROVED GOAL AND MVP-FIRST PROCESS. New v2 implementation, GUI, binaries and launch remain incomplete; commercial release and paid/permission/security changes require separate approval.
 
 ## Product decision
 - Principal product: portable customer-operated **offline Windows code-risk checker**, one-time purchase, unlimited local runs, no recurring per-run vendor fee, no API key required for core features.
@@ -8,7 +8,7 @@ Date: 2026-10-26 KST. Status: PROPOSED. This document does not authorize changin
 - Secondary product: seller-run verified diagnostic report, optional, explicitly scoped and priced separately.
 - Keep existing CLI and Gemini integration as a separate optional mode, **off by default**. BYOK Gemini usage may incur model charges and is NOT zero-cost. No implicit remote fallback.
 - Do not advertise independent 8-agent review: existing repository has one model call plus local pattern checks.
-- Preserve existing report-only plan as historical baseline until v2 approved.
+- Preserve the existing report-only plan as historical baseline. v2 offline software becomes the approved primary product design; historical Gemini CLI must not be represented as the new completed product.
 
 ## Required behaviors for first release
 1. Select directory, individual source file, or ZIP. Display what was analyzed and excluded before scanning. Protect against symlinks, ZIP escape/bombs, oversized files and secrets.
@@ -51,3 +51,10 @@ H. Pricing/launch requires validated time-to-deliver and realistic support/retur
 - Every result lists detected, eligible, scanned, skipped, unsupported and failed entries; neither TXT nor ZIP may silently truncate or report a partial scan as complete.
 - 500-line limit remains removed as v2 product policy; >=1,200 and >=12,000-line synthetic fixtures are mandatory before publishing scale guarantees. Operational file/byte limits remain until benchmarked.
 - Details and synthetic acceptance cases: [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md).
+
+## Approved staged delivery sequence
+- [FINAL_PRODUCT_BLUEPRINT.md](FINAL_PRODUCT_BLUEPRINT.md) is the target; [MVP_3DAY_ROADMAP.md](MVP_3DAY_ROADMAP.md) controls implementation order and acceptance gates.
+- Phase 1: 3 focused development days for the working, offline, source-safe MVP with TXT/ZIP → static rules → local report and basic Windows interaction. Not all final-product features must be complete within 3 days.
+- Phase 2: perform explicit gap review against the final blueprint and fill missing product functionality.
+- Phase 3: comprehensive stability/security/performance/licensing/privacy and accuracy verification, preserving baseline safety in all phases.
+- Phase 4: Windows packaging/customer-acceptance verification and Kmong commercialization. No release before gates.

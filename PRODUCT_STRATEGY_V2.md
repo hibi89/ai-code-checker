@@ -1,6 +1,6 @@
-# Code Checker v2 — Commercial Strategy (Proposal, not published offer)
+# Code Checker v2 — Commercial Strategy (Approved Product Type; Prices and Listing Unconfirmed)
 
-2026-10-26 KST. Not approved for listing.
+2026-10-26 KST. Offline program is owner-approved as primary target; displayed prices remain hypotheses. No actual executable, market listing or permission to claim readiness.
 
 ## Principle
 Sell practical repeatable value to a nondeveloper/vibe-coding customer: portable offline software and locally generated evidence/priority reports, not just an API wrapper. Report-only service remains separately available.
@@ -31,3 +31,6 @@ If owner wants to sell proprietary software code rather than convenient support/
 
 ## Decision gate
 Current plan is recommended but awaits explicit owner approval for implementing the app, price publication, new private repository, external data processing and release.
+
+## Sequencing / release constraint
+Build 3-focused-day MVP first; compare it with FINAL_PRODUCT_BLUEPRINT.md and fill product gaps; then security/reliability/commercial hardening; only then release on Kmong. See MVP_3DAY_ROADMAP.md. Existing v1 CLI and its MIT license remain public; the listing must not misrepresent the existing free source as exclusively paid.

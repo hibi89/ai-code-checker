@@ -1,44 +1,34 @@
-# Code Checker Handoff (Planning Branch)
+# CODE CHECKER — HANDOFF (10-point transfer)
 
-Updated: 2026-10-26 KST (time not recorded)
-Read order on resume: HANDOFF.md -> STATUS.md -> AGENTS.md -> REQUIREMENTS.md -> ARCHITECTURE_V2.md -> PRODUCT_STRATEGY_V2.md -> current source.
+Updated: 2026-10-26 KST (clock time not captured); code state verified against GitHub before documentation update.
+Resume order: HANDOFF.md -> STATUS.md -> AGENTS.md -> REQUIREMENTS.md -> FINAL_PRODUCT_BLUEPRINT.md -> MVP_3DAY_ROADMAP.md -> INPUT_SPEC_V2.md -> source/test.
 
-## 1. Goal / confirmed / tech
-Existing product: Python 3.11+, google-genai >=2.18.1,<3, Pydantic 2, Interactions API, local CLI; originally seller-run Markdown report service. Proposed v2: reusable offline Windows code-risk checker, local HTML/PDF printing, optional human report, **not yet owner-approved for implementation**.
+## 1. Goal / confirmed requirements / technology
+Final target **approved by owner 2026-10-26**: customer-run offline Windows code-risk checker (no mandatory API/hosting or subscription), TXT/ZIP/combined TXT/folder/paste, Korean HTML/Markdown and browser Print-to-PDF. Optional separate human review; cloud Gemini BYOK only explicit opt-in. Existing tech: Python CLI 3.11+, Pydantic v2, google-genai for historical optional cloud function; new UI/packaging proposed stdlib tkinter + PyInstaller subject to validation.
 
-## 2. Completed and decisions
-Current baseline inspected, broad CI results checked, shortcomings assessed. Chosen proposal: reuse code, don't rewrite from scratch; default offline, no mandatory cloud. Removed 500-line product cap in proposal only; distinguish total traversal from analyzed coverage. Existing MIT license/public nature requires honest paid differentiation.
+## 2. Completed / changes / decisions
+Baseline CLI and input security are reusable, no restart from scratch. Original report-only product becomes secondary. Vision doc FINAL_PRODUCT_BLUEPRINT.md; sequencing doc MVP_3DAY_ROADMAP.md. Workflow **3 focused days MVP → gap analysis → hardening → Kmong**. Avoid false claims: no stand-alone Windows v2 binary exists. Existing MIT public source cannot be made proprietary retroactively; separate commercial IP needs prior approval.
 
-## 3. Tests and verification
-Existing baseline local evidence: 46 tests (45 pass, 1 POSIX-only skip on Windows) as recorded in existing docs. GitHub Actions 16/16 successful on baseline. No new v2 product tests, app builds or offline network tests. Actual Gemini successful report still 0 in records; no API calls performed for this proposal.
+## 3. Tests / execution / PASS-FAIL-UNVERIFIED
+Historical baseline local tests 46 (45 pass, 1 POSIX-only skip on Windows per documentation). Planning branch CI at `72f546d` verified completed/success on 2026-10-26. No new v2 product test executed this documentation task; no actual TXT multi-file reconstruction test or Windows GUI test. Existing commands: `python -m unittest discover -s tests -v`; `python main.py assets/pilot-vulnerable.zip --dry-run`. Real Gemini success: 0 documented. Do not infer success from CI green for v2.
 
-## 4. Complete / active / pending / blocked
-Complete planning and GitHub documentation branch; waiting owner decision on implementation, pricing, public/private packaging; v2 GUI/report adapters not coded. Never claim docs equal product.
+## 4. Status / stopping point
+Design and staged workflow owner-approved/documented. Stage1 Day1 **NOT STARTED**. Stage2/3/4 not started. New docs committed and PR/main merge must be verified in latest GitHub; don't invent success. No customer delivery.
 
-## 5. Errors / root evidence / failed attempts / stop conditions
-Previous: API 503, rate limits, JSON-invalid and connection errors; causes vary, no proven fix to live generation. Never repeatedly retry uncertain requests, never leak .env or originals. Offline redesign avoids default API dependency, but may reduce semantic analysis quality. Test with vulnerable/safe fixtures before promoting.
+## 5. Errors / evidence / attempts / no-repeat / alternatives
+Old Gemini API attempts: 503, rate limit, invalid JSON, connection errors; none proves live successful output. Stop repeating API calls: v2 default offline entirely. Legacy TXT accepted but `.txt` does not currently trigger Python AST and delimited multi-file TXT is NOT reconstructed. Safe offline local parsing is next. Only synthetic files, with line/source maps verified. When errors recur without progress stop after 2 materially distinct attempts and pivot.
 
-## 6. Repo / branch / SHA / paths
-Public: https://github.com/hibi89/ai-code-checker
-Default main baseline SHA: 8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab
-Plan branch: plan/offline-zero-cost-v2; resulting commit to be verified after writing.
-Baseline source: main.py, reviewer.py, code_input.py, static_checks.py, reporting.py, review_models.py, tests/.
-Plan docs: AGENTS.md, REQUIREMENTS.md, ARCHITECTURE_V2.md, PRODUCT_STRATEGY_V2.md, STATUS.md, HANDOFF.md.
+## 6. Repository / branches / SHA / key paths
+https://github.com/hibi89/ai-code-checker, Public MIT. Original untouched baseline main SHA `8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab`. Planning branch before docs update SHA `72f546db2157f58a9ac1c6e901778d1f99067ced`. Must query final merged main SHA. Future branches only as actually needed: `feature/offline-core`, `feature/offline-report-ui`, `feature/windows-portable`, `hardening/prelaunch`. Source: main.py, code_input.py, static_checks.py, reviewer.py, reporting.py, review_models.py, tests/. Docs: AGENTS.md, REQUIREMENTS.md, FINAL_PRODUCT_BLUEPRINT.md, MVP_3DAY_ROADMAP.md, INPUT_SPEC_V2.md, STATUS.md.
 
-## 7. Production / commands / environment
-Production URL/Vercel: NOT APPLICABLE for current local CLI. Existing offline check: `python -m unittest discover -s tests -v`; `python main.py assets/pilot-safe.zip --dry-run`. Do NOT run real AI without explicit authorization. No Windows portable v2 binary is available.
+## 7. Production URL / deployments / run env
+No website, Vercel or deployed production: **NOT APPLICABLE**. Existing CLI Python 3.11+; Windows binary not created. No production app SHA; Git commit SHA only. No remote calls in new offline mode.
 
-## 8. Originals / backups / secrets / no-touch
-Existing main SHA is recovery point, main files unchanged. Historical PRODUCT_PLAN_KMONG.md is valid historical scope; don't replace without approved change. Never store customer code, API keys, .env, paid responses, private program modules or secrets in public repo.
+## 8. Original locations / backups / auth / no-touch
+Original Git SHA `8c72a6f` remains recoverable. Public GitHub should never receive real customer source, proprietary packaging secrets, `.env`, API keys, raw model outputs, or customer reports. Keep code input read-only and client report local. No real clients or cloud transmission approved.
 
-## 9. Next priorities, completion, approvals
-(1) Owner approves or revises report-versus-software model and proposed prices; (2) clarify open MIT core vs proprietary packaging in private repo (explicit approval required); (3) implement offline scan manifest, code hygiene and safe report gate; (4) run Python synthetic vulnerable+safe fixtures; (5) Windows packaged clean-machine offline QA; (6) create actual listing and verify platform delivery and refund expectations. Any private repository, release, product-code modification, cloud upload or paid signing requires approval.
+## 9. Next tasks / acceptance / approvals
+Next `ㄱ`: confirm main/docs SHA; create `feature/offline-core` on latest main; implement Day1 input normalization, manifest, safe TXT/ZIP parsing and source map plus synthetic tests; update STATUS/HANDOFF. Day2 findings and HTML; Day3 Windows basic UI and candidate packaging; later compare final blueprint and harden before sale. External API calls, costs, public listing, repository visibility change, private repo, security/permission changes still need prior explicit approval.
 
-## 10. Update metadata / evidence limits
-Date: 2026-10-26 KST (time not recorded). Verified baseline main Git SHA, repo public state and Actions 16 checks; no fresh model run, customer shipment, Windows EXE, website or human quality review. Document baseline commit SHA is 8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab; planning commit SHA must be taken from GitHub after this document is committed (self-referential SHA intentionally not embedded). On resume compare actual branch tip, main tip and documents.
-
-## Latest update — multi-input design, 2026-10-26 KST
-- User requested TXT and ZIP intake, including projects larger than 500 lines. Design recorded in [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md) and linked from REQUIREMENTS.md / ARCHITECTURE_V2.md.
-- Critical baseline difference: .txt/.zip are already parsed as inputs; ordinary TXT is NOT mapped to the Python AST analyzer, and an aggregate TXT does NOT reconstruct multiple files. This must be tested and implemented, not claimed ready.
-- Synthetic acceptance tests: 1,200-line single TXT; multi-file marked TXT with accurate source/line maps; mixed/unsafe ZIP; 12,000-line bounded scan; partial-vs-complete manifest; offline/no-network.
-- No modifications to `main`, no customer code, no paid API, no deployment. Resume at actual plan-branch HEAD and verify after the commit; `main` baseline remains `8c72a6f`.
+## 10. Update timestamp / evidence / doc commit basis
+2026-10-26 KST. Verified source baseline and planning branch status during this task. No real Windows/UI/executable/function success is claimed. This file purposely does not claim its own current SHA: resolve `main` HEAD from GitHub and compare on each resume. Planning doc merge commit is the document base once GitHub reports merged and SHA.
