@@ -160,6 +160,7 @@ def render_markdown(report: OfflineReport) -> str:
         f"- 입력 유형: {_m(report.scan.input_kind)}",
         f"- 발견 후보: {len(report.findings)}개 (근거 일치 {report.verified_count}개)",
         f"- 파일: 발견 {counts['enumerated']} / Python 분석 {counts['analyzed']} / 제한 {counts['limited']} / 실패 {counts['failed']} / 제외 {counts['excluded']} / 미지원 {counts['unsupported']}",
+        f"- 하위 탐색 생략 폴더: {counts['pruned_subtrees']}개 (각 폴더 내부 파일 수는 미확인)",
         "- 방식: 로컬 정적 규칙과 Python AST. AI 호출·코드 실행 없음.", "",
         "> complete는 입력 처리 상태이지 소프트웨어 안전성이나 결함 부재 보장이 아닙니다.", "",
         "## 파일별 검사 범위", "",
@@ -186,6 +187,10 @@ def render_markdown(report: OfflineReport) -> str:
         if row.verified:
             lines.append(f"- 마스킹 발췌: {_m(row.excerpt)}")
         lines.extend(["- 주의: 규칙 일치는 실제 취약점 증명이 아닙니다.", ""])
+    if report.scan.pruned_subtrees:
+        lines.extend(["## 정책상 하위 탐색 제외 폴더 (내부 파일 미집계)", ""])
+        lines.extend("- " + _m(path) for path in report.scan.pruned_subtrees)
+        lines.append("")
     if report.validation_issues:
         lines.extend(["## 근거 대조 실패", ""])
         lines.extend("- " + _m(issue) for issue in report.validation_issues)
@@ -229,6 +234,11 @@ def render_html(report: OfflineReport) -> str:
     def items(values: tuple[str, ...] | list[str]) -> str:
         return "<ul>" + "".join("<li>" + _h(value) + "</li>" for value in values) + "</ul>"
 
+    pruned = (
+        "<section><h2>하위 탐색 생략 폴더 — 내부 파일 수 미확인</h2>"
+        + items(report.scan.pruned_subtrees) + "</section>"
+        if report.scan.pruned_subtrees else ""
+    )
     problems = (
         "<section><h2>근거 대조 실패</h2>" + items(report.validation_issues)
         + "<p>사람이 추가 확인하기 전에는 납품 완료로 처리하지 마세요.</p></section>"
@@ -259,12 +269,13 @@ def render_html(report: OfflineReport) -> str:
         + str(report.verified_count) + "건) / 파일 " + str(counts["enumerated"])
         + " / Python 분석 " + str(counts["analyzed"]) + " / 제한 " + str(counts["limited"])
         + " / 실패 " + str(counts["failed"]) + " / 제외 " + str(counts["excluded"])
-        + " / 미지원 " + str(counts["unsupported"]) + "</p>"
+        + " / 미지원 " + str(counts["unsupported"])
+        + " / 하위 탐색 제외 폴더 " + str(counts["pruned_subtrees"]) + " (내부 파일 수 미확인)</p>"
         "<p class='small'>오프라인 정적 분석만 수행. complete도 안전성·무결점 보증이 아닙니다.</p>"
         "<section><h2>파일별 검사 범위</h2><table><thead><tr><th>파일</th>"
         "<th>상태</th><th>분석기</th><th>사유</th></tr></thead><tbody>"
         + rows + "</tbody></table></section><section><h2>위험 후보</h2>"
-        + cards + "</section>" + problems + warnings
+        + cards + "</section>" + pruned + problems + warnings
         + "<section><h2>한계 및 보관</h2><ul>"
         "<li>미지원·제외·실패·제한 검사 파일은 분석 범위가 제한됩니다.</li>"
         "<li>코드를 실행하거나 런타임·침투 테스트를 진행하지 않았습니다.</li>"
