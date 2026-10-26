@@ -15,7 +15,7 @@ from pathlib import Path
 from desktop_core import ScanRequest, ScanResult, inspect_input, run_scan
 
 
-def launch() -> int:
+def launch(on_ready=None) -> int:
     try:
         import tkinter as tk
         from tkinter import filedialog, messagebox, scrolledtext, ttk
@@ -287,7 +287,11 @@ def launch() -> int:
     except tk.TclError:
         print("GUI unavailable: desktop display initialization failed.", file=sys.stderr)
         return 2
-    CodeCheckerWindow(root)
+    window = CodeCheckerWindow(root)
+    if on_ready is not None:
+        # Explicit opt-in injection for synthetic Windows Tk integration tests.
+        # Production launch never calls it.
+        root.after(0, lambda: on_ready(window))
     root.mainloop()
     return 0
 
@@ -315,7 +319,31 @@ def packaged_smoke_test() -> int:
     return 0
 
 
+def packaged_gui_smoke_test() -> int:
+    """Check real Tk initialization in the packaged process, no project data."""
+    try:
+        import tkinter as tk
+        from tkinter import ttk
+
+        root = tk.Tk()
+        try:
+            root.title("CodeCheckerOffline synthetic Tk smoke")
+            button = ttk.Button(root, text="synthetic")
+            button.pack()
+            root.update_idletasks()
+            root.update()
+            if not button.winfo_exists() or not root.winfo_exists():
+                return 1
+        finally:
+            root.destroy()
+    except Exception:
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 2 and sys.argv[1] == "--gui-smoke":
+        raise SystemExit(packaged_gui_smoke_test())
     if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
         raise SystemExit(packaged_smoke_test())
     if len(sys.argv) != 1:
