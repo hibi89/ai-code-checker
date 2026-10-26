@@ -42,3 +42,12 @@ H. Pricing/launch requires validated time-to-deliver and realistic support/retur
 ## Explicit non-goals in offline MVP
 - Independent 8-agent CODE COUNCIL, code auto-fix, comprehensive vulnerability certification, real-runtime analysis, SaaS backend, customer login, online license server, automatic remote updates, proprietary DRM.
 - A guaranteed permanent zero operating cost including developer labor, payment fees, Windows code signing or user computer usage.
+
+## TXT, ZIP, and multi-file ingest (design revision 2026-10-26)
+
+- Official first-class inputs: ZIP, raw TXT, explicitly delimited multi-file TXT, folder, and paste. All feed ONE offline-safe normalized file manifest.
+- Raw TXT is a single source; v2 asks for/infers language cautiously, retaining original line positions. Current CLI already accepts TXT and ZIP, but local Python AST only executes for `.py`/`.pyi`, **not** generic TXT. Multi-file TXT reconstruction is not implemented.
+- Multi-file TXT uses `===== FILE: relative/path.ext =====` section markers and strict path/line mapping, malformed content fails visibly. ZIP retains relative paths, blocks dangerous entries and never executes code.
+- Every result lists detected, eligible, scanned, skipped, unsupported and failed entries; neither TXT nor ZIP may silently truncate or report a partial scan as complete.
+- 500-line limit remains removed as v2 product policy; >=1,200 and >=12,000-line synthetic fixtures are mandatory before publishing scale guarantees. Operational file/byte limits remain until benchmarked.
+- Details and synthetic acceptance cases: [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md).

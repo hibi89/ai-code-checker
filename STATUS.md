@@ -36,3 +36,8 @@ Planning branch: plan/offline-zero-cost-v2
 
 ## Divergence notice
 Original PRODUCT_PLAN_KMONG.md still describes a report-delivery service; this v2 proposal would change primary product to offline customer-operated software. Do not silently treat proposal as implemented/approved.
+
+## Latest proposal refinement — TXT and ZIP ingest (2026-10-26 KST)
+- Added [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md): single TXT with explicit language mapping, marked multi-file TXT, ZIP/folder/paste, exact coverage counters, path-safety gates, synthetic 1,200/12,000-line tests.
+- Checked current baseline behavior: `.txt` and ZIP already accepted by `code_input.py`; multi-file TXT reconstruction is not implemented. `static_checks.py` only applies Python AST to `.py` and `.pyi`, so ordinary TXT currently gets only generic local checks. No new source/UI/binary changes or tests were executed.
+- v2 input and scale guarantees remain unimplemented and unverified. `main` unchanged; design branch only. No Gemini call.

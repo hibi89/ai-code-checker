@@ -45,3 +45,10 @@ C. Eight independent AI agents: deeper deliberative potential, but nonzero calls
 
 ## Revert and recovery
 Keep baseline main SHA `8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab`; rollback by leaving proposal unmerged. Before any code migration, preserve an immutable tag or verified SHA and compare tests. Never force-push.
+
+## Unified intake specification update (2026-10-26)
+ZIP/folder, single TXT, delimited multi-file TXT and pasted code all produce normalized `VirtualSourceFile` entries and a `ScanManifest`. The latter records original container, logical path, original line provenance, language source/selection, analysis coverage, parsing failures and exclusions. Intake must not execute code or install dependencies.
+
+Raw TXT uses exactly one source file with selected language; it cannot imply dependencies. Delimited TXT has explicit header lines `===== FILE: relative/path.ext =====`, strict parsing and collision handling. ZIP preserves relative paths, validates archive metadata and content limits, and is never unpacked as an executable project.
+
+A result gate operates on all eligible files, not merely the existence of some findings. Large input must be fully processed within proven limits or marked `partial`/`blocked`. Do not claim comprehensive security analysis from file enumeration. Exact grammar, errors and test cases in [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md).

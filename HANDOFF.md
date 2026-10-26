@@ -36,3 +36,9 @@ Existing main SHA is recovery point, main files unchanged. Historical PRODUCT_PL
 
 ## 10. Update metadata / evidence limits
 Date: 2026-10-26 KST (time not recorded). Verified baseline main Git SHA, repo public state and Actions 16 checks; no fresh model run, customer shipment, Windows EXE, website or human quality review. Document baseline commit SHA is 8c72a6f3bc30f2a720c10f3a5a9dd366f0d059ab; planning commit SHA must be taken from GitHub after this document is committed (self-referential SHA intentionally not embedded). On resume compare actual branch tip, main tip and documents.
+
+## Latest update — multi-input design, 2026-10-26 KST
+- User requested TXT and ZIP intake, including projects larger than 500 lines. Design recorded in [INPUT_SPEC_V2.md](INPUT_SPEC_V2.md) and linked from REQUIREMENTS.md / ARCHITECTURE_V2.md.
+- Critical baseline difference: .txt/.zip are already parsed as inputs; ordinary TXT is NOT mapped to the Python AST analyzer, and an aggregate TXT does NOT reconstruct multiple files. This must be tested and implemented, not claimed ready.
+- Synthetic acceptance tests: 1,200-line single TXT; multi-file marked TXT with accurate source/line maps; mixed/unsafe ZIP; 12,000-line bounded scan; partial-vs-complete manifest; offline/no-network.
+- No modifications to `main`, no customer code, no paid API, no deployment. Resume at actual plan-branch HEAD and verify after the commit; `main` baseline remains `8c72a6f`.
