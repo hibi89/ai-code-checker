@@ -286,3 +286,16 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Safety/backups: never execute scanned customer code or send source to external service; only 4 synthetic cases; separate `.build-p1g/` ignored, no EXE artifact upload, no paid API, no repo security changes. Preserve original code and main SHA for rollback.
 9. Next: verify final workflow/main CI and normal PR merge. Then opt-in, fail-closed JS/TS integration with explicit limited/analyzed truth, research Windows full-product candidate size/compatibility only after independent NOTICE/authorization; end-user Defender/SmartScreen/OS packets/Korean PDF and original runtime notice verification remain.
 10. Actual evidence as of 2026-10-26 KST code commit above; feature documentation commit changes SHA. No assertion of distribution license compliance or product release.
+
+
+## P1-G final 10-point transfer — 2026-10-26 KST
+1. Goal: offline zero-required-AI Windows source checker, native parser EXE research and source LICENSE file evidence without product release.
+2. Implementation: separate executable baseline/native smoke with binary metadata sizes, plus pinned installed original LICENSE hash/writing evidence on Windows/Ubuntu; shipped CodeCheckerOffline.exe unchanged.
+3. Tests: PR #17 feature SHA ac23a7c00fcd8fef54679fad18640c0211b4e0bc. Regular https://github.com/hibi89/ai-code-checker/actions/runs/40346261310 16/16 PASS, 147 unittests; https://github.com/hibi89/ai-code-checker/actions/runs/40346261152 research 3/3 PASS, 4 frozen grammar smoke samples PASS.
+4. State: PR #17 merged main 3a94feb607aea7908094f6adb24318ad6220bffa. This docs commit moves main; verify actual latest SHA and CI. Rollback prior main d4cc67eafc21edcef83b2eadc63595e7298e7010.
+5. Limits: core Tree-sitter original installed license differs by platform; basic MIT text marker and SHA are not legal distribution signoff. Original CPython/Tcl/Tk/VC/Pydantic/PyInstaller NOTICE, packed legal materials, real consumer Windows/AV/network/PDF and independent JS/TS accuracy remain unverified.
+6. Paths: scripts/p1g_notice_inventory.py, scripts/p1g_native_exe_entry.py, scripts/p1g_native_package_probe.ps1, tests/test_p1g_notice_inventory.py, .github/workflows/p1g-parser-packaging.yml, P1G_NATIVE_NOTICE_EVIDENCE_20261026.md, .gitignore and this handoff.
+7. Runtime: Python 3.13, Windows PyInstaller 6.22.3 with pinned binary-only Tree-sitter wheels. No Vercel/production URL; sample data only. Candidate delta +490,385 bytes (8,563,435 B to 9,053,820 B) not actual customer EXE delta.
+8. Privacy: .build-p1g locally ignored; no binaries or full original LICENSE text published, no customer source execution, no AI API, no repo permissions change, no signed release.
+9. Next GO: verify final main CI; then optional fail-closed JS/TS static adapter integration with clearly partial/limited reporting and no default dependency until legal notice approval, plus independent clean retail Windows Defender/SmartScreen/packet/PDF checks.
+10. As of 2026-10-26, feature CI and PR merge verified; post-doc main CI not yet observed. No commercial readiness claim.
