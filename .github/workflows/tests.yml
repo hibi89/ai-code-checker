@@ -32,10 +32,13 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Compile application modules
-        run: python -m py_compile main.py code_input.py reporting.py reviewer.py review_models.py static_checks.py
+        run: python -m py_compile main.py code_input.py reporting.py reviewer.py review_models.py static_checks.py offline_core.py offline_report.py desktop_core.py desktop_ui.py
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+
+      - name: Verify GUI controller synthetic CLI self-test (no Tk window)
+        run: python desktop_ui.py --self-test
 
       - name: Verify local-only dry run
         run: python main.py tests/test_review_flow.py --dry-run

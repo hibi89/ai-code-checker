@@ -1,8 +1,8 @@
 # AI Code Checker
 
-**새 채팅에서 바로 작업 재개:** `[코드체커 깃헙 확인해]` — [코드체커 총괄 인수인계·실행 출발점](CODE_CHECKER_RESUME.md). 현재 기준 Day 1 오프라인 코어 완료, 다음 승인 단위 Day 2 한국어 HTML·Markdown 리포트. 최신 코드는 항상 GitHub `main`과 CI 확인.
+**새 채팅에서 바로 작업 재개:** `[코드체커 깃헙 확인해]` — [코드체커 총괄 인수인계·실행 출발점](CODE_CHECKER_RESUME.md). 현재 Day 1·Day 2는 main 병합·CI 통과. Day 3 Windows GUI·포터블 EXE 후보는 PR #4에서 개발 중이며 실제 고객 PC 검증은 미완료. 최신 코드는 항상 GitHub `main`과 CI 확인.
 
-> **2026-10-26 개발 방향:** 최종 제품은 **오프라인 Windows 코드체커 v2**이며 **3일 MVP → 최종 설계도 대조·확장 → 안전성·보안·품질 보강 → 크몽 상품화** 순으로 개발합니다. **아래 README의 기존 v1 CLI/Gemini 기능과 출시 전 상태는 현재 구현의 설명**이며, 새 오프라인 GUI·패키지·TXT 다중 복원은 아직 구현 전입니다.
+> **2026-10-26 개발 방향:** 최종 제품은 **오프라인 Windows 코드체커 v2**이며 **3일 MVP → 최종 설계도 대조·확장 → 안전성·보안·품질 보강 → 크몽 상품화** 순으로 개발합니다. **아래 README의 기존 v1 CLI/Gemini 기능과 출시 전 상태는 현재 구현의 설명**이며, 새 오프라인 v2는 코어·보고서가 main에 구현됐고 Windows GUI/포터블 후보는 검증 중입니다. v1 Gemini CLI는 별도입니다.
 >
 > - [최종 제품 설계도](FINAL_PRODUCT_BLUEPRINT.md)
 > - [3일 MVP 및 단계별 개발 로드맵](MVP_3DAY_ROADMAP.md)
@@ -14,7 +14,7 @@
 
 하나의 AI 모델이 보안·신뢰성·테스트·구조·유지보수·성능·자원관리·복잡도/비용의 8개 관점을 확인합니다. 서로 독립된 8개 AI나 사람 리뷰어가 검토하는 서비스는 아닙니다.
 
-## Offline v2 core — Day 1 developer preview
+## Offline v2 — 로컬 코드 검사 + HTML·Markdown + Day 3 GUI 후보
 
 The owner-approved v2 product is still under development. The standalone offline scanner core is now available as `offline_core.py`. **This is a developer-only preview, not a customer-ready Windows program or a human-reviewed security audit.**
 
@@ -26,8 +26,21 @@ python offline_core.py .\\path\\to\\code.txt --language python
 
 Offline v2 accepts ZIP/folder/single source and single TXT; delimited multi-file TXT uses `===== FILE: relative/path.ext =====`. Python gets the existing local AST checks; other languages currently receive only generic patterns, marked **limited**. Metadata status is **partial** if any enumerated file was excluded, unsupported, failed or covered only by generic checks. Exit code 0 means all eligible files passed the *configured parsing/rule execution*, **not** that code is secure; partial returns 3 and blocked input 2.
 
-Current local v2 limits: 200 files, 1 MiB per file and 8 MiB total, explicitly subject to testing and not marketed as universal project-size support. The old Gemini CLI below is unchanged and has separate limits. HTML/PDF and Windows GUI are planned for Day 2/3; see [current status](STATUS.md) and [roadmap](MVP_3DAY_ROADMAP.md).
+Current local v2 limits: 200 files, 1 MiB per file and 8 MiB total, explicitly subject to testing and not marketed as universal project-size support. The old Gemini CLI below is unchanged and has separate limits. Day 2 한국어 HTML·Markdown 리포트는 구현·병합 완료. Day 3 Tkinter GUI·Windows EXE 빌드는 현재 개발자 프리뷰로 CI 검증 중이며, 실제 고객 Windows 버튼·PDF 인쇄·SmartScreen 검증 전에는 완성품이 아닙니다. 세부 사항은 [DAY3_WINDOWS_GUIDE.md](DAY3_WINDOWS_GUIDE.md) 및 [STATUS.md](STATUS.md) 참고.
 
+## v2 오프라인 사용법 (개발자 미리보기)
+
+다음 기본 검사 경로에는 Gemini API 키·고객 소스 업로드·서버가 필요 없습니다. GUI에는 별도 최소 의존성 목록 requirements-offline.txt (Pydantic만)을 사용합니다. EXE 후보는 별도 검증 단계입니다.
+
+    python -m pip install -r requirements-offline.txt
+    python offline_report.py .\source.txt --language python --output-dir .\reports --name scan01
+    python desktop_ui.py
+    python desktop_ui.py --self-test
+
+UI에서 TXT·ZIP·폴더·붙여넣기를 선택하고 미리보기 후 검사하면 로컬 한국어 HTML·Markdown을 생성합니다. HTML을 브라우저에서 열어 인쇄/PDF 저장할 수 있으나 실제 고객 Windows 결과는 미검증입니다. complete는 입력 처리 완료일 뿐 취약점 부재 보증이 아닙니다.
+
+- [Day 2 오프라인 보고서 안내](DAY2_REPORT_GUIDE.md)
+- [Day 3 Windows GUI/EXE 후보 안내](DAY3_WINDOWS_GUIDE.md)
 ## 기능
 
 - 폴더, ZIP, 단일 파일, 표준 입력 지원

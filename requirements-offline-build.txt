@@ -1,0 +1,4 @@
+# Windows GUI EXE candidate build-only dependencies, no Gemini API.
+# Before a commercial release, re-audit licenses and lock the full dependency graph.
+pydantic==2.12.5
+pyinstaller==6.22.3
