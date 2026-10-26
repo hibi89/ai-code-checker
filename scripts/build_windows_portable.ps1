@@ -15,6 +15,9 @@ try {
   if (-not (Test-Path -LiteralPath $exe)) { throw 'EXE not created.' }
   & $exe --self-test
   if ($LASTEXITCODE -ne 0) { throw 'Packaged offline self-test failed.' }
+  & $exe --gui-smoke
+  if ($LASTEXITCODE -ne 0) { throw 'Packaged Tk GUI startup smoke failed.' }
+  Write-Output 'PACKAGED_TK_WINDOW_STARTUP_PASS'
   $hash = Get-FileHash -LiteralPath $exe -Algorithm SHA256
   Write-Output 'CANDIDATE_BUILT_SMOKE_PASS'
   Write-Output "PATH=$exe"
