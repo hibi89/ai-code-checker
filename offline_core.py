@@ -21,6 +21,7 @@ from code_input import (
 )
 from review_models import CodeFinding
 from static_checks import run_static_checks
+from offline_coverage import list_pruned_subtrees
 
 
 OFFLINE_LIMITS = InputLimits(
@@ -69,10 +70,11 @@ class OfflineScan:
     coverage: list[FileCoverage]
     input_kind: str
     warnings: list[str] = field(default_factory=list)
+    pruned_subtrees: tuple[str, ...] = ()
 
     @property
     def status(self) -> ScanStatus:
-        return "partial" if any(item.status != "analyzed" for item in self.coverage) else "complete"
+        return "partial" if self.pruned_subtrees or any(item.status != "analyzed" for item in self.coverage) else "complete"
 
     @property
     def counts(self) -> dict[str, int]:
@@ -83,6 +85,7 @@ class OfflineScan:
             "failed": 0,
             "excluded": 0,
             "unsupported": 0,
+            "pruned_subtrees": len(self.pruned_subtrees),
         }
         for entry in self.coverage:
             counts[entry.status] += 1
@@ -112,6 +115,8 @@ class OfflineScan:
                 for item in self.coverage
             ],
             "warnings": self.warnings,
+            "pruned_subtrees": list(self.pruned_subtrees),
+            "pruned_subtrees_note": "내부 파일은 읽거나 개별 집계하지 않았습니다.",
         }
 
 
@@ -315,7 +320,10 @@ def scan_path(
     input_kind = "zip" if source_path.suffix.lower() == ".zip" else (
         "folder" if source_path.is_dir() else "file"
     )
-    return _check_bundle(bundle, input_kind=input_kind, origins={})
+    scan = _check_bundle(bundle, input_kind=input_kind, origins={})
+    if input_kind == "folder":
+        scan.pruned_subtrees = list_pruned_subtrees(source_path, limits=limits)
+    return scan
 
 
 def scan_text(
