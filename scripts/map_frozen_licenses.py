@@ -264,6 +264,9 @@ def main() -> int:
         print("COMPONENT_NAME_CANDIDATE_MAPPING_PASS")
         print("TOTAL_ARCHIVE_AND_PYZ_ROWS=" + str(mapping["total_rows"]))
         print("CANDIDATE_PACKAGES=" + str(mapping["candidate_dist_count"]))
+        # Package names are public package metadata, not customer code or paths.
+        print("CANDIDATE_PACKAGE_NAMES=" + ",".join(mapping["installed_dist_candidates"]))
+        print("MAPPING_CATEGORY_COUNTS=" + json.dumps(mapping["mapping_counts"], sort_keys=True))
         print("UNRESOLVED_ENTRIES=" + str(mapping["unresolved_count"]))
         print("STAGED_ORIGINAL_LICENSE_FILES=" + str(draft_status["staged_original_license_files"]))
         print("MISSING_ORIGINAL_LICENSE_FILES=" + str(len(draft_status["unavailable_or_missing_texts"])))
