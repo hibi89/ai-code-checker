@@ -7,6 +7,9 @@ on:
       - 'desktop_ui.py'
       - 'scripts/windows_gui_e2e.py'
       - 'scripts/windows_browser_pdf_smoke.py'
+      - 'scripts/audit_frozen_exe.py'
+      - 'scripts/offline_dependency_inventory.py'
+      - 'tests/test_frozen_exe_audit.py'
       - 'offline_core.py'
       - 'offline_report.py'
       - 'code_input.py'
@@ -40,6 +43,11 @@ jobs:
       - name: Build EXE and run synthetic offline smoke
         shell: pwsh
         run: ./scripts/build_windows_portable.ps1
+      - name: Audit actual frozen EXE CArchive, nested PYZ and local license file evidence
+        run: python -m scripts.audit_frozen_exe --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/frozen-exe-evidence.json
+      - name: Confirm manifest is kept local and flags manual NOTICE review
+        run: |
+          python -c "import json; from pathlib import Path; p=Path('.build-windows/frozen-exe-evidence.json'); j=json.loads(p.read_text(encoding='utf-8')); assert j['archive']['top_level_count']>0; assert j['archive']['pyz_module_count']>0; assert j['license_compliance_certified'] is False; assert j['third_party_notice_ready_to_distribute'] is False; assert j['customer_release_ready'] is False; print('LOCAL_BINARY_MANIFEST_PRESENT_REVIEW_GATE_OPEN')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
         run: |
