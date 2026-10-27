@@ -157,3 +157,9 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 ## 2026-10-27 P1-U merged hosted Defender scan evidence
 
 PR #32 https://github.com/hibi89/ai-code-checker/pull/32 merged source main 0bd567c4f89df5230a6a6b767fa65f0c74e0a318. Native hosted Windows candidate actually invoked Defender custom no-remediation file scan, returned ZERO_EXIT and passed same EXE hash receipt validation: https://github.com/hibi89/ai-code-checker/actions/runs/40520257918. Final feature 16/16 Tests and Windows candidate both SUCCESS. A successful command is not a malware-free certificate; actual retail device Defender/SmartScreen, OS-level egress, Korean PDF visual, original license NOTICE/legal signoff and customer release remain unverified.
+
+
+## P1-V Windows frozen EXE NOTICE legal-review crosswalk (2026-10-27 KST)
+
+- New on [PR #33](https://github.com/hibi89/ai-code-checker/pull/33): local five-stage EXE SHA/entry/installed LICENSE/native TOC reconciliation, seven-item manual legal review ledger, no customer-ready notice. Windows candidate [40523678817](https://github.com/hibi89/ai-code-checker/actions/runs/40523678817) passed with 7 installed package owner candidates, 26 original installed LICENSE files staged, 0 missing, 92 unresolved archive category labels and 1 missing PKG TOC claim; standard [40523679110](https://github.com/hibi89/ai-code-checker/actions/runs/40523679110) 16/16 passed.
+- **Status: partial engineering evidence only.** Full original runtime/native licenses, redistribution permissions/copyright and final NOTICE customer rights need human source-backed legal review; no EXE or NOTICE ready to ship. Other release gates (physical user Windows, SmartScreen, OS packets, Korean PDF human visual and explicit owner approval) still UNVERIFIED. Prior main P1-U SHA 0414ffb, P1-V PR merge not yet checked at writing.
