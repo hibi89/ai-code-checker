@@ -344,3 +344,13 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 - **Resolved real CI failures:** Windows `DirEntry.stat` link count portability; Tk smoke test expected count 10 vs new 11; unexpected dialog fail-fast. All fixed prior to final green PR. No new dependencies/AI/API/telemetry, customer-source execution or data upload.
 - **Release not approved:** physical clean consumer Windows, independent Defender actual scan/SmartScreen, OS packet capture, human visual Korean PDF and original third-party NOTICE/legal obligations remain **UNVERIFIED/BLOCKED**. No Vercel or customer binary distribution.
 - **Next `ㄱ`:** fetch live main HEAD and post-merge Actions; reconcile documents/CI then move to a measurable acceptance blocker without repeatedly changing only docs. Full context in `HANDOFF.md`.
+
+
+## P1-U hosted Windows Defender real file-scan command evidence — IN REVIEW (2026-10-27 KST)
+
+- **Prior baseline:** Current main `0b391f99f6255cd2c43309e7be344bfd5eff076e` [post-document Tests 40518692266](https://github.com/hibi89/ai-code-checker/actions/runs/40518692266) **success**, so P1-T final main CI is closed.
+- **PR #32** feature `feature/p1u-defender-file-scan-evidence`: new opt-in Windows PowerShell 7+ custom actual EXE scan attempt using documented `MpCmdRun.exe -Scan -ScanType 3 -File ... -DisableRemediation`, with fixed-time bounded process, no signature updates or OS setting changes; SHA-256/size before+after; local CreateNew receipt only, no scan stdout or EXE artifact upload.
+- **Independent contract:** `scripts/windows_defender_scan_contract.py` verifies receipt schema, actual executable bytes and command status coherence without claiming the EXE is malware-free. A zero return is command-execution evidence only; if Defender unavailable/disabled, `UNVERIFIED`. Existing P1-L settings-only acceptance receipt remains unchanged.
+- **Tests:** New synthetic regression `tests/test_windows_defender_scan_contract.py`; Windows packaged-candidate workflow probes its own synthetic built binary. As of this addendum, PR-head CI is **PENDING**. Never turn a queued job into PASS, nor mark real consumer Defender acceptance complete based on hosted runner.
+- **Still blocked:** real clean customer Windows/SmartScreen, OS-level network proof, original binary third-party NOTICE/license/legal, Korean PDF human visual and explicit owner release authorization. No Vercel. No customer code upload, paid API or executable distribution.
+- **Next `ㄱ`:** verify PR #32 current branch, exact SHA and Tests/Windows jobs; examine actual logs including `DEFENDER_SCAN_COMMAND_STATUS`; merge only if all green and update the evidence with observed state.
