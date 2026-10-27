@@ -103,6 +103,33 @@ def main() -> int:
                     if not all(p.exists() and p.with_suffix(".md").exists() for p in saved_reports):
                         fail("paired HTML Markdown missing")
                         return
+                    # Reopen a previous report by explicit picker without restoring
+                    # in-session delete authority. Reject an unrelated HTML file.
+                    window.last_result = None
+                    window.delete_button.configure(state="disabled")
+                    window.output_var.set(str(report_root))
+                    with patch(
+                        "tkinter.filedialog.askopenfilename", return_value=str(saved_reports[0])
+                    ), patch("os.startfile") as open_history:
+                        window.history_button.invoke()
+                        open_history.assert_called_once_with(str(saved_reports[0].absolute()))
+                    if window.last_result is not None or not window.delete_button.instate(["disabled"]):
+                        fail("historical report gained deletion authority")
+                        return
+                    unrelated = report_root / "unrelated.html"
+                    unrelated.write_text("<html>untrusted</html>", encoding="utf-8")
+                    with patch(
+                        "tkinter.filedialog.askopenfilename", return_value=str(unrelated)
+                    ), patch("os.startfile") as blocked_open, patch(
+                        "tkinter.messagebox.showerror"
+                    ) as denied:
+                        window.history_button.invoke()
+                        blocked_open.assert_not_called()
+                        denied.assert_called_once()
+                    if window.last_result is not None:
+                        fail("untrusted historical HTML changed active report state")
+                        return
+                    results.append("historical report read-only open and denial PASS")
                     # Validate folder-to-child-output denial on the Windows runner,
                     # before source ingestion and before any output directory is made.
                     from code_input import InputError
@@ -315,7 +342,7 @@ def main() -> int:
             rc = 1
         for result in results:
             print("GUI_E2E: " + result)
-        if errors or rc != 0 or len(results) != 9:
+        if errors or rc != 0 or len(results) != 10:
             print("GUI_E2E_FAILURE: " + json.dumps(errors, ensure_ascii=False), file=sys.stderr)
             return 1
         print("WINDOWS_TK_WIDGET_INTEGRATION_PASS")

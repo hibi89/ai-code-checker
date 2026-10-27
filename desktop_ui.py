@@ -13,6 +13,9 @@ from datetime import datetime
 from pathlib import Path
 
 from report_cleanup import ReportCleanupError, delete_report_pair
+from report_history import validate_historical_report
+from output_safety import validate_output_location
+from code_input import InputError
 from desktop_core import (
     ProgressUpdate, ScanCancelled, ScanControl, ScanRequest, ScanResult,
     inspect_input, run_scan,
@@ -101,7 +104,11 @@ def launch(on_ready=None) -> int:
             self.output_entry = ttk.Entry(pathbar, textvariable=self.output_var)
             self.output_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
             self.output_button = ttk.Button(pathbar, text="위치 선택", command=self._choose_output)
-            self.output_button.pack(side="left")
+            self.output_button.pack(side="left", padx=(0, 8))
+            self.history_button = ttk.Button(
+                pathbar, text="기존 보고서 열기", command=self._open_historical_report
+            )
+            self.history_button.pack(side="left")
             ttk.Label(
                 target,
                 text="네트워크 공유·연결 드라이브 저장 차단 · OneDrive 등 동기화 폴더는 직접 피하세요.",
@@ -219,6 +226,7 @@ def launch(on_ready=None) -> int:
             for button in (
                 self.file_button, self.folder_button, self.paste_button,
                 self.clear_button, self.preview_button, self.output_button,
+                self.history_button,
             ):
                 button.configure(state=state)
             self.language_select.configure(state="disabled" if enabled else "readonly")
@@ -410,6 +418,41 @@ def launch(on_ready=None) -> int:
                     webbrowser.open_new_tab(path.as_uri())
             except (OSError, ValueError) as exc:
                 messagebox.showerror("열기 실패", f"로컬 HTML을 열지 못했습니다 ({type(exc).__name__}).")
+
+        def _open_historical_report(self) -> None:
+            """Read-only previous report selection; never authorizes deletion."""
+            if self.busy:
+                return
+            try:
+                folder = validate_output_location(self.output_var.get().strip())
+                if not folder.is_dir():
+                    raise InputError("보고서 저장 폴더가 존재하지 않습니다.")
+            except (InputError, OSError) as exc:
+                messagebox.showerror("기존 보고서 열기 차단", str(exc))
+                return
+            chosen = filedialog.askopenfilename(
+                title="기존 코드체커 HTML 보고서 선택 (읽기 전용)",
+                initialdir=str(folder),
+                filetypes=(("HTML 보고서", "*.html"),),
+            )
+            if not chosen:
+                return
+            try:
+                validated = validate_historical_report(folder, chosen)
+                if sys.platform == "win32":
+                    os.startfile(str(validated))
+                else:
+                    import webbrowser
+                    webbrowser.open_new_tab(validated.as_uri())
+            except (InputError, OSError, ValueError) as exc:
+                messagebox.showerror("기존 보고서 열기 차단", str(exc))
+                return
+            self.state_var.set("선택한 기존 로컬 보고서를 읽기 전용으로 열었습니다.")
+            # Deliberately do not set last_result/receipt or enable deletion.
+            self._show(
+                "기존 HTML 보고서를 열었습니다. 이 파일은 현재 실행의 보고서가 아니므로 "
+                "프로그램에서 삭제할 수 없습니다. 보고서 형식 확인은 출처 인증이 아닙니다."
+            )
 
         def _on_close(self) -> None:
             if self.busy:
