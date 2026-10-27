@@ -377,7 +377,10 @@ def scan_text(
             on_progress=on_progress, check_cancelled=check_cancelled,
         )
     if language is not None:
-        raise InputError("확장자가 있는 코드 붙여넣기는 언어 선택을 허용하지 않습니다.")
+        suffix = Path(filename).suffix.lower()
+        expected = LANGUAGE_SUFFIX.get(language)
+        if expected != suffix and not (language == "python" and suffix == ".pyi"):
+            raise InputError("가상 파일명 확장자와 선택한 언어가 일치하지 않습니다.")
     return _check_bundle(
         bundle, input_kind="paste", origins={},
         on_progress=on_progress, check_cancelled=check_cancelled,

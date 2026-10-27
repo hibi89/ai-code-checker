@@ -7,13 +7,14 @@ without a display, API key or external network access.
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event, Lock
 from typing import Callable, Literal
 
-from code_input import InputError, bundle_from_text, load_path
-from offline_core import OFFLINE_LIMITS, _split_delimited_txt, scan_path, scan_text
+from code_input import InputError, _validate_relative_path, bundle_from_text, load_path
+from offline_core import OFFLINE_LIMITS, LANGUAGE_SUFFIX, _language_virtual_path, _split_delimited_txt, scan_path, scan_text
 from offline_report import build_report, write_report
 from offline_coverage import list_pruned_subtrees
 from output_safety import validate_output_location
@@ -75,6 +76,7 @@ class ScanRequest:
     source: str = ""
     text: str = ""
     language: str | None = None
+    filename: str = "pasted.txt"  # Only paste; a leaf-only virtual label.
 
 
 @dataclass(frozen=True)
@@ -147,6 +149,31 @@ class ScanResult:
         )
 
 
+def _validate_paste_filename(filename: str, language: str | None) -> None:
+    """Validate a Windows-safe virtual basename, never a filesystem path."""
+    if (not isinstance(filename, str) or not filename or len(filename) > 128
+            or filename != filename.strip() or filename.endswith((".", " "))
+            or re.search(r'[<>:"/\\|?*\x00-\x1f\x7f]', filename)):
+        raise InputError("가상 파일명은 경로가 아닌 안전한 파일명(.py/.pyi/.js/.ts/.txt)이어야 합니다.")
+    try:
+        filename.encode("utf-8")
+        _validate_relative_path(filename)
+    except (UnicodeEncodeError, ValueError):
+        raise InputError("가상 파일명에 사용할 수 없는 문자가 있습니다.") from None
+    reserved = {"CON", "PRN", "AUX", "NUL"}
+    reserved.update(f"COM{i}" for i in range(1, 10))
+    reserved.update(f"LPT{i}" for i in range(1, 10))
+    if filename.split(".", 1)[0].upper().rstrip(" ") in reserved:
+        raise InputError("Windows 예약 장치 이름은 가상 파일명으로 사용할 수 없습니다.")
+    suffix = Path(filename).suffix.lower()
+    if suffix not in {".txt", ".py", ".pyi", ".js", ".ts"}:
+        raise InputError("가상 파일명은 .py/.pyi/.js/.ts/.txt 확장자만 지원합니다.")
+    if language is not None and suffix != ".txt":
+        actual = "python" if suffix in {".py", ".pyi"} else ("javascript" if suffix == ".js" else "typescript")
+        if language != actual:
+            raise InputError("선택한 언어가 가상 파일명 확장자와 다릅니다.")
+
+
 def _validate_request(request: ScanRequest) -> None:
     if request.mode not in {"path", "paste"}:
         raise InputError("입력 모드가 유효하지 않습니다.")
@@ -158,6 +185,7 @@ def _validate_request(request: ScanRequest) -> None:
         if request.language and Path(request.source).suffix.lower() != ".txt":
             raise InputError("언어 선택은 단일 TXT 또는 붙여넣기에서만 사용합니다.")
     else:
+        _validate_paste_filename(request.filename, request.language)
         if not request.text.strip():
             raise InputError("붙여넣기 영역에 코드를 입력하세요.")
 
@@ -165,7 +193,7 @@ def _validate_request(request: ScanRequest) -> None:
 def _base_bundle(request: ScanRequest):
     _validate_request(request)
     if request.mode == "paste":
-        return bundle_from_text(request.text, filename="pasted.txt", limits=OFFLINE_LIMITS), "paste"
+        return bundle_from_text(request.text, filename=request.filename, limits=OFFLINE_LIMITS), "paste"
     candidate = validate_offline_input_path(request.source)
     kind = "folder" if candidate.is_dir() else (
         "zip" if candidate.suffix.lower() == ".zip" else (
@@ -224,7 +252,7 @@ def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -
     bundle, kind = _base_bundle(request)
     if control is not None:
         control.check()
-    if kind in {"paste", "txt"} and len(bundle.files) == 1:
+    if (kind == "txt" or (kind == "paste" and request.filename.lower().endswith(".txt"))) and len(bundle.files) == 1:
         parsed = _split_delimited_txt(bundle.files[0], limits=OFFLINE_LIMITS)
         if parsed is not None:
             if request.language is not None:
@@ -254,7 +282,11 @@ def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -
         sum(item.line_count for item in bundle.files),
         sum(item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python") for item in bundle.files),
         sum(not (item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python")) for item in bundle.files),
-        tuple(item.path for item in bundle.files), tuple(bundle.warnings),
+        tuple(
+            _language_virtual_path(item.path, request.language)
+            if kind == "paste" and item.path.lower().endswith(".txt") and request.language is not None
+            else item.path for item in bundle.files
+        ), tuple(bundle.warnings),
         pruned,
         fingerprint=_preview_fingerprint(bundle, kind, request.language, pruned=pruned),
         excluded_paths=tuple(bundle.excluded_paths),
@@ -296,7 +328,7 @@ def run_scan(
     check_cancelled = control.check if control is not None else None
     if request.mode == "paste":
         scan = scan_text(
-            request.text, filename="pasted.txt", language=request.language,
+            request.text, filename=request.filename, language=request.language,
             on_progress=on_progress, check_cancelled=check_cancelled,
         )
     else:

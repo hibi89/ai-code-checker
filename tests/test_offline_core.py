@@ -156,8 +156,12 @@ class OfflineCoreTests(unittest.TestCase):
         self.assertEqual(result.status, "partial")
 
     def test_language_selection_invalid_is_fail_closed(self) -> None:
+        self.assertEqual(
+            scan_text("print('x')", filename="code.py", language="python").status,
+            "complete",
+        )
         with self.assertRaises(InputError):
-            scan_text("print('x')", filename="code.py", language="python")
+            scan_text("print('x')", filename="code.py", language="javascript")
         with self.assertRaises(InputError):
             scan_text("print('x')", filename="code.txt", language="unknown")
 

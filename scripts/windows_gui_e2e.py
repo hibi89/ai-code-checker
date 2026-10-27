@@ -252,6 +252,7 @@ def main() -> int:
                         window.paste_text.delete("1.0", "end")
                         window.paste_text.insert("1.0", "print('paste')\n")
                         window.language_var.set("Python")
+                        window.paste_filename_var.set("client-sample.py")
                     window.output_var.set(str(report_root))
                     window.root.update_idletasks()
                     window.preview_button.invoke()
@@ -267,6 +268,11 @@ def main() -> int:
                     return window.preview_request is not None
 
                 def after_preview() -> None:
+                    if name == "paste":
+                        if (window.preview_request.filename != "client-sample.py"
+                                or "client-sample.py" not in window.result_text.get("1.0", "end")):
+                            fail("paste virtual filename not visible in Tk preview")
+                            return
                     if expected == "blocked":
                         if window.preview_request is not None:
                             fail("blocked input was preview-approved")
