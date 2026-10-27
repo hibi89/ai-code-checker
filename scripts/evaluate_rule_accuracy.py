@@ -23,6 +23,24 @@ class Case:
 
 
 PYTHON_CASES = (
+    # P2-9: lexical function-local import provenance, fixed synthetic fixtures.
+    Case("local-subprocess", "def check(cmd):\n    import subprocess as sp\n    sp.run(cmd, shell=True)\n", (("PY-SHELL", 3),)),
+    Case("local-subprocess-from", "def check(cmd):\n    from subprocess import run as launch\n    launch(cmd, shell=True)\n", (("PY-SHELL", 3),)),
+    Case("local-os", "def check(cmd):\n    import os as osapi\n    osapi.system(cmd)\n", (("PY-SHELL", 3),)),
+    Case("local-asyncio", "async def check(cmd):\n    from asyncio import create_subprocess_shell as launch\n    await launch(cmd)\n", (("PY-SHELL", 3),)),
+    Case("local-pickle", "def check(data):\n    import pickle as p\n    p.loads(data)\n", (("PY-PICKLE", 3),)),
+    Case("local-requests", "def check(url):\n    from requests import get as fetch\n    fetch(url, verify=False)\n", (("GEN-TLS-VERIFY", 3),)),
+    Case("local-builtins", "def check(data):\n    from builtins import eval as e\n    e(data)\n", (("PY-DYNAMIC-EXEC", 3),)),
+    Case("local-before-rebind", "def f(cmd):\n    import subprocess as sp\n    sp.run(cmd, shell=True)\n    sp = fake\n    sp.run(cmd, shell=True)\n", (("PY-SHELL", 3),)),
+    Case("local-late-import", "def check(cmd):\n    sp.run(cmd, shell=True)\n    import subprocess as sp\n", ()),
+    Case("local-argument-shadow", "def check(sp):\n    sp.run(cmd, shell=True)\n", ()),
+    Case("local-rebound", "def check(cmd):\n    import subprocess as sp\n    sp = fake\n    sp.run(cmd, shell=True)\n", ()),
+    Case("local-branch-outside", "def check(cmd, enabled):\n    if enabled:\n        import subprocess as sp\n    sp.run(cmd, shell=True)\n", ()),
+    Case("local-branch-inside", "def check(cmd, enabled):\n    if enabled:\n        import subprocess as sp\n        sp.run(cmd, shell=True)\n", (("PY-SHELL", 4),)),
+    Case("local-branch-else", "def check(cmd, enabled):\n    if enabled:\n        import subprocess as sp\n    else:\n        sp.run(cmd, shell=True)\n", ()),
+    Case("local-sibling", "def first():\n    import subprocess as sp\ndef second():\n    sp.run(cmd, shell=True)\n", ()),
+    Case("local-nested-closure-uncertain", "def outer():\n    import subprocess as sp\n    def inner():\n        sp.run(cmd, shell=True)\n", ()),
+    Case("local-global-leak", "def check(cmd):\n    import subprocess as sp\nsp.run(cmd, shell=True)\n", ()),
     # Explicit builtins module / symbol aliases are sensitive only when proven.
     Case("builtins-module-eval", "import builtins\nbuiltins.eval(value)\n", (("PY-DYNAMIC-EXEC", 2),)),
     Case("builtins-module-exec-alias", "import builtins as safe_api\nsafe_api.exec(source)\n", (("PY-DYNAMIC-EXEC", 2),)),

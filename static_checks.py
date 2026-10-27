@@ -61,6 +61,7 @@ class _ImportResolver:
                         for child in ast.iter_child_nodes(parent)}
         self.events: dict[str, list[tuple[int, int, tuple[str, str] | None, ast.AST]]] = {}
         self.locals: dict[ast.AST, set[str]] = {}
+        self.function_events: dict[ast.AST, dict[str, list[tuple[int, int, tuple[str, str] | None, ast.AST]]]] = {}
 
         def bind(name: str, node: ast.AST, origin: tuple[str, str] | None = None) -> None:
             self.events.setdefault(name, []).append(
@@ -109,6 +110,63 @@ class _ImportResolver:
             walk(statement, direct=True)
         for events in self.events.values():
             events.sort(key=lambda value: (value[0], value[1]))
+        for function in ast.walk(tree):
+            if isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                self.function_events[function] = self._local_import_events(function)
+
+    @staticmethod
+    def _local_import_events(scope: ast.FunctionDef | ast.AsyncFunctionDef
+                             ) -> dict[str, list[tuple[int, int, tuple[str, str] | None, ast.AST]]]:
+        """Lexically scoped import/rebind records, separate from module globals.
+
+        Never traverse inner functions, classes, lambdas or comprehensions.
+        Guarded blocks remain conditional: _control_suites verifies the arm.
+        """
+        result: dict[str, list[tuple[int, int, tuple[str, str] | None, ast.AST]]] = {}
+        allowed = {"subprocess", "pickle", "requests", "os", "asyncio", "builtins"}
+
+        def bind(name: str, node: ast.AST, origin: tuple[str, str] | None = None) -> None:
+            result.setdefault(name, []).append((
+                getattr(node, "lineno", 0), getattr(node, "col_offset", 0), origin, node,
+            ))
+
+        def walk(node: ast.AST) -> None:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                bind(node.name, node)
+                return
+            if isinstance(node, (ast.Lambda, ast.ListComp, ast.SetComp, ast.DictComp,
+                                 ast.GeneratorExp)):
+                return
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    origin = ((alias.name, "__module__")
+                              if alias.name in allowed else None)
+                    bind(alias.asname or alias.name.split(".")[0], node, origin)
+                return
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    if alias.name == "*":
+                        for existing in tuple(result):
+                            bind(existing, node)
+                    else:
+                        pkg = node.module if node.level == 0 else None
+                        origin = ((pkg, alias.name) if pkg in allowed else None)
+                        bind(alias.asname or alias.name, node, origin)
+                return
+            if isinstance(node, ast.ExceptHandler) and node.name:
+                bind(node.name, node)
+            if isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name:
+                bind(node.name, node)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+                bind(node.id, node)
+            for child in ast.iter_child_nodes(node):
+                walk(child)
+
+        for statement in scope.body:
+            walk(statement)
+        for records in result.values():
+            records.sort(key=lambda event: (event[0], event[1]))
+        return result
 
     def local_names(self, scope: ast.AST) -> set[str]:
         if scope in self.locals:
@@ -177,12 +235,29 @@ class _ImportResolver:
 
     def _candidate(self, alias: str, call: ast.Call) -> tuple[str, str] | None:
         nested = False
+        closest_scope: ast.AST | None = None
         parent = self.parents.get(call)
         while parent is not None:
             if isinstance(parent, self._SCOPES):
                 nested = True
+                if closest_scope is None:
+                    closest_scope = parent
                 if alias in self.local_names(parent):
-                    return None
+                    # Inner function imports can be traced; other lexical
+                    # scopes/closures stay unknown rather than borrowing a
+                    # sibling or class import.
+                    if (parent is not closest_scope
+                            or not isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef))):
+                        return None
+                    records = self.function_events.get(parent, {}).get(alias, ())
+                    earlier = [row for row in records
+                               if (row[0], row[1]) < (call.lineno, call.col_offset)]
+                    if not earlier:
+                        return None
+                    _, _, origin, bound_at = earlier[-1]
+                    if not self._control_suites(bound_at).issubset(self._control_suites(call)):
+                        return None
+                    return origin
             parent = self.parents.get(parent)
         events = self.events.get(alias, ())
         if nested and any(origin is None for _, _, origin, _ in events):
