@@ -1,6 +1,7 @@
 """Synthetic output path privacy boundaries; never uses client data or internet."""
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,7 +11,7 @@ from code_input import InputError
 from desktop_core import ScanRequest, run_scan
 from offline_core import scan_text
 from offline_report import build_report, write_report
-from output_safety import validate_output_location
+from output_safety import _windows_drive_type, validate_output_location
 
 
 class OutputPathSafetyTests(unittest.TestCase):
@@ -112,6 +113,13 @@ class OutputPathSafetyTests(unittest.TestCase):
                 with self.assertRaises(InputError):
                     validate_output_location(dest)
             self.assertFalse(dest.exists())
+
+    @unittest.skipUnless(os.name == "nt", "GetDriveTypeW is Windows-only")
+    def test_real_windows_temporary_drive_is_local(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            observed = _windows_drive_type(Path(temp))
+            self.assertIn(observed, (2, 3, 6))
+            self.assertEqual(validate_output_location(Path(temp)), Path(temp))
 
     def test_existing_file_cannot_be_target_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
