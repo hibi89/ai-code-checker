@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import re
+import string
 
 from code_input import CodeBundle, SourceFile
 from review_models import CodeFinding
@@ -195,8 +196,11 @@ def _sql_literal_prefix(node: ast.AST) -> str:
         return node.value
     if isinstance(node, ast.JoinedStr) and node.values:
         return _sql_literal_prefix(node.values[0])
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Mod)):
         return _sql_literal_prefix(node.left)
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"format", "format_map"}):
+        return _sql_literal_prefix(node.func.value)
     return ""
 
 
@@ -219,14 +223,69 @@ def _sql_literal_only(node: ast.AST) -> bool:
     return False
 
 
+_SQL_PERCENT_SLOT = re.compile(
+    r"(?<!%)%(?:\([A-Za-z_]\w*\))?[-+# 0]*(?:\d+|\*)?(?:\.\d+)?[diouxXeEfFgGcrsa]"
+)
+
+
+def _literal_format_argument(node: ast.AST) -> bool:
+    """Structural literal check only: DO NOT evaluate code or f-strings."""
+    if isinstance(node, ast.Constant):
+        return type(node.value) in (str, bytes, int, float, bool, type(None))
+    if (isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub))
+            and isinstance(node.operand, ast.Constant)
+            and type(node.operand.value) in (int, float)):
+        return True
+    if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+        return all(_literal_format_argument(value) for value in node.elts)
+    if isinstance(node, ast.Dict):
+        return all(key is not None and _literal_format_argument(key)
+                   and _literal_format_argument(value)
+                   for key, value in zip(node.keys, node.values))
+    return False
+
+
+def _has_real_format_field(pattern: str) -> bool:
+    """Distinguish actual interpolation from escaped {{braces}} or plain SQL."""
+    try:
+        return any(field is not None for _, field, _, _
+                   in string.Formatter().parse(pattern))
+    except ValueError:
+        return False
+
+
 def _sql_dynamic(node: ast.AST) -> bool:
-    """An SQL prefix is not enough: require a nonliteral expression."""
-    return (
-        isinstance(node, (ast.JoinedStr, ast.BinOp))
-        and (not isinstance(node, ast.BinOp) or isinstance(node.op, ast.Add))
-        and not _sql_literal_only(node)
-        and bool(_SQL_START.match(_sql_literal_prefix(node)))
-    )
+    """Only direct dynamic interpolation with a visible leading SQL verb.
+
+    Includes Python string %, str.format and str.format_map without
+    treating constant-only formatting or parameterized SQL as risky.
+    This is pattern evidence, not proof of exploitable SQL injection.
+    """
+    if not _SQL_START.match(_sql_literal_prefix(node)):
+        return False
+    if isinstance(node, ast.JoinedStr):
+        return not _sql_literal_only(node)
+    if isinstance(node, ast.BinOp):
+        if isinstance(node.op, ast.Add):
+            return not _sql_literal_only(node)
+        if isinstance(node.op, ast.Mod):
+            return (isinstance(node.left, ast.Constant)
+                    and isinstance(node.left.value, str)
+                    and bool(_SQL_PERCENT_SLOT.search(node.left.value))
+                    and not _literal_format_argument(node.right))
+        return False
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"format", "format_map"}
+            and isinstance(node.func.value, ast.Constant)
+            and isinstance(node.func.value.value, str)):
+        pattern = node.func.value.value
+        if not _has_real_format_field(pattern):
+            return False
+        expressions = [*node.args, *(key.value for key in node.keywords)]
+        return (bool(expressions)
+                and not any(key.arg is None for key in node.keywords)
+                and any(not _literal_format_argument(item) for item in expressions))
+    return False
 
 
 def _sql_direct_local(query: ast.AST, call: ast.Call, resolver: _ImportResolver) -> bool:
