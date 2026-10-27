@@ -74,6 +74,45 @@ class OutputPathSafetyTests(unittest.TestCase):
                 with self.assertRaises(InputError):
                     validate_output_location(path)
 
+    def test_mapped_remote_drive_is_blocked_before_any_scan(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dest = Path(temp) / "remote-reports"
+            with patch("output_safety._windows_drive_type", return_value=4):
+                with patch("desktop_core.scan_text", side_effect=AssertionError("source read")):
+                    with self.assertRaisesRegex(InputError, "네트워크 연결"):
+                        run_scan(
+                            ScanRequest("paste", text="print('synthetic')\n", language="python"),
+                            dest, "blocked-network-drive",
+                        )
+            self.assertFalse(dest.exists())
+
+    def test_unknown_or_unwritable_windows_drive_types_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dest = Path(temp) / "reports"
+            for kind in (0, 1, 4, 5):
+                with self.subTest(kind=kind):
+                    with patch("output_safety._windows_drive_type", return_value=kind):
+                        with self.assertRaises(InputError):
+                            validate_output_location(dest)
+                    self.assertFalse(dest.exists())
+
+    def test_fixed_removable_and_ram_local_drive_types_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dest = Path(temp) / "reports"
+            for kind in (2, 3, 6):
+                with self.subTest(kind=kind):
+                    with patch("output_safety._windows_drive_type", return_value=kind):
+                        self.assertEqual(validate_output_location(dest), dest)
+            self.assertFalse(dest.exists())
+
+    def test_failed_drive_type_probe_fails_closed_without_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            dest = Path(temp) / "reports"
+            with patch("output_safety._windows_drive_type", side_effect=OSError("synthetic")):
+                with self.assertRaises(InputError):
+                    validate_output_location(dest)
+            self.assertFalse(dest.exists())
+
     def test_existing_file_cannot_be_target_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             dest = Path(temp) / "existing_file"
