@@ -13,7 +13,7 @@ from review_models import CodeFinding
 def _line_text(source: SourceFile, line_number: int | None) -> str:
     if not line_number or line_number < 1:
         return ""
-    lines = source.text.splitlines()
+    lines = source.source_lines
     if line_number > len(lines):
         return ""
     return lines[line_number - 1].strip()[:300]

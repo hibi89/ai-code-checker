@@ -40,6 +40,10 @@ def fixtures(parent: Path, *, full: bool = True):
     paths["folder_200_12k"] = (small, None, 200, 12000, "complete")
 
     if full:
+        dense = parent / "synthetic_dense_findings_1200.py"
+        dense.write_text("eval(value)\n" * 1200, encoding="utf-8", newline="\n")
+        paths["dense_findings_1200"] = (dense, None, 1, 1200, "complete")
+
         multi = parent / "synthetic_multimeg_200"
         multi.mkdir()
         # 60 lines * 512 B per line * 200 files = 6,144,000 bytes,

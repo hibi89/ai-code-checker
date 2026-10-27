@@ -15,9 +15,9 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from code_input import InputError
+from code_input import InputError, SourceFile
 from output_safety import validate_output_location
-from offline_core import LANGUAGE_SUFFIX, OfflineScan, scan_path
+from offline_core import LANGUAGE_SUFFIX, FileCoverage, OfflineScan, scan_path
 from review_models import CodeFinding
 
 
@@ -83,10 +83,14 @@ def _rule_id(finding: CodeFinding) -> str:
     return "LOCAL-UNREGISTERED"
 
 
-def _validate_evidence(scan: OfflineScan, finding: CodeFinding) -> tuple[bool, str, str | None, int | None]:
-    """Verify file, range, evidence against masked input, ignoring cached flag."""
-    source = scan.bundle.file_map.get(finding.file_path)
-    cover = next((item for item in scan.coverage if item.path == finding.file_path), None)
+def _validate_evidence(
+    finding: CodeFinding,
+    sources: dict[str, SourceFile],
+    coverage_by_path: dict[str, FileCoverage],
+) -> tuple[bool, str, str | None, int | None]:
+    """Verify exact masked input and source origin; ignore cached citation flags."""
+    source = sources.get(finding.file_path)
+    cover = coverage_by_path.get(finding.file_path)
     if finding.source != "static" or source is None or cover is None:
         return False, "", None, None
     if cover.status not in {"analyzed", "limited", "failed"}:
@@ -98,7 +102,7 @@ def _validate_evidence(scan: OfflineScan, finding: CodeFinding) -> tuple[bool, s
         end = start
     if not isinstance(end, int) or isinstance(end, bool) or end < start:
         return False, "", None, None
-    lines = source.text.splitlines()
+    lines = source.source_lines
     if end > len(lines):
         return False, "", None, None
     observed = _normalized("\n".join(lines[start - 1:end]))
@@ -110,12 +114,16 @@ def _validate_evidence(scan: OfflineScan, finding: CodeFinding) -> tuple[bool, s
         origin.source_line(start) if origin else start
     )
 
-
 def build_report(scan: OfflineScan) -> OfflineReport:
     """Deduplicate candidate observations; mark unmatched citations as partial."""
     seen: set[tuple[object, ...]] = set()
     findings: list[ReportFinding] = []
     errors: list[str] = []
+    # Index once per report. Keep first matching coverage row semantics.
+    sources = scan.bundle.file_map
+    coverage_by_path: dict[str, FileCoverage] = {}
+    for entry in scan.coverage:
+        coverage_by_path.setdefault(entry.path, entry)
     for index, item in enumerate(scan.findings, 1):
         signature = (
             item.source, item.severity, item.title, item.file_path,
@@ -124,7 +132,7 @@ def build_report(scan: OfflineScan) -> OfflineReport:
         if signature in seen:
             continue
         seen.add(signature)
-        verified, excerpt, origin_path, origin_line = _validate_evidence(scan, item)
+        verified, excerpt, origin_path, origin_line = _validate_evidence(item, sources, coverage_by_path)
         if not verified:
             errors.append(f"발견 후보 {index}: 파일·줄·발췌 근거 대조 실패 (원문 인용 생략)")
         findings.append(ReportFinding(item, _rule_id(item), verified, excerpt, origin_path, origin_line))

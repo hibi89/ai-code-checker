@@ -12,6 +12,7 @@ import stat
 import zlib
 import zipfile
 from dataclasses import dataclass, field
+from functools import cached_property
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 
@@ -43,9 +44,14 @@ class SourceFile:
     source_bytes: int
     redactions: tuple[SecretRedaction, ...] = ()
 
+    @cached_property
+    def source_lines(self) -> tuple[str, ...]:
+        """Bounded per-instance index; never persisted or globally cached."""
+        return tuple(self.text.splitlines())
+
     @property
     def line_count(self) -> int:
-        return len(self.text.splitlines()) or 1
+        return len(self.source_lines) or 1
 
 
 @dataclass
