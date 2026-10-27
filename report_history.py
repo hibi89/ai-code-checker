@@ -80,3 +80,50 @@ def validate_historical_report(output_dir: str | Path, selected: str | Path) -> 
     if not header.startswith(_HTML_PREFIX) or not md_header.startswith(_MD_MARKER):
         raise InputError("코드체커에서 생성한 HTML·Markdown 보고서 형식을 확인할 수 없습니다.")
     return html
+
+
+def list_historical_reports(output_dir: str | Path, *, limit: int = 20) -> tuple[Path, ...]:
+    """Find recent verified-format local report pairs, without a stored index.
+
+    A bounded directory walk limits work in unexpectedly large output folders.
+    The list is sorted by file modification time, not trusted creation time.
+    All entries are revalidated at open time; this is not proof of authorship.
+    """
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 50:
+        raise ValueError("limit must be an integer between 1 and 50")
+    folder = validate_output_location(output_dir)
+    if not folder.is_dir():
+        raise InputError("보고서 저장 폴더가 존재하지 않습니다.")
+    candidates: list[tuple[int, str]] = []
+    try:
+        with os.scandir(folder) as entries:
+            for entry in entries:
+                name = entry.name
+                if not name.endswith(".html") or name.startswith("."):
+                    continue
+                stem = name[:-5]
+                if not 1 <= len(stem) <= 80 or not all(
+                    char.isalnum() or char in "._-" for char in stem
+                ):
+                    continue
+                if not entry.is_file(follow_symlinks=False):
+                    continue
+                info = entry.stat(follow_symlinks=False)
+                if info.st_nlink != 1 or getattr(info, "st_file_attributes", 0) & _REPARSE:
+                    continue
+                candidates.append((info.st_mtime_ns, name))
+                if len(candidates) > 512:
+                    raise InputError("기존 보고서 후보가 512개를 초과합니다. 직접 파일을 선택하세요.")
+    except OSError as exc:
+        raise InputError("기존 보고서 목록을 안전하게 조회할 수 없습니다.") from exc
+
+    found: list[Path] = []
+    for _, name in sorted(candidates, key=lambda item: (-item[0], item[1])):
+        try:
+            report = validate_historical_report(folder, folder / name)
+        except InputError:
+            continue
+        found.append(report)
+        if len(found) >= limit:
+            break
+    return tuple(found)
