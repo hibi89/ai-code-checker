@@ -139,7 +139,11 @@ def main() -> int:
                         for child in widget.winfo_children():
                             yield from descendants(child)
 
-                    with patch("os.startfile") as opened_recent:
+                    with patch("os.startfile") as opened_recent, patch(
+                        "tkinter.messagebox.showinfo", side_effect=AssertionError("recent list unexpectedly empty")
+                    ), patch(
+                        "tkinter.messagebox.showerror", side_effect=AssertionError("recent list unexpectedly rejected")
+                    ):
                         window.recent_button.invoke()
                         dialogs = [
                             child for child in window.root.winfo_children()
