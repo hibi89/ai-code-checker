@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 from report_cleanup import ReportCleanupError, delete_report_pair
-from report_history import validate_historical_report
+from report_history import list_historical_reports, validate_historical_report
 from output_safety import validate_output_location
 from code_input import InputError
 from desktop_core import (
@@ -108,7 +108,11 @@ def launch(on_ready=None) -> int:
             self.history_button = ttk.Button(
                 pathbar, text="기존 보고서 열기", command=self._open_historical_report
             )
-            self.history_button.pack(side="left")
+            self.history_button.pack(side="left", padx=(0, 8))
+            self.recent_button = ttk.Button(
+                pathbar, text="최근 목록", command=self._browse_recent_reports
+            )
+            self.recent_button.pack(side="left")
             ttk.Label(
                 target,
                 text="네트워크 공유·연결 드라이브 저장 차단 · OneDrive 등 동기화 폴더는 직접 피하세요.",
@@ -419,7 +423,56 @@ def launch(on_ready=None) -> int:
             except (OSError, ValueError) as exc:
                 messagebox.showerror("열기 실패", f"로컬 HTML을 열지 못했습니다 ({type(exc).__name__}).")
 
-        def _open_historical_report(self) -> None:
+        def _browse_recent_reports(self) -> None:
+            """Show bounded local history sorted by file modification time."""
+            if self.busy:
+                return
+            try:
+                reports = list_historical_reports(self.output_var.get().strip())
+            except (InputError, OSError) as exc:
+                messagebox.showerror("최근 보고서 목록", str(exc))
+                return
+            if not reports:
+                messagebox.showinfo("최근 보고서 목록", "검증 가능한 기존 HTML·Markdown 보고서 쌍이 없습니다.")
+                return
+
+            dialog = tk.Toplevel(self.root)
+            dialog.title("최근 보고서 — 수정시간순 (읽기 전용)")
+            dialog.transient(self.root)
+            dialog.geometry("600x340")
+            frame = ttk.Frame(dialog, padding=12)
+            frame.pack(fill="both", expand=True)
+            ttk.Label(
+                frame, text="로컬 보고서 형식만 확인합니다. 출처 인증이나 안전성 검증은 아닙니다."
+            ).pack(anchor="w", pady=(0, 8))
+            listing = tk.Listbox(frame, height=min(len(reports), 12), exportselection=False)
+            listing.pack(fill="both", expand=True)
+            for path in reports:
+                listing.insert(tk.END, path.name)
+            listing.selection_set(0)
+
+            def open_selected(_event=None) -> None:
+                selection = listing.curselection()
+                if not selection:
+                    return
+                selected_path = reports[selection[0]]
+                dialog.destroy()
+                # The file could change while the list is displayed.
+                self._open_historical_report(selected_path)
+
+            buttons = ttk.Frame(frame)
+            buttons.pack(fill="x", pady=(8, 0))
+            ttk.Button(buttons, text="선택한 보고서 열기", command=open_selected).pack(
+                side="left", padx=(0, 8)
+            )
+            ttk.Button(buttons, text="취소", command=dialog.destroy).pack(side="left")
+            listing.bind("<Double-Button-1>", open_selected)
+            listing.bind("<Return>", open_selected)
+            dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+            dialog.grab_set()
+            listing.focus_set()
+
+        def _open_historical_report(self, selected: Path | None = None) -> None:
             """Read-only previous report selection; never authorizes deletion."""
             if self.busy:
                 return
@@ -430,7 +483,7 @@ def launch(on_ready=None) -> int:
             except (InputError, OSError) as exc:
                 messagebox.showerror("기존 보고서 열기 차단", str(exc))
                 return
-            chosen = filedialog.askopenfilename(
+            chosen = str(selected) if selected is not None else filedialog.askopenfilename(
                 title="기존 코드체커 HTML 보고서 선택 (읽기 전용)",
                 initialdir=str(folder),
                 filetypes=(("HTML 보고서", "*.html"),),

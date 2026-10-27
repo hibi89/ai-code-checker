@@ -8,7 +8,7 @@ from pathlib import Path
 
 from code_input import InputError
 from desktop_core import ScanRequest, run_scan
-from report_history import validate_historical_report
+from report_history import list_historical_reports, validate_historical_report
 
 
 class HistoricalReportTests(unittest.TestCase):
@@ -119,6 +119,73 @@ class HistoricalReportTests(unittest.TestCase):
             validate_historical_report(folder, report.html_path)
             after = {path.name: path.read_bytes() for path in folder.iterdir()}
             self.assertEqual(before, after)
+
+
+    def test_recent_list_orders_valid_pairs_and_skips_unrelated_html(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder, old = self.make_report(root, "older")
+            _, new = self.make_report(root, "newer")
+            os.utime(old.html_path, ns=(1_700_000_000_000_000_000,) * 2)
+            os.utime(new.html_path, ns=(1_700_000_100_000_000_000,) * 2)
+            (folder / "unrelated.html").write_text("<html>not ours</html>", encoding="utf-8")
+            (folder / "unpaired.html").write_bytes(old.html_path.read_bytes())
+            original = {
+                path.name: path.read_bytes() for path in folder.iterdir() if path.is_file()
+            }
+            self.assertEqual(list_historical_reports(folder), (new.html_path, old.html_path))
+            self.assertEqual(list_historical_reports(folder, limit=1), (new.html_path,))
+            after = {
+                path.name: path.read_bytes() for path in folder.iterdir() if path.is_file()
+            }
+            self.assertEqual(original, after)
+
+    def test_recent_list_returns_empty_for_directory_without_valid_pairs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            (folder / "ordinary.html").write_text("<html>test</html>", encoding="utf-8")
+            self.assertEqual(list_historical_reports(folder), ())
+
+    def test_recent_list_never_trusts_stale_selection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder, report = self.make_report(Path(tmp))
+            self.assertEqual(list_historical_reports(folder), (report.html_path,))
+            report.html_path.write_text("<html>changed</html>", encoding="utf-8")
+            with self.assertRaises(InputError):
+                validate_historical_report(folder, report.html_path)
+
+    def test_recent_list_excludes_symlink_and_hardlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder, report = self.make_report(root)
+            os.link(report.html_path, root / "external-html-hardlink.html")
+            self.assertEqual(list_historical_reports(folder), ())
+            alias = folder / "alias.html"
+            try:
+                alias.symlink_to(report.html_path)
+            except (NotImplementedError, OSError):
+                pass
+            else:
+                self.assertEqual(list_historical_reports(folder), ())
+
+    def test_recent_list_bounded_and_invalid_limit_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            for bad in (0, 51, -1, True, 1.2, None):
+                with self.subTest(limit=bad), self.assertRaises(ValueError):
+                    list_historical_reports(folder, limit=bad)
+            for i in range(513):
+                (folder / f"extra-{i:03d}.html").write_bytes(b"x")
+            with self.assertRaisesRegex(InputError, "512"):
+                list_historical_reports(folder)
+
+    def test_recent_list_rejects_invalid_or_remote_output_location(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            with self.assertRaises(InputError):
+                list_historical_reports(folder / "missing")
+            with self.assertRaises(InputError):
+                list_historical_reports("//remote/share")
 
 
 if __name__ == "__main__":
