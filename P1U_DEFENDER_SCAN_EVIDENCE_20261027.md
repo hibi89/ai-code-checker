@@ -26,3 +26,10 @@ Previous P1-L read-only Windows acceptance receipt reports installed Defender co
 - Microsoft official MpCmdRun switches/exit code: https://learn.microsoft.com/en-us/defender-endpoint/command-line-arguments-microsoft-defender-antivirus
 - Microsoft scan completion/event ID context: https://learn.microsoft.com/en-us/defender-endpoint/troubleshoot-mdav-scan-issues
 - [PR #32](https://github.com/hibi89/ai-code-checker/pull/32). The current source/CI status must be rechecked; do not infer a verified scan from this document itself.
+
+
+## Final source/CI/Defender observation — 2026-10-27 KST
+
+Feature 8ff471435e403b7b9a64e9077ad6ccf8d06c7468: https://github.com/hibi89/ai-code-checker/actions/runs/40520621886 General Tests 16/16 success and https://github.com/hibi89/ai-code-checker/actions/runs/40520621813 Windows EXE/Defender candidate workflow success.
+Earlier actual Windows code workflow https://github.com/hibi89/ai-code-checker/actions/runs/40520257918 records DEFENDER_SCAN_ATTEMPTED=True, DEFENDER_SCAN_COMMAND_STATUS=ZERO_EXIT, DEFENDER_SCAN_RECEIPT_INTEGRITY_PASS, DEFENDER_COMMAND_ZERO_EXIT=True, MALWARE_FREE_CERTIFIED=False, CUSTOMER_RELEASE_READY=False.
+PR #32 https://github.com/hibi89/ai-code-checker/pull/32 merged main source 0bd567c4f89df5230a6a6b767fa65f0c74e0a318. Main post-merge Tests 40521006809 was pending on initial check. No user retail OS malware/SmartScreen, OS packet proof, native NOTICE/legal, PDF human visual or product sale approval is inferred.

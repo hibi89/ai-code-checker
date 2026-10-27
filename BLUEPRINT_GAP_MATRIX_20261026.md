@@ -152,3 +152,8 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 
 - #18/#19 **new source/code under review:** P1-L captured Defender settings only. P1-U [PR #32](https://github.com/hibi89/ai-code-checker/pull/32) adds an actual bounded custom file scan attempt for the freshly built unsigned EXE in GitHub Windows CI; no automatic remediation, telemetry or artifact distribution. `MpCmdRun` zero exit means command completion, not verified malware-free or physical retail-OS acceptance. The separate contract verifies local receipt/EXE hashes and explicitly retains `retail_defender_acceptance=UNVERIFIED`.
 - **Still open** real customer Windows, actual Defender/SmartScreen reputation, OS-level packet observation, human Korean PDF visuals, redistributed original third-party legal NOTICE approval and owner commercial-release signoff. No claim of release gate pass while PR CI pending.
+
+
+## 2026-10-27 P1-U merged hosted Defender scan evidence
+
+PR #32 https://github.com/hibi89/ai-code-checker/pull/32 merged source main 0bd567c4f89df5230a6a6b767fa65f0c74e0a318. Native hosted Windows candidate actually invoked Defender custom no-remediation file scan, returned ZERO_EXIT and passed same EXE hash receipt validation: https://github.com/hibi89/ai-code-checker/actions/runs/40520257918. Final feature 16/16 Tests and Windows candidate both SUCCESS. A successful command is not a malware-free certificate; actual retail device Defender/SmartScreen, OS-level egress, Korean PDF visual, original license NOTICE/legal signoff and customer release remain unverified.

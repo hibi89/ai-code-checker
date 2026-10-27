@@ -518,3 +518,17 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. **Originals/privacy:** EXE hash/length and fixed status only; no paths/usernames, detection output, malware descriptions, customer's source, secrets, external services or binaries committed. System AV may independently quarantine despite requested no-remediation mode; EXE hash mismatch makes evidence invalid.
 9. **Next acceptance:** Verify both exact PR-head general Tests 16 jobs and Windows candidate/synthetic package plus actual scan status, then merge and check post-merge CI. True retail Defender scan and human/OS/security/legal gates still require independent user-controlled validation and owner commercial approval.
 10. **Basis:** 2026-10-27 KST; official command details https://learn.microsoft.com/en-us/defender-endpoint/command-line-arguments-microsoft-defender-antivirus. Zero exit not unconditional clean result per Microsoft docs. See `P1U_DEFENDER_SCAN_EVIDENCE_20261027.md`.
+
+
+## P1-U final verified 10-point handoff — 2026-10-27 KST
+
+1. Goal: offline Windows code risk checker; verify actual Defender scan command against hosted Windows developer EXE, without certifying retail safety.
+2. Decision: the P1-L settings-only collector cannot prove a file scan. P1-U selects bounded opt-in MpCmdRun custom file scan with DisableRemediation, local SHA receipt and no OS configuration updates.
+3. Verification: PR #32 final head 8ff471435e403b7b9a64e9077ad6ccf8d06c7468: Tests 40520621886 16/16 success; Windows 40520621813 success. Earlier actual hosted Windows job 40520257918 logged DEFENDER_SCAN_ATTEMPTED=True; DEFENDER_SCAN_COMMAND_STATUS=ZERO_EXIT; DEFENDER_SCAN_RECEIPT_INTEGRITY_PASS; MALWARE_FREE_CERTIFIED=False.
+4. Done: PR #32 MERGED main source SHA 0bd567c4f89df5230a6a6b767fa65f0c74e0a318. Customer retail scan, SmartScreen, OS network observation, Korean PDF visual, native third-party license notice and legal/release approval remain pending.
+5. Errors and limitations: No final feature CI failures. Defender unavailable means UNVERIFIED. An exit code 0 is only command evidence and is not a malware-free certificate. A no-remediation CLI flag does not prevent independent real-time AV behavior.
+6. Code/ref/revert: hibi89/ai-code-checker public MIT; branch feature/p1u-defender-file-scan-evidence final 8ff4714 from previous main 0b391f9; PR #32 merge 0bd567c. Files scripts/windows_defender_file_scan.ps1, scripts/windows_defender_scan_contract.py, tests/test_windows_defender_scan_contract.py, .github/workflows/windows-portable.yml. Revert PR if needed, never force push.
+7. Runtime: Python 3.11+, Windows2025 hosted PyInstaller EXE, PowerShell7+. EXE and local acceptance receipts NOT uploaded/distributed. No Vercel or production URL.
+8. Privacy/security: original Gemini v1 untouched. Source never executed or uploaded; no telemetry, model API, customer files, keys, scanner stdout or user machine settings. Local immutable receipt requires unchanged EXE hash.
+9. Next: verify post-merge main Tests 40521006809, then focus on meaningful remaining real-user/release evidence or third-party original NOTICE. User approval required for expenses, OS modifications, signing, sale or permissions changes.
+10. Time/source: 2026-10-27 KST. GitHub Actions logs and PR merge checked. Microsoft official CLI command and ambiguous exit code: https://learn.microsoft.com/en-us/defender-endpoint/command-line-arguments-microsoft-defender-antivirus. Post-document CI must be checked at its own new SHA.

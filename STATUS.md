@@ -354,3 +354,12 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 - **Tests:** New synthetic regression `tests/test_windows_defender_scan_contract.py`; Windows packaged-candidate workflow probes its own synthetic built binary. As of this addendum, PR-head CI is **PENDING**. Never turn a queued job into PASS, nor mark real consumer Defender acceptance complete based on hosted runner.
 - **Still blocked:** real clean customer Windows/SmartScreen, OS-level network proof, original binary third-party NOTICE/license/legal, Korean PDF human visual and explicit owner release authorization. No Vercel. No customer code upload, paid API or executable distribution.
 - **Next `ㄱ`:** verify PR #32 current branch, exact SHA and Tests/Windows jobs; examine actual logs including `DEFENDER_SCAN_COMMAND_STATUS`; merge only if all green and update the evidence with observed state.
+
+
+## P1-U merged; actual hosted Defender file scan observed (2026-10-27 KST)
+
+- PR #32 https://github.com/hibi89/ai-code-checker/pull/32 MERGED main source 0bd567c4f89df5230a6a6b767fa65f0c74e0a318, final feature head 8ff471435e403b7b9a64e9077ad6ccf8d06c7468.
+- Actual Windows custom file scan command ran on hosted packaged candidate. Actions https://github.com/hibi89/ai-code-checker/actions/runs/40520257918 logged DEFENDER_SCAN_ATTEMPTED=True, DEFENDER_SCAN_COMMAND_STATUS=ZERO_EXIT, DEFENDER_SCAN_RECEIPT_INTEGRITY_PASS. No malware-free certification or customer release claim.
+- Final PR head Tests https://github.com/hibi89/ai-code-checker/actions/runs/40520621886 16/16 SUCCESS, Windows EXE and Defender workflow https://github.com/hibi89/ai-code-checker/actions/runs/40520621813 SUCCESS. Post-merge main Tests https://github.com/hibi89/ai-code-checker/actions/runs/40521006809 were in progress when initially checked.
+- No code signing, EXE publishing, new user OS settings, model API, upload, paid service or original v1 changes. Real retail Defender, SmartScreen, OS packet evidence, Korean PDF human visual, third-party original NOTICE/license/legal approval and owner release approval remain UNVERIFIED/BLOCKED.
+- Next GO: inspect current main SHA and post-doc CI, move to a distinct substantial release acceptance task. See P1U_DEFENDER_SCAN_EVIDENCE_20261027.md and HANDOFF.md.
