@@ -97,6 +97,10 @@ def launch(on_ready=None) -> int:
             self.output_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
             self.output_button = ttk.Button(pathbar, text="위치 선택", command=self._choose_output)
             self.output_button.pack(side="left")
+            ttk.Label(
+                target,
+                text="네트워크 공유·연결 드라이브 저장 차단 · OneDrive 등 동기화 폴더는 직접 피하세요.",
+            ).pack(anchor="w", pady=(6, 0))
 
             actions = ttk.Frame(container)
             actions.pack(fill="x", pady=(12, 6))
