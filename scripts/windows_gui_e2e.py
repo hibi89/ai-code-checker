@@ -130,6 +130,51 @@ def main() -> int:
                         fail("untrusted historical HTML changed active report state")
                         return
                     results.append("historical report read-only open and denial PASS")
+                    # Use the actual Tk recent-list dialog and choose an entry;
+                    # this is not an interactive consumer Windows acceptance test.
+                    from tkinter import Listbox, Toplevel
+
+                    def descendants(widget):
+                        yield widget
+                        for child in widget.winfo_children():
+                            yield from descendants(child)
+
+                    with patch("os.startfile") as opened_recent:
+                        window.recent_button.invoke()
+                        dialogs = [
+                            child for child in window.root.winfo_children()
+                            if isinstance(child, Toplevel)
+                        ]
+                        if len(dialogs) != 1:
+                            fail("recent report chooser did not create exactly one dialog")
+                            return
+                        chooser = dialogs[0]
+                        entries = [child for child in descendants(chooser) if isinstance(child, Listbox)]
+                        if len(entries) != 1:
+                            fail("recent chooser missing listbox")
+                            return
+                        listbox = entries[0]
+                        if set(listbox.get(0, "end")) != {path.name for path in saved_reports}:
+                            fail("recent chooser offered invalid or missing reports")
+                            return
+                        choose_buttons = [
+                            child for child in descendants(chooser)
+                            if child.winfo_class() == "TButton"
+                            and child.cget("text") == "선택한 보고서 열기"
+                        ]
+                        if len(choose_buttons) != 1:
+                            fail("recent chooser missing open command")
+                            return
+                        chosen_filename = listbox.get(0)
+                        choose_buttons[0].invoke()
+                        opened_recent.assert_called_once_with(str((report_root / chosen_filename).absolute()))
+                        if chooser.winfo_exists():
+                            fail("recent chooser remained open after selection")
+                            return
+                    if window.last_result is not None or not window.delete_button.instate(["disabled"]):
+                        fail("recent history chooser granted deletion permission")
+                        return
+                    results.append("Tk recent-report chooser read-only open PASS")
                     # Validate folder-to-child-output denial on the Windows runner,
                     # before source ingestion and before any output directory is made.
                     from code_input import InputError
