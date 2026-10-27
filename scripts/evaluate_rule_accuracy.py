@@ -23,6 +23,20 @@ class Case:
 
 
 PYTHON_CASES = (
+    # Explicit builtins module / symbol aliases are sensitive only when proven.
+    Case("builtins-module-eval", "import builtins\nbuiltins.eval(value)\n", (("PY-DYNAMIC-EXEC", 2),)),
+    Case("builtins-module-exec-alias", "import builtins as safe_api\nsafe_api.exec(source)\n", (("PY-DYNAMIC-EXEC", 2),)),
+    Case("builtins-from-eval-alias", "from builtins import eval as evaluate\nevaluate(value)\n", (("PY-DYNAMIC-EXEC", 2),)),
+    Case("builtins-from-exec", "from builtins import exec\nexec(source)\n", (("PY-DYNAMIC-EXEC", 2),)),
+    Case("builtins-module-late-import", "builtins.eval(value)\nimport builtins\n", ()),
+    Case("builtins-module-shadow", "import builtins as b\nb = other\nb.eval(value)\n", ()),
+    Case("builtins-function-argument-shadow", "import builtins as b\ndef f(b):\n    b.exec(source)\n", ()),
+    Case("builtins-from-alias-shadow", "from builtins import eval as evaluate\nevaluate = fake\nevaluate(value)\n", ()),
+    Case("builtins-not-related-method", "service.eval(value)\n", ()),
+    Case("builtins-guarded-import-outside", "if flag:\n    import builtins as b\nb.eval(value)\n", ()),
+    Case("builtins-guarded-import-inside", "if flag:\n    import builtins as b\n    b.eval(value)\n", (("PY-DYNAMIC-EXEC", 3),)),
+    Case("builtins-guarded-from-outside", "if flag:\n    from builtins import exec as invoke\ninvoke(source)\n", ()),
+    Case("builtins-other-module", "from fake import eval as evaluate\nevaluate(value)\n", ()),
     Case("dynamic-eval", "eval(value)\n", (("PY-DYNAMIC-EXEC", 1),)),
     Case("dynamic-exec", "exec(source)\n", (("PY-DYNAMIC-EXEC", 1),)),
     Case("subprocess-direct", "import subprocess\nsubprocess.run(cmd, shell=True)\n", (("PY-SHELL", 2),)),
