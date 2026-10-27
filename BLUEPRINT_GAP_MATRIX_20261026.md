@@ -70,3 +70,12 @@ Updated 2026-10-26 KST. Baseline **main merge `f0c257058f43298167e6777f315db01ae
 ## Rollback / boundaries / next handoff
 
 Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294fd86`; preserve it. No force push; all fixes feature branch → tests → PR → main and STATUS/HANDOFF refresh. Product not Vercel deployed. Real customer delivery remains NOT READY.
+
+
+## 2026-10-27 verified P1-H / P1-E addendum (baseline table above is historical)
+
+- **#14 summaries:** P1-H [PR #18](https://github.com/hibi89/ai-code-checker/pull/18) merged; Korean HTML/Markdown severity/rule/language summary tables are implemented/CI tested. Statistics are candidates/file suffixes only; they are not confirmed vulnerabilities or a complete language-coverage guarantee.
+- **#17 progress/cancellation:** P1-E [PR #19](https://github.com/hibi89/ai-code-checker/pull/19) merged source SHA `12c51540e646bc088aa24faa96aaf48f5fb843dd`; cooperative per-file progress and GUI cancel implemented with 7 headless tests + Windows scripted Tk E2E, all feature CI PASS. Cannot interrupt one bounded input read or atomic publication mid-stage; not a total wall-clock completion percentage. `cancelled` is an exception/UI result and NOT yet a persisted `OfflineScan` report state.
+- **#4 blocked/cancelled persisted outcomes** remain PARTIAL: blocked CLI and cancelled GUI are visibly differentiated, but they are not persisted reports.
+- **#20 report management:** local automatic stored report deletion remains MISSING. Prioritize explicit user-controlled selection and safe deletion with no unprompted source/report removal.
+- **#18/#19/#23 customer Windows, packet/privacy, signing and legal clearance** remain UNVERIFIED/BLOCKED despite synthetic hosted Windows tests. No Vercel and no commercial release.
