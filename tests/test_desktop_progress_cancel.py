@@ -71,6 +71,42 @@ class CooperativeProgressTests(unittest.TestCase):
         self.assertEqual(seen[-1], "publishing")
         self.assertNotIn("done", seen)
 
+    def test_cancel_rejected_after_atomic_publication_boundary(self) -> None:
+        control = ScanControl()
+        attempted: list[bool] = []
+        from desktop_core import write_report as real_write_report
+
+        def observer(*args, **kwargs):
+            # Simulate a late Tk button press after the worker crossed the
+            # real publication boundary, before both files are committed.
+            attempted.append(control.cancel())
+            return real_write_report(*args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as tmp, patch(
+            "desktop_core.write_report", side_effect=observer
+        ):
+            result = run_scan(
+                ScanRequest("paste", text="eval('1')\\n", language="python"),
+                Path(tmp) / "reports", "late-cancel", control=control,
+            )
+            self.assertEqual(result.status, "complete")
+            self.assertTrue(result.html_path.is_file())
+            self.assertTrue(result.markdown_path.is_file())
+            self.assertIsNotNone(result.report_receipt)
+        self.assertEqual(attempted, [False])
+        self.assertFalse(control.cancel_requested.is_set())
+
+    def test_cancel_acceptance_and_publication_barrier_are_atomic(self) -> None:
+        control = ScanControl()
+        self.assertTrue(control.cancel())
+        with self.assertRaises(ScanCancelled):
+            control.begin_publication()
+
+        fresh = ScanControl()
+        fresh.begin_publication()
+        self.assertFalse(fresh.cancel())
+        self.assertFalse(fresh.cancel_requested.is_set())
+
     def test_complete_scan_emits_monotone_progress_and_writes_once(self) -> None:
         updates = []
         control = ScanControl(on_update=updates.append)
