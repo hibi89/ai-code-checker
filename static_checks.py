@@ -77,7 +77,7 @@ class _ImportResolver:
                 for alias in node.names:
                     local = alias.asname or alias.name.split(".")[0]
                     origin = ((alias.name, "__module__")
-                              if direct and alias.name in {"subprocess", "pickle", "requests", "os", "asyncio"}
+                              if direct and alias.name in {"subprocess", "pickle", "requests", "os", "asyncio", "builtins"}
                               else None)
                     bind(local, node, origin)
                 return
@@ -90,7 +90,7 @@ class _ImportResolver:
                         local = alias.asname or alias.name
                         pkg = node.module if node.level == 0 else None
                         origin = ((pkg, alias.name)
-                                  if direct and pkg in {"subprocess", "pickle", "requests", "os", "asyncio"}
+                                  if direct and pkg in {"subprocess", "pickle", "requests", "os", "asyncio", "builtins"}
                                   else None)
                         bind(local, node, origin)
                 return
@@ -468,12 +468,14 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
         attribute_name = node.func.attr if isinstance(node.func, ast.Attribute) else None
         literal_dynamic_target = _dynamic_import_target(node, resolver)
         if ((function_name in {"eval", "exec"} and resolver.builtin(node, function_name))
+                or resolver.imported(node, "builtins", {"eval", "exec"})
                 or (literal_dynamic_target is not None
                     and literal_dynamic_target[0] == "builtins"
                     and literal_dynamic_target[1] in {"eval", "exec"})):
             risky_builtin = (
                 literal_dynamic_target[1] if literal_dynamic_target is not None
-                and literal_dynamic_target[0] == "builtins" else function_name
+                and literal_dynamic_target[0] == "builtins" else
+                function_name or attribute_name or "eval/exec alias"
             )
             findings.append(_finding(
                 source, "HIGH", "security", f"동적 코드 실행 호출: {risky_builtin}",
