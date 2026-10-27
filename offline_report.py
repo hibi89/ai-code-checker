@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import html
+from collections import Counter
 import json
 import os
 import re
@@ -25,6 +26,12 @@ COVERAGE_LABELS = {
     "failed": "구문 분석 실패", "excluded": "정책상 제외",
     "unsupported": "언어·형식 미지원",
 }
+LANGUAGE_LABELS = {
+    ".py": "Python", ".pyi": "Python",
+    ".js": "JavaScript", ".jsx": "JavaScript", ".mjs": "JavaScript",
+    ".cjs": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript",
+}
+
 RULE_TITLES = (
     ("Python 구문 오류", "PY-SYNTAX"),
     ("동적 코드 실행 호출:", "PY-DYNAMIC-EXEC"),
@@ -141,6 +148,43 @@ def _m(value: object) -> str:
     return re.sub(r"([\\\x60*_{}\[\]()#+.!|>~-])", r"\\\1", safe)
 
 
+def _breakdowns(report: OfflineReport) -> tuple[list[tuple[str, int]], list[tuple[str, int]], list[tuple[str, int]]]:
+    """Descriptive distributions only. Include unverified findings and excluded file paths."""
+    severities = Counter(item.finding.severity for item in report.findings)
+    rules = Counter(item.rule_id for item in report.findings)
+    languages = Counter(
+        LANGUAGE_LABELS.get(Path(item.path).suffix.lower(), "기타/미분류")
+        for item in report.scan.coverage
+    )
+    return (
+        sorted(severities.items(), key=lambda pair: (SEVERITY_ORDER.get(pair[0], 99), pair[0])),
+        sorted(rules.items(), key=lambda pair: (-pair[1], pair[0])),
+        sorted(languages.items(), key=lambda pair: pair[0]),
+    )
+
+
+def _summary_markdown(title: str, rows: list[tuple[str, int]], *, kind: str) -> list[str]:
+    values = rows if rows else [("없음", 0)]
+    return [
+        "", "## " + title, "",
+        "| " + kind + " | 건수 |", "|---|---:|",
+        *(f"| {_m(name)} | {count} |" for name, count in values),
+    ]
+
+
+def _summary_html(title: str, rows: list[tuple[str, int]], *, kind: str) -> str:
+    values = rows if rows else [("없음", 0)]
+    table_rows = "".join(
+        "<tr><td>" + _h(name) + "</td><td>" + str(count) + "</td></tr>"
+        for name, count in values
+    )
+    return (
+        "<section><h2>" + _h(title) + "</h2><table><thead><tr><th>"
+        + _h(kind) + "</th><th>건수</th></tr></thead><tbody>"
+        + table_rows + "</tbody></table></section>"
+    )
+
+
 def _location(row: ReportFinding) -> str:
     f = row.finding
     path = f"{f.file_path}:{f.start_line if f.start_line is not None else '?'}"
@@ -171,6 +215,12 @@ def render_markdown(report: OfflineReport) -> str:
             f"| {_m(item.path)} | {_m(COVERAGE_LABELS.get(item.status, item.status))} "
             f"| {_m(item.analyzer)} | {_m(item.reason)} |"
         )
+    severities, rules, languages = _breakdowns(report)
+    lines.extend(_summary_markdown("심각도별 발견 후보", severities, kind="심각도"))
+    lines.extend(_summary_markdown("규칙별 발견 후보", rules, kind="규칙 ID"))
+    lines.extend(_summary_markdown("언어별 파일 분포", languages, kind="언어 추정"))
+    lines.extend(["", "언어는 경로 확장자로 추정하며 제외·미지원 파일도 포함합니다. 생략 폴더 내부는 집계하지 않습니다."])
+    lines.extend(["발견 후보 통계는 취약점 확정 수치가 아니며 근거 대조 실패 항목도 포함합니다."])
     lines.extend(["", "## 위험 후보", ""])
     if not report.findings:
         lines.append("적용 규칙에 일치한 후보가 없습니다. 안전하다는 의미는 아닙니다.")
@@ -249,6 +299,15 @@ def render_html(report: OfflineReport) -> str:
         if report.scan.warnings else ""
     )
     cards = "".join(findings) if findings else "<p>적용 규칙에 일치한 후보가 없습니다. 안전 판정은 아닙니다.</p>"
+    severities, rules, languages = _breakdowns(report)
+    summaries = (
+        _summary_html("심각도별 발견 후보", severities, kind="심각도")
+        + _summary_html("규칙별 발견 후보", rules, kind="규칙 ID")
+        + _summary_html("언어별 파일 분포", languages, kind="언어 추정")
+        + "<p class='small'>언어는 경로 확장자로 추정하며 제외·미지원 파일도 포함합니다."
+        " 생략 폴더 내부는 집계하지 않습니다. 발견 후보는 취약점 확정 수치가 아니고"
+        " 근거 대조 실패 항목도 포함합니다.</p>"
+    )
     return (
         "<!doctype html><html lang='ko'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -272,7 +331,7 @@ def render_html(report: OfflineReport) -> str:
         + " / 미지원 " + str(counts["unsupported"])
         + " / 하위 탐색 제외 폴더 " + str(counts["pruned_subtrees"]) + " (내부 파일 수 미확인)</p>"
         "<p class='small'>오프라인 정적 분석만 수행. complete도 안전성·무결점 보증이 아닙니다.</p>"
-        "<section><h2>파일별 검사 범위</h2><table><thead><tr><th>파일</th>"
+        + summaries + "<section><h2>파일별 검사 범위</h2><table><thead><tr><th>파일</th>"
         "<th>상태</th><th>분석기</th><th>사유</th></tr></thead><tbody>"
         + rows + "</tbody></table></section><section><h2>위험 후보</h2>"
         + cards + "</section>" + pruned + problems + warnings
