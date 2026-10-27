@@ -100,7 +100,7 @@ def dense_redaction_case():
     """Measure only local input normalization of dense synthetic PII, no scan/report."""
     count = 6000
     text = "".join(
-        f"person_{n:05d} = 'user{n:05d}@synthetic.invalid'\\n"
+        f"person_{n:05d} = 'user{n:05d}@synthetic.invalid'\n"
         for n in range(count)
     )
     # The benchmark is synthetic and within the current 1 MiB per-file cap.
