@@ -40,6 +40,9 @@ jobs:
       - name: Evaluate fixed synthetic rule corpus (accuracy only within labels)
         run: python -m scripts.evaluate_rule_accuracy
 
+      - name: Verify functional MVP from preview to Korean HTML/Markdown (offline, synthetic)
+        run: python -m scripts.mvp_acceptance
+
       - name: Verify GUI controller synthetic CLI self-test (no Tk window)
         run: python desktop_ui.py --self-test
 

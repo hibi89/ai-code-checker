@@ -1,6 +1,9 @@
 # AI Code Checker
 
-**새 채팅에서 바로 작업 재개:** `[코드체커 깃헙 확인해]` — [코드체커 총괄 인수인계·실행 출발점](CODE_CHECKER_RESUME.md). 현재 Day 1·Day 2는 main 병합·CI 통과. Day 3 Windows GUI·포터블 EXE 후보는 PR #4에서 개발 중이며 실제 고객 PC 검증은 미완료. 최신 코드는 항상 GitHub `main`과 CI 확인.
+> **2026-10-27 MVP 우선순위 변경:** 10월 28일까지의 개발 목표는 **오프라인 입력 선택 → 미리보기 → 검사 → 로컬 HTML·Markdown 보고서 저장·열기**가 동작하는 최소 버전입니다. 실제 소스·테스트·CI로 검증한 기능 범위에서만 완료를 선언합니다. GUI 디자인 고도화, 추가 분석 규칙, 확장 기능, 상용 라이선스 최종 서류는 MVP 이후로 이관합니다. **미검증 고객 PC·SmartScreen·라이선스 NOTICE를 통과한 것으로 표시하거나 EXE를 판매·배포하지 않습니다.** [MVP 실행·합격 기준](MVP_FREEZE_20261028.md).
+
+
+**새 채팅에서 바로 작업 재개:** `[코드체커 깃헙 확인해]` — [코드체커 총괄 인수인계·실행 출발점](CODE_CHECKER_RESUME.md). Day 1·2 오프라인 코어·보고서와 Day 3 Windows GUI·포터블 EXE 개발자 후보는 구현·CI 검증 이력이 있으며, 실제 고객 PC와 판매용 라이선스 검토는 미완료입니다. 최신 코드는 항상 GitHub `main`과 CI 확인.
 
 > **2026-10-26 개발 방향:** 최종 제품은 **오프라인 Windows 코드체커 v2**이며 **3일 MVP → 최종 설계도 대조·확장 → 안전성·보안·품질 보강 → 크몽 상품화** 순으로 개발합니다. **아래 README의 기존 v1 CLI/Gemini 기능과 출시 전 상태는 현재 구현의 설명**이며, 새 오프라인 v2는 코어·보고서가 main에 구현됐고 Windows GUI/포터블 후보는 검증 중입니다. v1 Gemini CLI는 별도입니다.
 >
@@ -26,7 +29,7 @@ python offline_core.py .\\path\\to\\code.txt --language python
 
 Offline v2 accepts ZIP/folder/single source and single TXT; delimited multi-file TXT uses `===== FILE: relative/path.ext =====`. Python gets the existing local AST checks; other languages currently receive only generic patterns, marked **limited**. Metadata status is **partial** if any enumerated file was excluded, unsupported, failed or covered only by generic checks. Exit code 0 means all eligible files passed the *configured parsing/rule execution*, **not** that code is secure; partial returns 3 and blocked input 2.
 
-Current local v2 limits: 200 files, 1 MiB per file and 8 MiB total, explicitly subject to testing and not marketed as universal project-size support. The old Gemini CLI below is unchanged and has separate limits. Day 2 한국어 HTML·Markdown 리포트는 구현·병합 완료. Day 3 Tkinter GUI·Windows EXE 빌드는 현재 개발자 프리뷰로 CI 검증 중이며, 실제 고객 Windows 버튼·PDF 인쇄·SmartScreen 검증 전에는 완성품이 아닙니다. 세부 사항은 [DAY3_WINDOWS_GUIDE.md](DAY3_WINDOWS_GUIDE.md) 및 [STATUS.md](STATUS.md) 참고.
+Current local v2 limits: 200 files, 1 MiB per file and 8 MiB total, explicitly subject to testing and not marketed as universal project-size support. The old Gemini CLI below is unchanged and has separate limits. Day 2 한국어 HTML·Markdown 리포트는 구현·병합 완료. Day 3 Tkinter GUI·Windows EXE 빌드는 개발자 후보로 CI에서 검사됐으나, 실제 고객 Windows 버튼·PDF 인쇄·SmartScreen 검증 전에는 완성품이 아닙니다. 세부 사항은 [DAY3_WINDOWS_GUIDE.md](DAY3_WINDOWS_GUIDE.md) 및 [STATUS.md](STATUS.md) 참고.
 
 ## v2 오프라인 사용법 (개발자 미리보기)
 
