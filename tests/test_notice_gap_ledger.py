@@ -134,6 +134,16 @@ class NoticeLedgerTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     reconcile_notice_gaps(*args)
 
+    def test_windows_archive_separators_match_ownership_canonical_names(self):
+        args = fixture()
+        args[0]["archive"]["top_level"][-1]["name"] = r"nested\\mystery.dll"
+        args[1] = make_mapping(args[0], package_claims={"pydantic": ["pydantic"]}, installed_files={})
+        args[1]["license_text_draft"] = fixture()[1]["license_text_draft"]
+        args[2]["records"][0]["name"] = "nested/mystery.dll"
+        result = reconcile_notice_gaps(*args)
+        self.assertTrue(result["metadata_complete"])
+        self.assertEqual(result["unresolved_archive_entry_count"], 1)
+
     def test_archive_rows_are_exhaustive_and_exact(self):
         args = fixture()
         args[1]["entries"].pop()
