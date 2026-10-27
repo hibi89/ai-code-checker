@@ -53,9 +53,9 @@ def reconcile_notice_gaps(audit: dict, mapping: dict, native: dict,
     archive = audit["archive"]
     # P0-E normalizes Windows archive separators in _safe_name; compare
     # canonical archive-relative entry names, never OS absolute paths.
-    actual = ([("CArchive", row["name"].replace("\\\\", "/"))
+    actual = ([("CArchive", row["name"].replace("\\", "/"))
                for row in archive["top_level"]]
-              + [("PYZ", row["module"].replace("\\\\", "/"))
+              + [("PYZ", row["module"].replace("\\", "/"))
                  for row in archive["pyz_modules"]])
     rows = mapping["entries"]
     if not 0 < len(actual) <= MAX_ROWS or len(rows) != len(actual):
