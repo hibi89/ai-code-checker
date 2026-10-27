@@ -86,7 +86,7 @@ class CooperativeProgressTests(unittest.TestCase):
             "desktop_core.write_report", side_effect=observer
         ):
             result = run_scan(
-                ScanRequest("paste", text="eval('1')\\n", language="python"),
+                ScanRequest("paste", text="eval('1')\n", language="python"),
                 Path(tmp) / "reports", "late-cancel", control=control,
             )
             self.assertEqual(result.status, "complete")
