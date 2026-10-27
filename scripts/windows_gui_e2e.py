@@ -103,6 +103,24 @@ def main() -> int:
                     if not all(p.exists() and p.with_suffix(".md").exists() for p in saved_reports):
                         fail("paired HTML Markdown missing")
                         return
+                    # Validate folder-to-child-output denial on the Windows runner,
+                    # before source ingestion and before any output directory is made.
+                    from code_input import InputError
+                    from desktop_core import ScanRequest, run_scan
+                    forbidden_output = folder / "inside-project" / "reports"
+                    try:
+                        run_scan(
+                            ScanRequest("path", source=str(folder)),
+                            forbidden_output, "must-not-write",
+                        )
+                    except InputError:
+                        if forbidden_output.exists():
+                            fail("denied output nevertheless created files")
+                            return
+                        results.append("Windows project-output containment blocked PASS")
+                    else:
+                        fail("scan wrote reports under the scanned project")
+                        return
                     # Exercise the real Tk delete button against a separately
                     # generated synthetic report, preserving the four prior reports.
                     from desktop_core import ScanRequest, run_scan
@@ -292,7 +310,7 @@ def main() -> int:
             rc = 1
         for result in results:
             print("GUI_E2E: " + result)
-        if errors or rc != 0 or len(results) != 8:
+        if errors or rc != 0 or len(results) != 9:
             print("GUI_E2E_FAILURE: " + json.dumps(errors, ensure_ascii=False), file=sys.stderr)
             return 1
         print("WINDOWS_TK_WIDGET_INTEGRATION_PASS")

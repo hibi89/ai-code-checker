@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from code_input import InputError
+from output_safety import validate_output_location
 from offline_core import LANGUAGE_SUFFIX, OfflineScan, scan_path
 from review_models import CodeFinding
 
@@ -351,9 +352,7 @@ def write_report(report: OfflineReport, output_dir: str | Path, *, name: str = "
         not (char.isalnum() or char in "._-") for char in name
     ):
         raise InputError("보고서 이름이 허용 형식이 아닙니다.")
-    folder = Path(output_dir).expanduser()
-    if folder.is_symlink():
-        raise InputError("심볼릭 링크 폴더로 보고서를 출력하지 않습니다.")
+    folder = validate_output_location(output_dir)
     folder.mkdir(parents=True, exist_ok=True)
     if not folder.is_dir():
         raise InputError("보고서 저장 위치가 폴더가 아닙니다.")
