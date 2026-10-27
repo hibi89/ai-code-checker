@@ -55,6 +55,7 @@ def main() -> int:
             ("folder", "partial"),
             ("paste", "complete"),
             ("blocked", "blocked"),
+            ("cancel", "cancelled"),
         ]
         deadline = time.monotonic() + 75
         dummy_connect = AssertionError("offline Python GUI must not create sockets")
@@ -107,11 +108,14 @@ def main() -> int:
                 name, expected = scenarios[scenario_index]
                 old_result = window.last_result
                 try:
-                    if name in {"txt", "zip", "blocked"}:
-                        selected = {"txt": txt, "zip": zip_path, "blocked": invalid_zip}[name]
+                    if name in {"txt", "zip", "blocked", "cancel"}:
+                        selected = {
+                            "txt": txt, "zip": zip_path,
+                            "blocked": invalid_zip, "cancel": txt,
+                        }[name]
                         with patch("tkinter.filedialog.askopenfilename", return_value=str(selected)):
                             window.file_button.invoke()
-                        if name == "txt":
+                        if name in {"txt", "cancel"}:
                             window.language_var.set("Python")
                     elif name == "folder":
                         with patch("tkinter.filedialog.askdirectory", return_value=str(folder)):
@@ -154,6 +158,48 @@ def main() -> int:
                             + " busy=" + str(window.busy)
                             + " state=" + window.state_var.get()
                         )
+                        return
+                    if name == "cancel":
+                        from desktop_core import ScanCancelled
+                        from unittest.mock import patch as local_patch
+
+                        # Isolate UI cancellation from machine speed: a synthetic
+                        # worker pauses until the Tk button sends the cancel event.
+                        def cancellable_worker(_req, _folder, _name, *, control=None):
+                            if control is None:
+                                raise AssertionError("missing GUI cancellation control")
+                            control.emit("scan", 0, 2)
+                            if not control.cancel_requested.wait(4):
+                                raise AssertionError("Tk cancellation was not sent")
+                            control.check()
+                            raise AssertionError("cancelled task continued")
+
+                        patcher = local_patch("desktop_ui.run_scan", side_effect=cancellable_worker)
+                        patcher.start()
+                        window.scan_button.invoke()
+                        if window.cancel_button.instate(["disabled"]):
+                            patcher.stop()
+                            fail("cancel button disabled during active scan")
+                            return
+                        window.cancel_button.invoke()
+
+                        def after_cancel() -> None:
+                            patcher.stop()
+                            if window.last_result is not None:
+                                fail("cancelled job exposed stale report")
+                                return
+                            if "작업 취소됨" not in window.state_var.get():
+                                fail("cancelled job not labelled cancelled")
+                                return
+                            if not window.open_button.instate(["disabled"]):
+                                fail("cancelled job left HTML open enabled")
+                                return
+                            if (report_root / "cancelled.html").exists():
+                                fail("cancelled job produced report")
+                                return
+                            results.append("cancel button and Tk worker cancellation PASS")
+                            advance()
+                        until(lambda: not window.busy, "cancel worker", after_cancel)
                         return
                     window.scan_button.invoke()
 
@@ -213,7 +259,7 @@ def main() -> int:
             rc = 1
         for result in results:
             print("GUI_E2E: " + result)
-        if errors or rc != 0 or len(results) != 6:
+        if errors or rc != 0 or len(results) != 7:
             print("GUI_E2E_FAILURE: " + json.dumps(errors, ensure_ascii=False), file=sys.stderr)
             return 1
         print("WINDOWS_TK_WIDGET_INTEGRATION_PASS")
