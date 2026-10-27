@@ -6,14 +6,45 @@ without a display, API key or external network access.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from threading import Event
+from typing import Callable, Literal
 
 from code_input import InputError, bundle_from_text, load_path
 from offline_core import OFFLINE_LIMITS, _split_delimited_txt, scan_path, scan_text
 from offline_report import build_report, write_report
 from offline_coverage import list_pruned_subtrees
+
+
+class ScanCancelled(Exception):
+    """User requested cancellation before the report publication boundary."""
+
+
+@dataclass(frozen=True)
+class ProgressUpdate:
+    phase: Literal["reading", "scan", "report", "publishing", "done", "preview"]
+    completed: int = 0
+    total: int = 0
+
+
+@dataclass
+class ScanControl:
+    """Thread-safe cooperative cancellation; callback runs on the worker thread."""
+
+    on_update: Callable[[ProgressUpdate], None] | None = None
+    cancel_requested: Event = field(default_factory=Event)
+
+    def cancel(self) -> None:
+        self.cancel_requested.set()
+
+    def check(self) -> None:
+        if self.cancel_requested.is_set():
+            raise ScanCancelled("사용자 취소 요청")
+
+    def emit(self, phase: Literal["reading", "scan", "report", "publishing", "done", "preview"], completed: int = 0, total: int = 0) -> None:
+        if self.on_update is not None:
+            self.on_update(ProgressUpdate(phase, completed, total))
 
 
 @dataclass(frozen=True)
@@ -109,15 +140,23 @@ def _base_bundle(request: ScanRequest):
     return load_path(candidate, OFFLINE_LIMITS), kind
 
 
-def inspect_input(request: ScanRequest) -> InputPreview:
+def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -> InputPreview:
     """Read and inventory eligible inputs, but DO NOT execute static checks."""
+    if control is not None:
+        control.check()
+        control.emit("reading")
     bundle, kind = _base_bundle(request)
+    if control is not None:
+        control.check()
     if kind in {"paste", "txt"} and len(bundle.files) == 1:
         parsed = _split_delimited_txt(bundle.files[0], limits=OFFLINE_LIMITS)
         if parsed is not None:
             if request.language is not None:
                 raise InputError("통합 TXT는 파일별 확장자를 사용하므로 언어 자동을 선택하세요.")
             bundle, _origins, additional = parsed
+            if control is not None:
+                control.check()
+                control.emit("preview", 1, 1)
             return InputPreview(
                 "multi-txt", len(bundle.files), len(additional),
                 bundle.source_bytes, sum(item.line_count for item in bundle.files),
@@ -126,6 +165,9 @@ def inspect_input(request: ScanRequest) -> InputPreview:
                 tuple(item.path for item in bundle.files), tuple(bundle.warnings),
             )
     pruned = list_pruned_subtrees(request.source, limits=OFFLINE_LIMITS) if kind == "folder" else ()
+    if control is not None:
+        control.check()
+        control.emit("preview", 1, 1)
     return InputPreview(
         kind, len(bundle.files), len(bundle.excluded_paths), bundle.source_bytes,
         sum(item.line_count for item in bundle.files),
@@ -140,15 +182,42 @@ def run_scan(
     request: ScanRequest,
     output_dir: str | Path,
     report_name: str,
+    *,
+    control: ScanControl | None = None,
 ) -> ScanResult:
-    """Scan without API and write local reports without clobbering prior output."""
+    """Run an offline scan; cancellation before publishing writes no report pair."""
     _validate_request(request)
+    if control is not None:
+        control.check()
+        control.emit("reading")
+    on_progress = (
+        (lambda completed, total: control.emit("scan", completed, total))
+        if control is not None else None
+    )
+    check_cancelled = control.check if control is not None else None
     if request.mode == "paste":
-        scan = scan_text(request.text, filename="pasted.txt", language=request.language)
+        scan = scan_text(
+            request.text, filename="pasted.txt", language=request.language,
+            on_progress=on_progress, check_cancelled=check_cancelled,
+        )
     else:
-        scan = scan_path(request.source, language=request.language)
+        scan = scan_path(
+            request.source, language=request.language,
+            on_progress=on_progress, check_cancelled=check_cancelled,
+        )
+    if control is not None:
+        control.check()
+        control.emit("report")
     report = build_report(scan)
+    if control is not None:
+        control.check()
+        control.emit("publishing")
+        # Cancellation is cooperative until this final publication boundary.
+        # Once publishing starts, atomic write_report completes or rolls back.
+        control.check()
     html_path, markdown_path = write_report(report, output_dir, name=report_name)
+    if control is not None:
+        control.emit("done", 1, 1)
     counts = scan.counts
     return ScanResult(
         report.status, counts["enumerated"], counts["analyzed"], counts["limited"],

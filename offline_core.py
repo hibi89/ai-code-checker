@@ -12,7 +12,7 @@ import re
 import unicodedata
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from code_input import (
     CodeBundle, InputError, InputLimits, SecretRedaction, SourceFile,
@@ -238,6 +238,8 @@ def _check_bundle(
     input_kind: str,
     origins: dict[str, SourceOrigin],
     excluded: list[FileCoverage] | None = None,
+    on_progress: Callable[[int, int], None] | None = None,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> OfflineScan:
     coverage = list(excluded or [])
     for path in bundle.excluded_paths:
@@ -252,7 +254,11 @@ def _check_bundle(
         )
     _ensure_distinct([item.path for item in coverage] + [source.path for source in bundle.files])
 
-    for source in bundle.files:
+    incremental = on_progress is not None or check_cancelled is not None
+    findings: list[CodeFinding] = []
+    for index, source in enumerate(bundle.files, 1):
+        if check_cancelled is not None:
+            check_cancelled()
         origin = origins.get(source.path, SourceOrigin(source.path, source.path))
         if source.path.lower().endswith((".py", ".pyi")):
             try:
@@ -262,7 +268,15 @@ def _check_bundle(
                 coverage.append(FileCoverage(source.path, "failed", "python-ast+generic", "Python parsing failed", origin))
         else:
             coverage.append(FileCoverage(source.path, "limited", "generic-patterns-only", "no language-specific analyzer", origin))
-    findings = run_static_checks(bundle)
+        if incremental:
+            # Static checks are file-local; preserve existing file and finding order.
+            findings.extend(run_static_checks(CodeBundle([source])))
+        if on_progress is not None:
+            on_progress(index, len(bundle.files))
+    if check_cancelled is not None:
+        check_cancelled()
+    if not incremental:
+        findings = run_static_checks(bundle)
     return OfflineScan(bundle, findings, coverage, input_kind, list(bundle.warnings))
 
 
@@ -273,6 +287,8 @@ def _txt_bundle(
     language: str | None,
     limits: InputLimits,
     input_kind: str,
+    on_progress: Callable[[int, int], None] | None = None,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> OfflineScan:
     if len(base.files) != 1:
         raise InputError("단일 TXT 입력에서 하나의 소스만 예상했습니다.")
@@ -290,13 +306,17 @@ def _txt_bundle(
             replace(item, origin=replace(item.origin, container_path=source_label) if item.origin else None)
             for item in excluded
         ]
-        return _check_bundle(bundle, input_kind="multi-txt", origins=origins, excluded=excluded)
+        return _check_bundle(
+            bundle, input_kind="multi-txt", origins=origins, excluded=excluded,
+            on_progress=on_progress, check_cancelled=check_cancelled,
+        )
     virtual = _language_virtual_path(source.path, language)
     modified = replace(source, path=virtual)
     bundle = CodeBundle([modified], list(base.warnings), list(base.excluded_paths), base.source_bytes)
     return _check_bundle(
         bundle, input_kind=input_kind,
         origins={virtual: SourceOrigin(virtual, source_label)},
+        on_progress=on_progress, check_cancelled=check_cancelled,
     )
 
 
@@ -305,6 +325,8 @@ def scan_path(
     *,
     language: str | None = None,
     limits: InputLimits = OFFLINE_LIMITS,
+    on_progress: Callable[[int, int], None] | None = None,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> OfflineScan:
     """Never executes scanned code or calls external APIs."""
     source_path = Path(path).expanduser()
@@ -312,17 +334,25 @@ def scan_path(
         raise InputError("언어 선택은 TXT에서만 허용됩니다.")
     # The legacy loader enforces size, path, ZIP and symlink protections.
     bundle = load_path(source_path, limits)
+    if check_cancelled is not None:
+        check_cancelled()
     if source_path.is_file() and source_path.suffix.lower() == ".txt":
         return _txt_bundle(
             bundle, source_label=source_path.name, language=language,
             limits=limits, input_kind="txt",
+            on_progress=on_progress, check_cancelled=check_cancelled,
         )
     input_kind = "zip" if source_path.suffix.lower() == ".zip" else (
         "folder" if source_path.is_dir() else "file"
     )
-    scan = _check_bundle(bundle, input_kind=input_kind, origins={})
+    scan = _check_bundle(
+        bundle, input_kind=input_kind, origins={},
+        on_progress=on_progress, check_cancelled=check_cancelled,
+    )
     if input_kind == "folder":
         scan.pruned_subtrees = list_pruned_subtrees(source_path, limits=limits)
+    if check_cancelled is not None:
+        check_cancelled()
     return scan
 
 
@@ -332,17 +362,25 @@ def scan_text(
     filename: str = "pasted.txt",
     language: str | None = None,
     limits: InputLimits = OFFLINE_LIMITS,
+    on_progress: Callable[[int, int], None] | None = None,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> OfflineScan:
     """Inspect pasted synthetic/customer text in memory, without network access."""
     bundle = bundle_from_text(text, filename=filename, limits=limits)
+    if check_cancelled is not None:
+        check_cancelled()
     if filename.lower().endswith(".txt"):
         return _txt_bundle(
             bundle, source_label=filename, language=language,
             limits=limits, input_kind="paste",
+            on_progress=on_progress, check_cancelled=check_cancelled,
         )
     if language is not None:
         raise InputError("확장자가 있는 코드 붙여넣기는 언어 선택을 허용하지 않습니다.")
-    return _check_bundle(bundle, input_kind="paste", origins={})
+    return _check_bundle(
+        bundle, input_kind="paste", origins={},
+        on_progress=on_progress, check_cancelled=check_cancelled,
+    )
 
 
 def main() -> int:
