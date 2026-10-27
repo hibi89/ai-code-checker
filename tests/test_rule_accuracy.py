@@ -71,6 +71,38 @@ class RuleAccuracyTests(unittest.TestCase):
             [("PY-SHELL", 3)],
         )
 
+    def test_sql_interpolation_improves_detection_without_constant_false_alarms(self):
+        cases = (
+            ('cursor.execute("SELECT * FROM users WHERE id=%s" % user)\n', ("PY-SQL-CONCAT", 1)),
+            ('cursor.execute("SELECT * FROM users WHERE id={id}".format(id=user))\n', ("PY-SQL-CONCAT", 1)),
+            ('cursor.execute("DELETE FROM users WHERE id={id}".format_map(data))\n', ("PY-SQL-CONCAT", 1)),
+            ('sql = "SELECT * FROM users WHERE id=%s" % user\ncursor.execute(sql)\n', ("PY-SQL-CONCAT", 2)),
+        )
+        for code, expected in cases:
+            with self.subTest(code=code):
+                report = build_report(scan_text(code, filename="synthetic.py"))
+                self.assertEqual(
+                    [(r.rule_id, r.finding.start_line) for r in report.findings],
+                    [expected],
+                )
+                self.assertEqual(report.verified_count, 1)
+
+    def test_sql_literal_and_parameter_cases_are_not_false_positives(self):
+        safe = (
+            'cursor.execute("SELECT * FROM users WHERE id=%s", (user,))\n',
+            'cursor.execute("SELECT * FROM users WHERE id=%s" % 42)\n',
+            'cursor.execute("SELECT * FROM users WHERE id={}".format(42))\n',
+            'cursor.execute("SELECT * FROM users WHERE id={id}".format_map({"id": 42}))\n',
+            'cursor.execute("SELECT * FROM {{table}}".format(user))\n',
+            'cursor.execute("SELECT * FROM users".format(user))\n',
+            'cursor.execute("SELECT %% FROM users" % user)\n',
+            'print("SELECT * FROM users WHERE id={}".format(user))\n',
+        )
+        for code in safe:
+            with self.subTest(code=code):
+                report = build_report(scan_text(code, filename="synthetic.py"))
+                self.assertFalse(any(r.rule_id == "PY-SQL-CONCAT" for r in report.findings))
+
     def test_js_ts_do_not_claim_ast_analyzer(self):
         for filename, code in (("x.js", "fetch(url);\n"), ("x.ts", "let a: number = 1;\n")):
             scan = scan_text(code, filename=filename)
