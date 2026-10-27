@@ -143,6 +143,36 @@ class RuleAccuracyTests(unittest.TestCase):
                 report = build_report(scan_text(sample, filename="fixture.py"))
                 self.assertEqual(report.findings, ())
 
+    def test_guarded_import_not_promoted_to_unconditional_provenance(self):
+        samples = (
+            'if enabled:\n    import subprocess as sp\nsp.run(cmd, shell=True)\n',
+            'try:\n    import requests as req\nexcept ImportError:\n    req = other\nreq.get(url, verify=False)\n',
+            'for x in values:\n    from pickle import loads as read\nread(value)\n',
+            'match mode:\n    case "yes":\n        import subprocess as sp\nsp.run(cmd, shell=True)\n',
+            'if enabled:\n    import subprocess as sp\nelse:\n    sp.run(cmd, shell=True)\n',
+        )
+        for code in samples:
+            with self.subTest(source=code):
+                report = build_report(scan_text(code, filename="fixture.py"))
+                self.assertEqual(report.findings, ())
+
+    def test_guarded_import_keeps_proof_inside_exact_same_suite(self):
+        samples = (
+            ('if enabled:\n    import subprocess as sp\n    sp.run(cmd, shell=True)\n', "PY-SHELL", 3),
+            ('try:\n    import requests as req\n    req.get(url, verify=False)\nexcept ImportError:\n    pass\n', "GEN-TLS-VERIFY", 3),
+            ('with resource:\n    from pickle import loads as parse\n    parse(payload)\n', "PY-PICKLE", 3),
+            ('match mode:\n    case "on":\n        import subprocess as sp\n        sp.run(cmd, shell=True)\n', "PY-SHELL", 4),
+            ('if enabled:\n    import os as sp\nimport subprocess as sp\nsp.run(cmd, shell=True)\n', "PY-SHELL", 4),
+        )
+        for code, rule, line in samples:
+            with self.subTest(source=code):
+                report = build_report(scan_text(code, filename="fixture.py"))
+                self.assertEqual(
+                    [(row.rule_id, row.finding.start_line) for row in report.findings],
+                    [(rule, line)],
+                )
+                self.assertEqual(report.verified_count, 1)
+
     def test_js_ts_do_not_claim_ast_analyzer(self):
         for filename, code in (("x.js", "fetch(url);\n"), ("x.ts", "let a: number = 1;\n")):
             scan = scan_text(code, filename=filename)

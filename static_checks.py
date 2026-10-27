@@ -59,12 +59,12 @@ class _ImportResolver:
     def __init__(self, tree: ast.Module) -> None:
         self.parents = {child: parent for parent in ast.walk(tree)
                         for child in ast.iter_child_nodes(parent)}
-        self.events: dict[str, list[tuple[int, int, tuple[str, str] | None]]] = {}
+        self.events: dict[str, list[tuple[int, int, tuple[str, str] | None, ast.AST]]] = {}
         self.locals: dict[ast.AST, set[str]] = {}
 
         def bind(name: str, node: ast.AST, origin: tuple[str, str] | None = None) -> None:
             self.events.setdefault(name, []).append(
-                (getattr(node, "lineno", 0), getattr(node, "col_offset", 0), origin))
+                (getattr(node, "lineno", 0), getattr(node, "col_offset", 0), origin, node))
 
         def walk(node: ast.AST, *, direct: bool = False) -> None:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -139,6 +139,40 @@ class _ImportResolver:
         self.locals[scope] = names
         return names
 
+    _CONDITIONAL_BLOCKS = (
+        ast.If, ast.For, ast.AsyncFor, ast.While, ast.Try, ast.TryStar,
+        ast.With, ast.AsyncWith, ast.Match,
+    )
+
+    def _control_suites(self, node: ast.AST) -> set[tuple[ast.AST, str | ast.AST]]:
+        """Track exactly which guarded suite contains a syntactic node.
+
+        An import in an if/try/loop/match suite is not guaranteed to have run
+        when a later call is outside that same suite. This is purely syntactic
+        dominance evidence, not execution of code or full control-flow analysis.
+        """
+        result: set[tuple[ast.AST, str | ast.AST]] = set()
+        child = node
+        parent = self.parents.get(child)
+        while parent is not None:
+            if isinstance(parent, self._CONDITIONAL_BLOCKS):
+                key: str | ast.AST | None = None
+                for field in ("body", "orelse", "finalbody"):
+                    suite = getattr(parent, field, None)
+                    if isinstance(suite, list) and child in suite:
+                        key = field
+                        break
+                if key is None and isinstance(parent, (ast.Try, ast.TryStar)):
+                    if child in parent.handlers:
+                        key = child  # exact except handler, not every handler
+                if key is None and isinstance(parent, ast.Match):
+                    if child in parent.cases:
+                        key = child  # exact match case
+                if key is not None:
+                    result.add((parent, key))
+            child, parent = parent, self.parents.get(parent)
+        return result
+
     def _candidate(self, alias: str, call: ast.Call) -> tuple[str, str] | None:
         nested = False
         parent = self.parents.get(call)
@@ -149,11 +183,16 @@ class _ImportResolver:
                     return None
             parent = self.parents.get(parent)
         events = self.events.get(alias, ())
-        if nested and any(origin is None for _, _, origin in events):
+        if nested and any(origin is None for _, _, origin, _ in events):
             return None  # Execution order of later global writes is unknown.
         earlier = [row for row in events
                    if (row[0], row[1]) < (call.lineno, call.col_offset)]
-        return earlier[-1][2] if earlier else None
+        if not earlier:
+            return None
+        _, _, origin, bound_at = earlier[-1]
+        if not self._control_suites(bound_at).issubset(self._control_suites(call)):
+            return None  # Import or shadow may have executed only in another arm.
+        return origin
 
     def imported(self, call: ast.Call, package: str, names: set[str]) -> bool:
         target = call.func
@@ -171,7 +210,7 @@ class _ImportResolver:
             return False
         events = self.events.get(name, ())
         if any((line, col) < (call.lineno, call.col_offset)
-               for line, col, _ in events):
+               for line, col, _, _ in events):
             return False
         parent = self.parents.get(call)
         while parent is not None:
