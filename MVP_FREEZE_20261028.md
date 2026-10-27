@@ -11,21 +11,21 @@
 - Build and unit CI green with no new paid dependencies. No customer secrets or synthetic EXEs uploaded.
 
 ## Reproduce in a checkout
-\`\`\`powershell
+```powershell
 python -m pip install -r requirements-offline.txt
 python -m scripts.mvp_acceptance
 python desktop_ui.py --self-test
 python desktop_ui.py
-\`\`\`
+```
 On Windows with approved packaging dependencies:
-\`\`\`powershell
+```powershell
 python -m pip install -r requirements-offline-build.txt
 ./scripts/build_windows_portable.ps1
-\`\`\`
-Generated developer-only binary: \`dist-windows/CodeCheckerOffline.exe\`. No public upload or automated commercial release. Optional packaging dependencies are developer-side only.
+```
+Generated developer-only binary: `dist-windows/CodeCheckerOffline.exe`. No public upload or automated commercial release. Optional packaging dependencies are developer-side only.
 
 ## Evidence interpretation
-\`scripts.mvp_acceptance\` tests seven user-critical contracts with disposable synthetic Python, mixed ZIP and invalid ZIP:
+`scripts.mvp_acceptance` tests seven user-critical contracts with disposable synthetic Python, mixed ZIP and invalid ZIP:
 1. Preview of Python input.
 2. Real scan with supported Python AST risk candidate, verified finding.
 3. HTML/Markdown generated with source mapping and self-contained content.
