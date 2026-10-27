@@ -76,6 +76,17 @@ class ComponentOwnershipTests(unittest.TestCase):
         self.assertFalse(info["license_compliance_certified"])
         self.assertFalse(info["customer_release_ready"])
 
+    def test_bundled_history_module_is_accounted_as_first_party(self):
+        audit = sample_audit()
+        audit["archive"]["pyz_modules"].append({"module": "report_history"})
+        mapping = make_mapping(audit, package_claims={}, installed_files={})
+        kinds = {row["name"]: row["mapping"] for row in mapping["entries"]}
+        self.assertEqual(kinds["report_history"], "first_party_candidate")
+        baseline = make_mapping(sample_audit(), package_claims={}, installed_files={})
+        self.assertEqual(mapping["unresolved_count"], baseline["unresolved_count"])
+        self.assertEqual(mapping["total_rows"], baseline["total_rows"] + 1)
+        self.assertFalse(mapping["customer_release_ready"])
+
     def test_ambiguous_package_cannot_be_assigned_a_single_owner(self):
         audit = sample_audit()
         audit["python_build_distributions"].append({
