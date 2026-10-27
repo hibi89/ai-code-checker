@@ -15,8 +15,8 @@ import tracemalloc
 import zipfile
 from pathlib import Path
 
-from code_input import InputError
-from offline_core import scan_path
+from code_input import InputError, bundle_from_text
+from offline_core import OFFLINE_LIMITS, scan_path
 from offline_report import build_report, write_report
 
 
@@ -96,6 +96,36 @@ def one_case(label, source, language, expected_files, expected_lines, expected_s
     }
 
 
+def dense_redaction_case():
+    """Measure only local input normalization of dense synthetic PII, no scan/report."""
+    count = 6000
+    text = "".join(
+        f"person_{n:05d} = 'user{n:05d}@synthetic.invalid'\\n"
+        for n in range(count)
+    )
+    # The benchmark is synthetic and within the current 1 MiB per-file cap.
+    tracemalloc.start()
+    start = time.perf_counter()
+    bundle = bundle_from_text(text, filename="synthetic.py", limits=OFFLINE_LIMITS)
+    elapsed = time.perf_counter() - start
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    positions = tuple(item.line_number for item in bundle.files[0].redactions)
+    if (len(positions) != count or positions != tuple(range(1, count + 1))
+            or "synthetic.invalid" in bundle.files[0].text):
+        raise AssertionError("Dense synthetic redaction did not preserve line citations")
+    return {
+        "case": "dense_redaction_6000",
+        "scope": "input_normalization_only_no_scan_or_report",
+        "input_bytes": len(text.encode("utf-8")),
+        "redacted_items": count,
+        "elapsed_seconds": round(elapsed, 4),
+        "tracemalloc_peak_mib": round(peak / (1024 * 1024), 3),
+        "rss_measured": False,
+        "before_version_direct_comparison": False,
+    }
+
+
 def boundary_cases(parent: Path):
     """Fail-closed checks: no silent truncation, no 'complete' on limits."""
     folder = parent / "synthetic_201"
@@ -130,6 +160,7 @@ def run_benchmark(*, full: bool = True):
             "benchmark_fixture_source_only": True,
             "limits": {"max_eligible_files": 200, "max_file_bytes": 1048576, "max_total_bytes": 8388608},
             "results": cases,
+            "redaction_normalization": dense_redaction_case() if full else None,
             "limit_checks": checks,
             "marketing_capacity_certified": False,
         }
