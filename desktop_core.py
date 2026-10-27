@@ -6,6 +6,7 @@ without a display, API key or external network access.
 """
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event
@@ -70,6 +71,7 @@ class InputPreview:
     paths: tuple[str, ...]
     warnings: tuple[str, ...]
     pruned_subtrees: tuple[str, ...] = ()
+    fingerprint: str = ""  # Session-only; never show or persist content hashes.
 
     def display(self) -> str:
         summary = (
@@ -144,6 +146,47 @@ def _base_bundle(request: ScanRequest):
     return load_path(candidate, OFFLINE_LIMITS), kind
 
 
+def _preview_fingerprint(bundle, kind: str, language: str | None, *,
+                         pruned: tuple[str, ...] = (),
+                         additional_excluded: tuple[str, ...] = ()) -> str:
+    """Bounded, session-only digest of normalized scan inputs and disclosure.
+
+    Secrets already excluded/redacted by loader are not re-read in raw form.
+    This is a preflight freshness guard, NOT atomic filesystem isolation.
+    """
+    digest = hashlib.sha256()
+
+    def add(value: object) -> None:
+        payload = str(value).encode("utf-8")
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+
+    add("code-checker-preview-v1")
+    add(kind)
+    add(language or "")
+    add(bundle.source_bytes)
+    for file in sorted(bundle.files, key=lambda item: item.path):
+        add("file")
+        add(file.path)
+        add(file.source_bytes)
+        add(file.text)
+        for redaction in file.redactions:
+            add(f"{redaction.line_number}:{redaction.kind}")
+    for excluded in sorted(bundle.excluded_paths):
+        add("excluded")
+        add(excluded)
+    for excluded in sorted(additional_excluded):
+        add("extra-excluded")
+        add(excluded)
+    for warning in sorted(bundle.warnings):
+        add("warning")
+        add(warning)
+    for item in sorted(pruned):
+        add("pruned")
+        add(item)
+    return digest.hexdigest()
+
+
 def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -> InputPreview:
     """Read and inventory eligible inputs, but DO NOT execute static checks."""
     if control is not None:
@@ -167,6 +210,10 @@ def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -
                 sum(item.path.lower().endswith((".py", ".pyi")) for item in bundle.files),
                 sum(not item.path.lower().endswith((".py", ".pyi")) for item in bundle.files),
                 tuple(item.path for item in bundle.files), tuple(bundle.warnings),
+                fingerprint=_preview_fingerprint(
+                    bundle, "multi-txt", request.language,
+                    additional_excluded=tuple(item.path for item in additional),
+                ),
             )
     pruned = list_pruned_subtrees(request.source, limits=OFFLINE_LIMITS) if kind == "folder" else ()
     if control is not None:
@@ -179,6 +226,7 @@ def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -
         sum(not (item.path.lower().endswith((".py", ".pyi")) or (kind in {"paste", "txt"} and request.language == "python")) for item in bundle.files),
         tuple(item.path for item in bundle.files), tuple(bundle.warnings),
         pruned,
+        fingerprint=_preview_fingerprint(bundle, kind, request.language, pruned=pruned),
     )
 
 
@@ -188,14 +236,25 @@ def run_scan(
     report_name: str,
     *,
     control: ScanControl | None = None,
+    expected_preview_fingerprint: str | None = None,
 ) -> ScanResult:
-    """Run an offline scan; cancellation before publishing writes no report pair."""
+    """Run offline scan; optional GUI preview freshness check before scanning.
+
+    A new filesystem write after the second read can still race; no atomic
+    filesystem snapshot is claimed. Headless callers remain backward-compatible.
+    """
     _validate_request(request)
     # Block remote/linked input before any is_dir metadata access.
     source = validate_offline_input_path(request.source) if request.mode == "path" else None
     # Never place generated reports inside the folder being scanned.
     input_folder = source if source is not None and source.is_dir() else None
     validate_output_location(output_dir, input_directory=input_folder)
+    if expected_preview_fingerprint is not None:
+        if not isinstance(expected_preview_fingerprint, str) or len(expected_preview_fingerprint) != 64:
+            raise InputError("미리보기 검증 정보가 올바르지 않습니다. 다시 미리보기를 실행하세요.")
+        fresh = inspect_input(request, control=control)
+        if fresh.fingerprint != expected_preview_fingerprint:
+            raise InputError("미리보기 이후 입력 파일 또는 검사 범위가 변경되었습니다. 다시 미리보기를 실행하세요.")
     if control is not None:
         control.check()
         control.emit("reading")
