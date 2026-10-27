@@ -109,7 +109,10 @@ def list_historical_reports(output_dir: str | Path, *, limit: int = 20) -> tuple
                 if not entry.is_file(follow_symlinks=False):
                     continue
                 info = entry.stat(follow_symlinks=False)
-                if info.st_nlink != 1 or getattr(info, "st_file_attributes", 0) & _REPARSE:
+                # Windows DirEntry.stat() may report st_nlink=0 even for a
+                # regular file. The definitive lstat/fstat single-link checks
+                # remain in validate_historical_report() below.
+                if getattr(info, "st_file_attributes", 0) & _REPARSE:
                     continue
                 candidates.append((info.st_mtime_ns, name))
                 if len(candidates) > 512:
