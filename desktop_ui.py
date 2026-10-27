@@ -436,6 +436,105 @@ def packaged_smoke_test() -> int:
     return 0
 
 
+
+def packaged_scenario_smoke_test() -> int:
+    """Drive actual frozen Tk widgets with synthetic code and local reports.
+
+    This is intentionally not a retail Windows, OS-packet, Defender or human
+    PDF visual acceptance check. No customer files, internet or browser.
+    """
+    import tempfile
+    import time
+    from pathlib import Path
+
+    success = [False]
+    failures: list[str] = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="code-checker-frozen-gui-") as temp:
+            output = Path(temp) / "synthetic-local-reports"
+
+            def on_ready(window) -> None:
+                deadline = time.monotonic() + 35
+
+                def fail(reason: str) -> None:
+                    failures.append(reason)
+                    window.root.destroy()
+
+                def await_phase(expected: str) -> None:
+                    if time.monotonic() > deadline:
+                        fail("timeout-" + expected)
+                        return
+                    if not window.root.winfo_exists():
+                        return
+                    try:
+                        if expected == "preview":
+                            if not window.busy and window.preview_request is not None:
+                                if window.scan_button.instate(["disabled"]):
+                                    fail("scan-button-disabled")
+                                    return
+                                window.scan_button.invoke()
+                                window.root.after(40, lambda: await_phase("report"))
+                                return
+                        elif expected == "report":
+                            if not window.busy and window.last_result is not None:
+                                result = window.last_result
+                                if (
+                                    result.status != "complete" or result.findings < 1
+                                    or result.verified < 1
+                                    or not result.html_path.is_file()
+                                    or not result.markdown_path.is_file()
+                                    or result.html_path.parent != output
+                                    or window.open_button.instate(["disabled"])
+                                    or window.delete_button.instate(["disabled"])
+                                    or result.report_receipt is None
+                                ):
+                                    fail("frozen-scan-or-controls-invalid")
+                                    return
+                                report_html = result.html_path.read_text(encoding="utf-8")
+                                report_markdown = result.markdown_path.read_text(encoding="utf-8")
+                                if (
+                                    "코드체커 오프라인 진단 보고서" not in report_html
+                                    or "코드체커 오프라인 진단 보고서" not in report_markdown
+                                    or "eval" not in report_html
+                                    or "<!doctype html>" not in report_html.lower()
+                                ):
+                                    fail("frozen-report-content-invalid")
+                                    return
+                                success[0] = True
+                                window.root.destroy()
+                                return
+                        if not window.busy and "실패" in window.state_var.get():
+                            fail("gui-reported-error-" + expected)
+                            return
+                        window.root.after(40, lambda: await_phase(expected))
+                    except Exception as error:
+                        fail("phase-" + expected + "-" + type(error).__name__)
+
+                try:
+                    window.paste_button.invoke()
+                    window.language_var.set("Python")
+                    window.paste_text.delete("1.0", "end")
+                    window.paste_text.insert("1.0", "eval('1+1')\n")
+                    window.output_var.set(str(output))
+                    window.root.update_idletasks()
+                    window.preview_button.invoke()
+                    await_phase("preview")
+                except Exception as error:
+                    fail("setup-" + type(error).__name__)
+
+            result_code = launch(on_ready=on_ready)
+            if result_code != 0 or not success[0] or failures:
+                print("FROZEN_GUI_SCENARIO_FAILURE=" + ",".join(failures), file=sys.stderr)
+                return 1
+        print("FROZEN_GUI_PREVIEW_SCAN_REPORT_PASS")
+        print("FROZEN_GUI_REAL_CUSTOMER_DEVICE=UNVERIFIED")
+        print("OS_PACKET_CAPTURE=UNVERIFIED")
+        return 0
+    except Exception as error:
+        print("FROZEN_GUI_SCENARIO_FAILURE=" + type(error).__name__, file=sys.stderr)
+        return 1
+
+
 def packaged_gui_smoke_test() -> int:
     """Check real Tk initialization in the packaged process, no project data."""
     try:
@@ -459,6 +558,8 @@ def packaged_gui_smoke_test() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 2 and sys.argv[1] == "--scenario-smoke":
+        raise SystemExit(packaged_scenario_smoke_test())
     if len(sys.argv) == 2 and sys.argv[1] == "--gui-smoke":
         raise SystemExit(packaged_gui_smoke_test())
     if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
