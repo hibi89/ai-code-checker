@@ -105,3 +105,11 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 - **#13 PDF:** Windows browser synthetic PDF smoke still PASS, actual visual page verification and real user browser print **UNVERIFIED**.
 - **#19 OS/network and #23 notice:** physical Windows Defender/SmartScreen/OS packet capture/actual binary rights and original NOTICE compliance remain UNVERIFIED/BLOCKED; CI GUI smoke provides no evidence for those.
 - New proof document: `P1K_FROZEN_GUI_ACCEPTANCE_20261027.md`. No Vercel or product release.
+
+
+## 2026-10-27 P1-L release-gate observation addendum
+
+- **#18/#19 Windows/privacy:** P1-L [PR #23](https://github.com/hibi89/ai-code-checker/pull/23) added an explicit local-only, read-only Windows EXE SHA/signature/Defender settings receipt, independently checked against the actual EXE bytes. CI hosted Windows logs confirm `WINDOWS_ACCEPTANCE_READONLY_EVIDENCE_PASS` and Defender *settings* observable, **not** a Defender EXE malware scan, SmartScreen acceptance or actual network packet capture. Actual retail clean Windows remains UNVERIFIED.
+- **#13 visual PDF:** Existing headless browser print remains synthetic only, human visual inspection UNVERIFIED.
+- **#23 binary licenses:** original third-party NOTICE and redistribution approval remain BLOCKED; signature status observation alone does not approve distribution.
+- **Release gates:** evidence schema hardcodes retail user acceptance, SmartScreen, OS packets, Defender file scan, human Korean PDF visual and third-party legal NOTICE as UNVERIFIED. No user OS changes; CI Tests 16/16 / 185 Python cases and Windows EXE + read-only receipt 1/1 PASS on feature `19496ba1`, merged source `f7fccd8`. See `P1L_WINDOWS_READONLY_ACCEPTANCE_20261027.md`.
