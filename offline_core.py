@@ -22,6 +22,7 @@ from code_input import (
 from review_models import CodeFinding
 from static_checks import run_static_checks
 from offline_coverage import list_pruned_subtrees
+from input_safety import validate_offline_input_path
 
 
 OFFLINE_LIMITS = InputLimits(
@@ -329,7 +330,7 @@ def scan_path(
     check_cancelled: Callable[[], None] | None = None,
 ) -> OfflineScan:
     """Never executes scanned code or calls external APIs."""
-    source_path = Path(path).expanduser()
+    source_path = validate_offline_input_path(path)
     if language is not None and source_path.suffix.lower() != ".txt":
         raise InputError("언어 선택은 TXT에서만 허용됩니다.")
     # The legacy loader enforces size, path, ZIP and symlink protections.

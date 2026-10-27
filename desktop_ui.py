@@ -70,6 +70,10 @@ def launch(on_ready=None) -> int:
             self.paste_button.pack(side="left", padx=(0, 8))
             self.clear_button = ttk.Button(bar, text="붙여넣기 지우기", command=self._clear_paste)
             self.clear_button.pack(side="left")
+            ttk.Label(
+                choose,
+                text="로컬 파일·폴더만 검사 · 연결 네트워크 드라이브 입력 차단 (파일 선택창은 별도 동작)",
+            ).pack(anchor="w", pady=(6, 2))
 
             self.source_entry = ttk.Entry(choose, textvariable=self.source_var, state="readonly")
             self.source_entry.pack(fill="x", pady=(10, 4))

@@ -16,6 +16,7 @@ from offline_core import OFFLINE_LIMITS, _split_delimited_txt, scan_path, scan_t
 from offline_report import build_report, write_report
 from offline_coverage import list_pruned_subtrees
 from output_safety import validate_output_location
+from input_safety import validate_offline_input_path
 from report_cleanup import ReportReceipt, capture_report_receipt
 
 
@@ -134,7 +135,7 @@ def _base_bundle(request: ScanRequest):
     _validate_request(request)
     if request.mode == "paste":
         return bundle_from_text(request.text, filename="pasted.txt", limits=OFFLINE_LIMITS), "paste"
-    candidate = Path(request.source).expanduser()
+    candidate = validate_offline_input_path(request.source)
     kind = "folder" if candidate.is_dir() else (
         "zip" if candidate.suffix.lower() == ".zip" else (
             "txt" if candidate.suffix.lower() == ".txt" else "file"
@@ -190,11 +191,10 @@ def run_scan(
 ) -> ScanResult:
     """Run an offline scan; cancellation before publishing writes no report pair."""
     _validate_request(request)
+    # Block remote/linked input before any is_dir metadata access.
+    source = validate_offline_input_path(request.source) if request.mode == "path" else None
     # Never place generated reports inside the folder being scanned.
-    input_folder = (
-        request.source if request.mode == "path"
-        and Path(request.source).expanduser().is_dir() else None
-    )
+    input_folder = source if source is not None and source.is_dir() else None
     validate_output_location(output_dir, input_directory=input_folder)
     if control is not None:
         control.check()
