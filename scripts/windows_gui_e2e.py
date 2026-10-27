@@ -216,9 +216,14 @@ def main() -> int:
 
                         # Isolate UI cancellation from machine speed: a synthetic
                         # worker pauses until the Tk button sends the cancel event.
-                        def cancellable_worker(_req, _folder, _name, *, control=None):
+                        def cancellable_worker(
+                            _req, _folder, _name, *,
+                            control=None, expected_preview_fingerprint=None,
+                        ):
                             if control is None:
                                 raise AssertionError("missing GUI cancellation control")
+                            if not expected_preview_fingerprint or len(expected_preview_fingerprint) != 64:
+                                raise AssertionError("GUI omitted the preview freshness token")
                             control.emit("scan", 0, 2)
                             if not control.cancel_requested.wait(4):
                                 raise AssertionError("Tk cancellation was not sent")
