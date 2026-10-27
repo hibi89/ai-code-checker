@@ -136,7 +136,7 @@ class NoticeLedgerTests(unittest.TestCase):
 
     def test_windows_archive_separators_match_ownership_canonical_names(self):
         args = fixture()
-        args[0]["archive"]["top_level"][-1]["name"] = r"nested\\mystery.dll"
+        args[0]["archive"]["top_level"][-1]["name"] = r"nested\mystery.dll"
         args[1] = make_mapping(args[0], package_claims={"pydantic": ["pydantic"]}, installed_files={})
         args[1]["license_text_draft"] = fixture()[1]["license_text_draft"]
         args[2]["records"][0]["name"] = "nested/mystery.dll"
