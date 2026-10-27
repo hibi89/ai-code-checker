@@ -205,8 +205,15 @@ def _sql_literal_only(node: ast.AST) -> bool:
     if isinstance(node, ast.Constant):
         return isinstance(node.value, str)
     if isinstance(node, ast.JoinedStr):
-        return all(isinstance(item, ast.Constant) and isinstance(item.value, str)
-                   for item in node.values)
+        return all(
+            (isinstance(item, ast.Constant) and isinstance(item.value, str))
+            or (
+                isinstance(item, ast.FormattedValue)
+                and isinstance(item.value, ast.Constant)
+                and (item.format_spec is None or _sql_literal_only(item.format_spec))
+            )
+            for item in node.values
+        )
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         return _sql_literal_only(node.left) and _sql_literal_only(node.right)
     return False
@@ -274,6 +281,33 @@ def _sql_direct_local(query: ast.AST, call: ast.Call, resolver: _ImportResolver)
     return False
 
 
+def _static_option_constant(value: ast.AST) -> object:
+    """Return only primitive syntax literals; never evaluate source expressions."""
+    if isinstance(value, ast.Constant):
+        return value.value
+    if (
+        isinstance(value, ast.UnaryOp)
+        and isinstance(value.op, (ast.UAdd, ast.USub))
+        and isinstance(value.operand, ast.Constant)
+        and type(value.operand.value) in (int, float)
+    ):
+        literal = value.operand.value
+        return literal if isinstance(value.op, ast.UAdd) else -literal
+    return None
+
+
+def _literal_shell_enabled(value: ast.AST) -> bool:
+    """Only flag syntactically known truthy built-in literals."""
+    candidate = _static_option_constant(value)
+    return type(candidate) in (bool, int, float, str, bytes) and bool(candidate)
+
+
+def _literal_tls_disabled(value: ast.AST) -> bool:
+    """None means 'default' in requests, not explicit certificate bypass."""
+    candidate = _static_option_constant(value)
+    return type(candidate) in (bool, int, float, str, bytes) and not candidate
+
+
 def _python_findings(source: SourceFile) -> list[CodeFinding]:
     findings: list[CodeFinding] = []
     try:
@@ -306,8 +340,7 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
 
         shell_true = any(
             keyword.arg == "shell"
-            and isinstance(keyword.value, ast.Constant)
-            and keyword.value.value is True
+            and _literal_shell_enabled(keyword.value)
             for keyword in node.keywords
         )
         if shell_true and resolver.imported(node, "subprocess", _SUBPROCESS_CALLS):
@@ -332,8 +365,8 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
         # Generic verify=False text matching on Python caused string/comment FPs.
         # Only recognize explicit requests module/from-import HTTP calls.
         if resolver.imported(node, "requests", _REQUESTS_CALLS) and any(
-            kw.arg == "verify" and isinstance(kw.value, ast.Constant)
-            and kw.value.value is False for kw in node.keywords
+            kw.arg == "verify" and _literal_tls_disabled(kw.value)
+            for kw in node.keywords
         ):
             findings.append(_finding(
                 source, "HIGH", "security", "TLS 인증서 검증을 비활성화함",

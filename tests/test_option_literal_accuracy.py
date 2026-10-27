@@ -1,0 +1,67 @@
+"""P1-Q: option literal truthiness and SQL constant interpolation regressions."""
+from __future__ import annotations
+
+import unittest
+
+from offline_core import scan_text
+from offline_report import build_report
+
+
+def rules(code: str) -> tuple[tuple[str, int | None], ...]:
+    report = build_report(scan_text(code, filename="synthetic.py"))
+    return tuple((row.rule_id, row.finding.start_line) for row in report.findings)
+
+
+class OptionLiteralAccuracyTests(unittest.TestCase):
+    def test_subprocess_truthy_literals_alert(self) -> None:
+        for literal in ("True", "1", "-1", "1.0", "'yes'", "b'yes'"):
+            with self.subTest(literal=literal):
+                code = f"import subprocess\nsubprocess.run(cmd, shell={literal})\n"
+                self.assertEqual(rules(code), (("PY-SHELL", 2),))
+
+    def test_subprocess_false_and_unknown_values_do_not_alert(self) -> None:
+        for literal in ("False", "0", "0.0", "''", "None", "shell_option"):
+            with self.subTest(literal=literal):
+                code = f"import subprocess\nsubprocess.run(cmd, shell={literal})\n"
+                self.assertEqual(rules(code), ())
+
+    def test_requests_explicit_falsey_literals_alert(self) -> None:
+        for literal in ("False", "0", "0.0", "''", 'b""'):
+            with self.subTest(literal=literal):
+                code = f"import requests\nrequests.get(url, verify={literal})\n"
+                self.assertEqual(rules(code), (("GEN-TLS-VERIFY", 2),))
+
+    def test_requests_none_and_truthy_do_not_alert(self) -> None:
+        for literal in ("None", "True", "1", "'custom-ca.pem'", "verify_option"):
+            with self.subTest(literal=literal):
+                code = f"import requests\nrequests.get(url, verify={literal})\n"
+                self.assertEqual(rules(code), ())
+
+    def test_only_known_imported_apis_match(self) -> None:
+        code = ("service.run(cmd, shell=1)\n"
+                "client.get(url, verify=0)\n")
+        self.assertEqual(rules(code), ())
+
+    def test_sql_literal_only_formatted_strings_stay_quiet(self) -> None:
+        cases = (
+            'cursor.execute(f"SELECT {1} FROM t")\n',
+            'cursor.execute(f"SELECT {1:02d} FROM t")\n',
+            'cursor.execute("SELECT " + f"{1}" + " FROM t")\n',
+            'query = f"SELECT {1} FROM t"\ncursor.execute(query)\n',
+            'query = "SELECT " + f"{1:02d}"\ncursor.execute(query)\n',
+        )
+        for code in cases:
+            with self.subTest(code=code):
+                self.assertEqual(rules(code), ())
+
+    def test_sql_variable_interpolation_remains_flagged(self) -> None:
+        code = 'cursor.execute(f"SELECT * FROM t WHERE id={user_id}")\n'
+        self.assertEqual(rules(code), (("PY-SQL-CONCAT", 1),))
+
+    def test_sql_dynamic_format_width_stays_candidate(self) -> None:
+        code = 'cursor.execute(f"SELECT {1:{width}} FROM t")\n'
+        self.assertEqual(rules(code), (("PY-SQL-CONCAT", 1),))
+
+
+if __name__ == "__main__":
+    unittest.main()
