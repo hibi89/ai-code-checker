@@ -200,6 +200,51 @@ def _sql_literal_prefix(node: ast.AST) -> str:
     return ""
 
 
+def _sql_dynamic(node: ast.AST) -> bool:
+    return (
+        (isinstance(node, ast.JoinedStr) or
+         (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add)))
+        and bool(_SQL_START.match(_sql_literal_prefix(node)))
+    )
+
+
+def _sql_direct_local(query: ast.AST, call: ast.Call, resolver: _ImportResolver) -> bool:
+    """Conservative linear local binding only; no control-flow or alias inference."""
+    if not isinstance(query, ast.Name):
+        return False
+    statement = resolver.parents.get(call)
+    scope = resolver.parents.get(statement)
+    if not isinstance(statement, ast.Expr) or not isinstance(
+        scope, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef)
+    ):
+        return False
+    candidate = False
+    for earlier in scope.body:
+        if earlier is statement:
+            return candidate
+        if (isinstance(earlier, ast.Assign) and len(earlier.targets) == 1
+                and isinstance(earlier.targets[0], ast.Name)
+                and earlier.targets[0].id == query.id):
+            candidate = _sql_dynamic(earlier.value)
+            continue
+        if (isinstance(earlier, ast.AnnAssign)
+                and isinstance(earlier.target, ast.Name)
+                and earlier.target.id == query.id):
+            candidate = earlier.value is not None and _sql_dynamic(earlier.value)
+            continue
+        if any(isinstance(n, ast.Name) and n.id == query.id and
+               isinstance(n.ctx, (ast.Store, ast.Del)) for n in ast.walk(earlier)):
+            candidate = False
+        if isinstance(earlier, (ast.Import, ast.ImportFrom)) and any(
+            (a.asname or a.name.split(".")[0]) == query.id for a in earlier.names
+        ):
+            candidate = False
+        if isinstance(earlier, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if earlier.name == query.id:
+                candidate = False
+    return False
+
+
 def _python_findings(source: SourceFile) -> list[CodeFinding]:
     findings: list[CodeFinding] = []
     try:
@@ -271,18 +316,15 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
 
         if attribute_name == "execute" and node.args:
             query = node.args[0]
-            if isinstance(query, ast.JoinedStr) or (
-                isinstance(query, ast.BinOp) and isinstance(query.op, ast.Add)
-            ):
-                if _SQL_START.match(_sql_literal_prefix(query)):
-                    findings.append(_finding(
-                        source, "HIGH", "security",
-                        "SQL 질의 문자열을 동적으로 조합함",
-                        line_number,
-                        "외부 입력이 질의 문자열에 직접 결합되면 SQL 인젝션 위험이 생길 수 있습니다.",
-                        "값은 플레이스홀더 바인딩으로 전달하고, 질의 구조와 데이터 값을 분리하세요.",
-                        80,
-                    ))
+            if _sql_dynamic(query) or _sql_direct_local(query, node, resolver):
+                findings.append(_finding(
+                    source, "HIGH", "security",
+                    "SQL 질의 문자열을 동적으로 조합함",
+                    line_number,
+                    "외부 입력이 질의 문자열에 직접 결합되면 SQL 인젝션 위험이 생길 수 있습니다.",
+                    "값은 플레이스홀더 바인딩으로 전달하고, 질의 구조와 데이터 값을 분리하세요.",
+                    80,
+                ))
     return findings
 
 
