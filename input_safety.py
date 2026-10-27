@@ -39,6 +39,8 @@ def validate_offline_input_path(path: str | Path) -> Path:
                 getattr(info, "st_file_attributes", 0) & _REPARSE
             ):
                 raise InputError("입력 경로의 심볼릭 링크·Windows 연결 경로를 거부했습니다.")
+    except InputError:
+        raise
     except (OSError, RuntimeError, ValueError) as exc:
         raise InputError("입력 경로를 안전하게 확인하지 못했습니다.") from exc
     return candidate
