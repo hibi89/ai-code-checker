@@ -503,7 +503,13 @@ def bundle_from_text(
     filename: str = "stdin.py",
     limits: InputLimits = InputLimits(),
 ) -> CodeBundle:
-    raw = text.encode("utf-8")
+    # Tk clipboard/paste strings can contain an unpaired surrogate. File and
+    # ZIP readers reject invalid UTF-8; treat memory input the same way rather
+    # than leaking an internal UnicodeEncodeError into the desktop workflow.
+    try:
+        raw = text.encode("utf-8")
+    except UnicodeEncodeError:
+        raise InputError("붙여넣은 내용에 UTF-8로 저장할 수 없는 문자가 있습니다. 내용을 수정한 뒤 다시 시도하세요.") from None
     if len(raw) > min(limits.max_file_bytes, limits.max_total_bytes):
         raise InputError("붙여넣은 입력이 파일 크기 제한을 초과했습니다.")
     filename = _validate_relative_path(filename)
