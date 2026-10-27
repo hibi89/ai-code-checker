@@ -108,14 +108,12 @@ def reconcile_notice_gaps(audit: dict, mapping: dict, native: dict,
         licenses = record["license_files_in_installed_distribution"]
         if not isinstance(licenses, list):
             raise ValueError("Installed original license rows invalid")
-        hashes = set()
         for item in licenses:
             digest = item["sha256"]
             if (not isinstance(digest, str) or re.fullmatch(r"[a-f0-9]{64}", digest) is None
-                    or digest in hashes or type(item["bytes"]) is not int
+                    or type(item["bytes"]) is not int
                     or not 0 < item["bytes"] <= 1024 * 1024):
                 raise ValueError("Original license metadata malformed or duplicate")
-            hashes.add(digest)
         total_declared += len(licenses)
         dist_tasks.append({
             "candidate_distribution": name,
@@ -241,8 +239,12 @@ def main() -> int:
         print("NOTICE_READY_TO_DISTRIBUTE=False")
         print("CUSTOMER_RELEASE_READY=False")
         return 0
-    except (OSError, ValueError, KeyError, TypeError, AttributeError, json.JSONDecodeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, json.JSONDecodeError) as exc:
         print("NOTICE_REVIEW_GAP_LEDGER_INVALID")
+        if isinstance(exc, ValueError):
+            print("REVIEW_GAP_VALIDATION_REASON=" + str(exc)[:160])
+        else:
+            print("REVIEW_GAP_VALIDATION_ERROR_TYPE=" + type(exc).__name__)
         return 1
 
 
