@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import re
 import stat
+from bisect import bisect_right
 import zlib
 import zipfile
 from dataclasses import dataclass, field
@@ -180,9 +181,20 @@ def _placeholder(value: str) -> bool:
 
 def _redact_text(path: str, text: str) -> tuple[str, tuple[SecretRedaction, ...]]:
     redactions: list[SecretRedaction] = []
+    # Each re.sub pass matches offsets in the version of text at that point.
+    # Build the line index only if at least one match needs a citation. Reset
+    # it after every substitution because replacements change character offsets.
+    line_starts: list[int] | None = None
+
+    def line_number_at(offset: int) -> int:
+        nonlocal line_starts
+        if line_starts is None:
+            line_starts = [0]
+            line_starts.extend(match.end() for match in re.finditer("\n", text))
+        return bisect_right(line_starts, offset)
 
     def replace_match(match: re.Match[str], kind: str, replacement: str) -> str:
-        line_number = text.count("\n", 0, match.start()) + 1
+        line_number = line_number_at(match.start())
         redactions.append(SecretRedaction(line_number, kind))
         return replacement + "\n" * match.group(0).count("\n")
 
@@ -190,6 +202,7 @@ def _redact_text(path: str, text: str) -> tuple[str, tuple[SecretRedaction, ...]
         lambda match: replace_match(match, "private key", "<REDACTED PRIVATE KEY>"),
         text,
     )
+    line_starts = None
 
     def replace_assignment(match: re.Match[str]) -> str:
         value = match.group("value") or match.group("bare")
@@ -197,23 +210,25 @@ def _redact_text(path: str, text: str) -> tuple[str, tuple[SecretRedaction, ...]
             return match.group(0)
         if not match.group("quote") and _CODE_REFERENCE.fullmatch(value.strip()):
             return match.group(0)
-        line_number = text.count("\n", 0, match.start()) + 1
+        line_number = line_number_at(match.start())
         redactions.append(SecretRedaction(line_number, "credential assignment"))
         quote = match.group("quote")
         replacement = f"{quote}<REDACTED>{quote}" if quote else "<REDACTED>"
         return f"{match.group('prefix')}{replacement}"
 
     text, _ = _SECRET_ASSIGNMENT.subn(replace_assignment, text)
+    line_starts = None
 
     for pattern, kind in _TOKEN_PATTERNS:
         def replace_token(match: re.Match[str], current_kind: str = kind) -> str:
-            line_number = text.count("\n", 0, match.start()) + 1
+            line_number = line_number_at(match.start())
             redactions.append(SecretRedaction(line_number, current_kind))
             if match.group(0).lower().startswith("bearer "):
                 return "Bearer <REDACTED>"
             return "<REDACTED>"
 
         text, _ = pattern.subn(replace_token, text)
+        line_starts = None
 
     def replace_personal(match: re.Match[str], kind: str) -> str:
         value = match.group(0)
@@ -221,12 +236,14 @@ def _redact_text(path: str, text: str) -> tuple[str, tuple[SecretRedaction, ...]
             domain = value.rsplit("@", 1)[1].lower()
             if domain in {"example.com", "example.org", "example.net", "test.com"}:
                 return value
-        line_number = text.count("\n", 0, match.start()) + 1
+        line_number = line_number_at(match.start())
         redactions.append(SecretRedaction(line_number, kind))
         return "<REDACTED>"
 
     text, _ = _EMAIL.subn(lambda match: replace_personal(match, "email address"), text)
+    line_starts = None
     text, _ = _KOREAN_PHONE.subn(lambda match: replace_personal(match, "Korean phone number"), text)
+    line_starts = None
     text, _ = _KOREAN_RRN.subn(lambda match: replace_personal(match, "Korean resident number"), text)
 
     if PurePosixPath(path).name.lower() == ".env.example":
