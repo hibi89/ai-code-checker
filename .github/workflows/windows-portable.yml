@@ -25,6 +25,9 @@ on:
       - 'review_models.py'
       - 'requirements-offline-build.txt'
       - 'scripts/build_windows_portable.ps1'
+      - 'scripts/windows_acceptance_readonly.ps1'
+      - 'scripts/windows_acceptance_contract.py'
+      - 'tests/test_windows_acceptance_contract.py'
       - '.github/workflows/windows-portable.yml'
   workflow_dispatch:
 
@@ -51,6 +54,12 @@ jobs:
       - name: Build EXE and run synthetic offline smoke
         shell: pwsh
         run: ./scripts/build_windows_portable.ps1
+      - name: Capture read-only local binary/Defender/signature observations
+        shell: pwsh
+        run: |
+          ./scripts/windows_acceptance_readonly.ps1 -ExePath 'dist-windows/CodeCheckerOffline.exe' -OutputPath '.build-windows/windows-acceptance-readonly.json'
+      - name: Verify receipt hash and keep all human release gates unverified
+        run: python -m scripts.windows_acceptance_contract --evidence .build-windows/windows-acceptance-readonly.json --exe dist-windows/CodeCheckerOffline.exe
       - name: Audit actual frozen EXE CArchive, nested PYZ and local license file evidence
         run: python -m scripts.audit_frozen_exe --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/frozen-exe-evidence.json
       - name: Confirm manifest is kept local and flags manual NOTICE review
