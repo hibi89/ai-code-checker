@@ -62,6 +62,18 @@ class HistoricalReportTests(unittest.TestCase):
                 with self.assertRaises(InputError):
                     validate_historical_report(folder, report.html_path)
 
+    def test_fake_report_cannot_insert_script_before_csp(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder, report = self.make_report(Path(tmp))
+            original = report.html_path.read_bytes()
+            self.assertIn(b"<head>", original)
+            report.html_path.write_bytes(
+                original.replace(b"<head>", b"<head><script>alert('synthetic')</script>", 1)
+            )
+            with self.assertRaises(InputError):
+                validate_historical_report(folder, report.html_path)
+            self.assertTrue(report.markdown_path.exists())
+
     def test_report_symlink_denied(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
