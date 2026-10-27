@@ -131,3 +131,10 @@ GitHub hibi89/ai-code-checker PR #17 https://github.com/hibi89/ai-code-checker/p
 - Function implemented: offline Korean Markdown and HTML severity/rule and extension-inferred language distributions (incl. excluded paths, except unread pruned child files). No claim of confirmed vulnerabilities or full JS/TS AST coverage.
 - Next `ㄱ`: inspect `HANDOFF.md` last P1-H addendum, `STATUS.md` last P1-H addendum, current GitHub main/CI/PR, then P1-E bounded progress/cancellation with truthful failure/partial semantics and safe input read-only lifecycle. Existing v1 Gemini and offline core unchanged.
 - Release blockers unchanged: legal notices/native-license clearance, actual clean customer Windows, OS-level packet/Defender/SmartScreen, PDF visual, human acceptance. No Vercel. Commercialization only with owner approval.
+
+
+## 2026-10-27 P1-E merged latest-go
+
+- P1-E [PR #19](https://github.com/hibi89/ai-code-checker/pull/19) **merged main** source SHA `12c51540e646bc088aa24faa96aaf48f5fb843dd` from feature `5790939162b790c87542a37017130ca35a13d19d`. All 16 general CI jobs, one Windows EXE/Tk/PDF synthetic job, 3 benchmark/license inventory jobs PASS; 158 Python tests PASS on Windows Python 3.11. Verify final docs main SHA/post-push CI live before relying on completion.
+- GUI adds cooperative cancel and file-by-file progress, no external calls/deps; a bounded read or atomic report publication cannot be interrupted mid-operation, and the UI must not claim otherwise. Cancellation before publication leaves no report; source unchanged.
+- Next `ㄱ`: read tail of HANDOFF + STATUS + GAP matrix, verify main/CI, prioritize local report cleanup/integrity and original NOTICE/Windows acceptance gates. Original Gemini mode and public MIT repository must remain unchanged. No Vercel; commercialization still blocked.
