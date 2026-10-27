@@ -79,3 +79,13 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 - **#4 blocked/cancelled persisted outcomes** remain PARTIAL: blocked CLI and cancelled GUI are visibly differentiated, but they are not persisted reports.
 - **#20 report management:** local automatic stored report deletion remains MISSING. Prioritize explicit user-controlled selection and safe deletion with no unprompted source/report removal.
 - **#18/#19/#23 customer Windows, packet/privacy, signing and legal clearance** remain UNVERIFIED/BLOCKED despite synthetic hosted Windows tests. No Vercel and no commercial release.
+
+
+## 2026-10-27 P1-I verified update (prior table remains historical)
+
+- **#20 (retention/delete):** user-initiated, latest in-session report HTML+Markdown deletion implemented/CI tested under [PR #20](https://github.com/hibi89/ai-code-checker/pull/20). SHA/stat proof, exact path/single-owner file checks, confirmation defaults to No, no directory scans/removal. Deletion after app restart or of historical files is not available. No claim of recoverable or atomic 2-file deletion; manual handling of partial I/O error remains.
+- **#22 output integrity:** prior atomic no-overwrite **creation** retained; new paired *deletion* is non-atomic with fail-closed preflight and truthful partial-error disclosure. Customer Windows edge cases remain unverified.
+- **#23 binary provenance:** new first-party module identified explicitly in frozen package candidate map. This is **not legal attribution, license clearance, or permission to distribute**.
+- **#18/#19 actual Windows/device/privacy:** synthetic hosted CI and UI invoke tests passed, but real customer Windows, OS packets, antivirus, SmartScreen, PDF visual remain unverified.
+- **#4 blocked/cancelled persisted reports:** unchanged; GUI status separated but not persisted report state.
+- Detailed evidence: [P1-I report cleanup ledger](P1I_REPORT_CLEANUP_EVIDENCE_20261027.md); source merge `779b611bf2f932fa219631c32f810fa3253111c4`, verified feature `78d5ad675ee0bf7d2502fc91e8d72db4fe5b9825`.
