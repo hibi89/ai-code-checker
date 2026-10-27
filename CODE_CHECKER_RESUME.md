@@ -270,3 +270,11 @@ Accelerated actual scanner development per owner request (ahead of Oct/Nov sched
 - Measured on a fixed NONREPRESENTATIVE synthetic corpus: 103 Python cases, 41 TP, 0 FP, 0 FN, 100% in-corpus recall, NOT real-world detection accuracy. Ubuntu Python 3.11: 276 unit tests passed. Legacy model path unchanged.
 - After merge main Tests run https://github.com/hibi89/ai-code-checker/actions/runs/40533179753 was queued when recorded. Do not infer pass before checking same SHA.
 - Next GO: verify latest main CI and fix a genuinely measurable scanner or user-workflow defect; avoid planning-only/doc churn. Advance upstream design ahead of schedule only with a regression that proves the behavior.
+
+## P2-3 merged; next GO on latest main (2026-10-28)
+
+- P2-3 verified module provenance correctness: PR #37 https://github.com/hibi89/ai-code-checker/pull/37 MERGED into main source SHA 8adfd1a42433b100429ea3f63645de001c68c7ed; exact feature head 4a8ae1ef0b6d1f4dbaa8bba0aea51113e2a33263.
+- Source static_checks.py now attaches binding AST origin and matches exact guarded suite ancestry. Only within the import's same or nested arm may it assert sensitive API binding. Later unconditional direct imports remain recognized. Conditional-only origins outside the arm are UNKNOWN rather than falsely attributed. Maintains conservative shadow/alias behavior and no inspected code execution.
+- Feature exact SHA 4a8ae1ef CI: general Tests https://github.com/hibi89/ai-code-checker/actions/runs/40534409884 16/16 SUCCESS (one Ubuntu 3.11 job 278 unit tests pass); Windows packaged EXE and Tk synthetic https://github.com/hibi89/ai-code-checker/actions/runs/40534410635 SUCCESS; performance/dependency inventory https://github.com/hibi89/ai-code-checker/actions/runs/40534409912 3/3 SUCCESS.
+- Current product status functional developer MVP remains CI-supported; consumer Windows, SmartScreen, actual OS packets, original bundled third-party NOTICE/legal, human Korean PDF visual and explicit owner distribution authorization are still UNVERIFIED/BLOCKED. No EXE distributed or signed; no paid APIs/secret/user data upload.
+- Next GO: verify latest main SHA and Actions, prioritize actual correctness/Windows user workflow gap instead of more design-only notes. Feature branch → regression → full CI → merge. Do not claim licensed sellable software from this improvement.

@@ -593,3 +593,16 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Privacy/runtime: no source execution, new dependencies, paid model/API, customer data uploads or binary distribution; original Gemini v1 preserved.
 9. Legal/release status: Functional developer MVP remains ready in synthetic CI scope. Customer EXE release still BLOCKED: independent real Windows acceptance, SmartScreen/Defender reputation, OS network packet verification, primary original LICENSE/NOTICE legal signoff, real Korean PDF visual and explicit owner commercialization approval. No customer code, paid API, model key, executable artifact upload or OS settings changes.
 10. Next executable work: Next GO: verify latest main CI and fix a genuinely measurable scanner or user-workflow defect; avoid planning-only/doc churn. Advance upstream design ahead of schedule only with a regression that proves the behavior.
+
+## P2-3 source handoff — 2026-10-28 KST
+
+1. Goal: eliminate user-visible false positives when module imports are behind unexecuted branches.
+2. Source: PR #37 merged main 8adfd1a42433b100429ea3f63645de001c68c7ed, tested feature 4a8ae1ef0b6d1f4dbaa8bba0aea51113e2a33263.
+3. Files: static_checks.py, scripts/evaluate_rule_accuracy.py, tests/test_rule_accuracy.py; conditional AST suite ancestry controls provenance.
+4. CI: Feature exact SHA 4a8ae1ef CI: general Tests https://github.com/hibi89/ai-code-checker/actions/runs/40534409884 16/16 SUCCESS (one Ubuntu 3.11 job 278 unit tests pass); Windows packaged EXE and Tk synthetic https://github.com/hibi89/ai-code-checker/actions/runs/40534410635 SUCCESS; performance/dependency inventory https://github.com/hibi89/ai-code-checker/actions/runs/40534409912 3/3 SUCCESS.
+5. Corpus: Fixed 119 synthetic Python cases, 49 TP, 0 FP, 0 FN, 100% synthetic precision/recall WITHIN FIXED LABELED CORPUS ONLY. Does not measure real-world false positives/false negatives or vulnerability exploitability. JS/TS still limited, not full parser.
+6. Error fixed: First feature SHA 1e3a7748 failed CI because recursive AST traversal dropped module-origin metadata inside guarded suites, reducing true positives. Fixed by passing direct-provenance flag through module-level guarded blocks, while still stopping at function/class scopes; reran exact SHA successfully. Never count failed attempt as proof.
+7. Data policy: zero new dependency/server/API, existing Gemini v1 unchanged, no user/customer code upload, no EXE artifact publishing.
+8. Remaining release gates: Current product status functional developer MVP remains CI-supported; consumer Windows, SmartScreen, actual OS packets, original bundled third-party NOTICE/legal, human Korean PDF visual and explicit owner distribution authorization are still UNVERIFIED/BLOCKED. No EXE distributed or signed; no paid APIs/secret/user data upload.
+9. Next: verify latest main Actions and fix highest severity uncovered correctness/Windows robustness defect with tests.
+10. Provenance caution: AST static dominance is not full control-flow/taint analysis or guarantee that import executes at runtime.
