@@ -251,3 +251,13 @@ PR #33 https://github.com/hibi89/ai-code-checker/pull/33 **MERGED** main source 
 
 ## 2026-10-28 MVP-first resume
 Owner directs minimum working unit by Oct 28, defer polish and missing extra functionality. Main PR #34 https://github.com/hibi89/ai-code-checker/pull/34 merged source SHA 257c19c141740f3009de4ecad5038814d565ade4, feature 8cfb25232dbbb1b9c2e015679236bfb9f3513744: Tests https://github.com/hibi89/ai-code-checker/actions/runs/40526518698 16/16 PASS and hosted Windows EXE/Tk synthetic https://github.com/hibi89/ai-code-checker/actions/runs/40526518662 PASS. Core acceptance command python -m scripts.mvp_acceptance runs seven synthetic offline workflow gates (preview, findings, HTML/Markdown, unchanged source, no overwrite, partial ZIP/secret, blocked ZIP). Main source CI 40527268124 pending at this entry. Next go verify main and focus user-critical defects only. Customer hardware acceptance/SmartScreen/OS packet/NOTICE and PDF manual acceptance remain unverified; no EXE sale/release.
+
+## 2026-10-28 fast-track resume
+
+Accelerated actual scanner development per owner request (ahead of Oct/Nov schedule).
+- PR #35 https://github.com/hibi89/ai-code-checker/pull/35 MERGED main source 2a1538a7f46dd3214ee054cdca4f0220dcdd8931, tested feature 88186ad59c10961be31c4b38d9b9feb9b4dd3d14.
+- Added AST-only SQL risk detection for dynamic Python percent, .format and .format_map interpolation on leading SQL string literal, direct execute and existing same-block local query variable. Constant-only formatting, escaped templates and SQL parameter binding suppressed; no new dependency, source execution or external API.
+- Feature Tests https://github.com/hibi89/ai-code-checker/actions/runs/40530106925 16/16 SUCCESS (Ubuntu Python 3.11: 274 unittests); Windows packaged candidate https://github.com/hibi89/ai-code-checker/actions/runs/40530107096 SUCCESS; synthetic performance/license inventory https://github.com/hibi89/ai-code-checker/actions/runs/40530106879 3/3 SUCCESS.
+- Actual post-merge main Tests https://github.com/hibi89/ai-code-checker/actions/runs/40531103716 SUCCESS.
+- Fixed synthetic labeled Python corpus 87 cases, TP36, FP0, FN2, precision 100% and recall 94.74% WITHIN FIXED SYNTHETIC CORPUS ONLY; never extrapolate to real-world security detection. Known indirection misses: dynamic getattr builtins eval and dynamic subprocess import.
+- Next GO: implement the next highest-impact actual scanner or Windows robustness defect with tests; do not churn documents. Sale/release remains blocked on independently tested clean customer Windows, SmartScreen, OS network packet capture, primary runtime NOTICE/legal rights, Korean PDF visual and explicit owner signoff. No Windows EXE published or sold.

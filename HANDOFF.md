@@ -567,3 +567,16 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Privacy: no external API, customer source upload, keys or binary release; original Gemini v1 preserved.
 9. Next GO: check newest main SHA and CI, fix actual user-blocking functional bugs; prioritize basic operation not extra package research or frontend styling.
 10. Accuracy: functional developer candidate shown by hosted CI, not signed retail/commercial readiness. MVP_FREEZE_20261028.md is frozen acceptance checklist.
+
+## 2026-10-28 P2 SQL detector handoff
+
+1. Goal: push substantive source beyond completed minimal offline developer MVP, ahead of schedule.
+2. Source changed: static_checks.py, scripts/evaluate_rule_accuracy.py, tests/test_rule_accuracy.py; no new deps.
+3. Source/CI: PR #35 https://github.com/hibi89/ai-code-checker/pull/35 MERGED main source 2a1538a7f46dd3214ee054cdca4f0220dcdd8931, tested feature 88186ad59c10961be31c4b38d9b9feb9b4dd3d14.
+4. Tests: Feature Tests https://github.com/hibi89/ai-code-checker/actions/runs/40530106925 16/16 SUCCESS (Ubuntu Python 3.11: 274 unittests); Windows packaged candidate https://github.com/hibi89/ai-code-checker/actions/runs/40530107096 SUCCESS; synthetic performance/license inventory https://github.com/hibi89/ai-code-checker/actions/runs/40530106879 3/3 SUCCESS.
+5. Merged main validation: Actual post-merge main Tests https://github.com/hibi89/ai-code-checker/actions/runs/40531103716 SUCCESS.
+6. Accuracy limits: Fixed synthetic labeled Python corpus 87 cases, TP36, FP0, FN2, precision 100% and recall 94.74% WITHIN FIXED SYNTHETIC CORPUS ONLY; never extrapolate to real-world security detection. Known indirection misses: dynamic getattr builtins eval and dynamic subprocess import.
+7. Scope: Added AST-only SQL risk detection for dynamic Python percent, .format and .format_map interpolation on leading SQL string literal, direct execute and existing same-block local query variable. Constant-only formatting, escaped templates and SQL parameter binding suppressed; no new dependency, source execution or external API.
+8. Data/privacy: existing optional Gemini v1 unchanged, user/customer data never used, no upload or paid API.
+9. Launch blocked: retail user Windows, OS packets, SmartScreen, human PDF visuals, primary legal NOTICE, owner release signoff.
+10. Next work: high-impact functionality defect with reproducible failing regression first, then branch, PR, green Tests+Windows, merge. No documentation-only cycle.
