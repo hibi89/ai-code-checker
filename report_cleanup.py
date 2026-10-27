@@ -117,9 +117,12 @@ def delete_report_pair(receipt: ReportReceipt) -> None:
     directory = _validated_pair(receipt.html.path, receipt.markdown.path)
     if directory != receipt.directory:
         raise ReportCleanupError("저장 폴더의 실제 경로가 변경되었습니다.")
-    for expected in (receipt.html, receipt.markdown):
-        if _identity(expected.path, directory) != expected:
-            raise ReportCleanupError("파일이 생성된 이후 변경되어 삭제를 거부했습니다.")
+    try:
+        for expected in (receipt.html, receipt.markdown):
+            if _identity(expected.path, directory) != expected:
+                raise ReportCleanupError("파일이 생성된 이후 변경되어 삭제를 거부했습니다.")
+    except OSError as error:
+        raise ReportCleanupError("보고서 두 파일이 모두 존재하고 변경되지 않아야 삭제할 수 있습니다.") from error
     removed = 0
     try:
         for expected in (receipt.html, receipt.markdown):
