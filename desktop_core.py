@@ -15,6 +15,7 @@ from code_input import InputError, bundle_from_text, load_path
 from offline_core import OFFLINE_LIMITS, _split_delimited_txt, scan_path, scan_text
 from offline_report import build_report, write_report
 from offline_coverage import list_pruned_subtrees
+from output_safety import validate_output_location
 from report_cleanup import ReportReceipt, capture_report_receipt
 
 
@@ -189,11 +190,17 @@ def run_scan(
 ) -> ScanResult:
     """Run an offline scan; cancellation before publishing writes no report pair."""
     _validate_request(request)
+    # Never place generated reports inside the folder being scanned.
+    input_folder = (
+        request.source if request.mode == "path"
+        and Path(request.source).expanduser().is_dir() else None
+    )
+    validate_output_location(output_dir, input_directory=input_folder)
     if control is not None:
         control.check()
         control.emit("reading")
     on_progress = (
-        (lambda completed, total: control.emit("scan", completed, total))
+         (lambda completed, total: control.emit("scan", completed, total))
         if control is not None else None
     )
     check_cancelled = control.check if control is not None else None
