@@ -41,6 +41,7 @@ def launch(on_ready=None) -> int:
             self.kind = "path"
             self.source_var = tk.StringVar()
             self.language_var = tk.StringVar(value="자동")
+            self.paste_filename_var = tk.StringVar(value="pasted.txt")
             self.output_var = tk.StringVar(value=str(Path.home() / "CodeCheckerReports"))
             self.state_var = tk.StringVar(value="먼저 파일·폴더 또는 붙여넣기를 선택하세요.")
             self.queue: queue.Queue[tuple[str, ScanRequest, object]] = queue.Queue()
@@ -50,6 +51,7 @@ def launch(on_ready=None) -> int:
             self.preview_fingerprint: str | None = None
             self.last_result: ScanResult | None = None
             self._build_widgets(ttk, tk, scrolledtext)
+            self.paste_filename_var.trace_add("write", lambda *_: self._clear_preview())
             self.root.after(100, self._poll)
 
         def _build_widgets(self, ttk, tk, scrolledtext) -> None:
@@ -90,6 +92,9 @@ def launch(on_ready=None) -> int:
             )
             self.language_select.pack(anchor="w", pady=(0, 8))
             self.language_select.bind("<<ComboboxSelected>>", lambda _e: self._clear_preview())
+            ttk.Label(choose, text="붙여넣기 가상 파일명 (.py/.pyi/.js/.ts/.txt, 경로 입력 불가)").pack(anchor="w")
+            self.paste_filename_entry = ttk.Entry(choose, textvariable=self.paste_filename_var, width=35)
+            self.paste_filename_entry.pack(anchor="w", pady=(3, 7))
             ttk.Label(choose, text="붙여넣기 영역 (파일 선택 중에는 무시됨)").pack(anchor="w")
             self.paste_text = scrolledtext.ScrolledText(
                 choose, height=7, wrap="none", font=("Consolas", 10)
@@ -221,7 +226,8 @@ def launch(on_ready=None) -> int:
                 "JavaScript": "javascript", "TypeScript": "typescript",
             }[self.language_var.get()]
             if self.kind == "paste":
-                return ScanRequest("paste", text=self.paste_text.get("1.0", "end-1c"), language=language)
+                return ScanRequest("paste", text=self.paste_text.get("1.0", "end-1c"),
+                                   language=language, filename=self.paste_filename_var.get())
             return ScanRequest("path", source=self.source_var.get(), language=language)
 
         def _busy(self, enabled: bool) -> None:
@@ -234,6 +240,7 @@ def launch(on_ready=None) -> int:
             ):
                 button.configure(state=state)
             self.language_select.configure(state="disabled" if enabled else "readonly")
+            self.paste_filename_entry.configure(state=state)
             self.paste_text.configure(state=state)
             self.output_entry.configure(state=state)
             self.open_button.configure(state="disabled" if enabled or self.last_result is None else "normal")
