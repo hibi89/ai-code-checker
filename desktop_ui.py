@@ -12,6 +12,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from report_cleanup import ReportCleanupError, delete_report_pair
 from desktop_core import (
     ProgressUpdate, ScanCancelled, ScanControl, ScanRequest, ScanResult,
     inspect_input, run_scan,
@@ -105,6 +106,10 @@ def launch(on_ready=None) -> int:
             self.scan_button.pack(side="left", padx=(0, 10))
             self.open_button = ttk.Button(actions, text="HTML 결과 열기", command=self._open, state="disabled")
             self.open_button.pack(side="left", padx=(0, 10))
+            self.delete_button = ttk.Button(
+                actions, text="현재 보고서 삭제", command=self._delete_current_report, state="disabled"
+            )
+            self.delete_button.pack(side="left", padx=(0, 10))
             self.cancel_button = ttk.Button(
                 actions, text="진행 중 취소", command=self._cancel, state="disabled"
             )
@@ -138,6 +143,7 @@ def launch(on_ready=None) -> int:
             if not self.busy:
                 self.scan_button.configure(state="disabled")
                 self.open_button.configure(state="disabled")
+                self.delete_button.configure(state="disabled")
 
         def _paste_modified(self, _event=None) -> None:
             if self.paste_text.edit_modified():
@@ -208,6 +214,11 @@ def launch(on_ready=None) -> int:
             self.paste_text.configure(state=state)
             self.output_entry.configure(state=state)
             self.open_button.configure(state="disabled" if enabled or self.last_result is None else "normal")
+            self.delete_button.configure(
+                state="normal"
+                if not enabled and self.last_result is not None
+                and self.last_result.report_receipt is not None else "disabled"
+            )
             self.scan_button.configure(state="disabled" if enabled or self.preview_request is None else "normal")
             self.cancel_button.configure(state="normal" if enabled else "disabled")
 
@@ -302,6 +313,7 @@ def launch(on_ready=None) -> int:
                         self.last_result = None
                         self.scan_button.configure(state="disabled")
                         self.open_button.configure(state="disabled")
+                        self.delete_button.configure(state="disabled")
                         self.state_var.set("작업 취소됨 — 새 보고서를 생성하지 않았습니다.")
                         self._show("취소 완료. 원본 파일은 변경하지 않았습니다. 다시 진행하려면 미리보기를 실행하세요.")
                     elif operation == "error":
@@ -310,6 +322,7 @@ def launch(on_ready=None) -> int:
                         self.last_result = None
                         self.scan_button.configure(state="disabled")
                         self.open_button.configure(state="disabled")
+                        self.delete_button.configure(state="disabled")
                         self.state_var.set("실패/차단 — 검사 완료로 처리하지 않았습니다.")
                         self._show(f"처리 실패 ({error_type})\n{message}\n\n원본 자료는 변경하지 않았습니다.")
                     elif operation == "preview":
@@ -324,10 +337,48 @@ def launch(on_ready=None) -> int:
                             else "부분 검사 — 보고서의 누락·제한 항목을 확인하세요."
                         )
                         self.open_button.configure(state="normal")
+                        self.delete_button.configure(
+                            state="normal" if payload.report_receipt is not None else "disabled"
+                        )
                         self._show(payload.display())
             except queue.Empty:
                 pass
             self.root.after(100, self._poll)
+
+        def _delete_current_report(self) -> None:
+            """Only the current session's unchanged generated pair may be removed."""
+            if self.busy or self.last_result is None:
+                return
+            receipt = self.last_result.report_receipt
+            if receipt is None:
+                messagebox.showwarning(
+                    "삭제 불가", "현재 실행에서 검증된 보고서 두 파일이 없어 삭제할 수 없습니다."
+                )
+                return
+            if not messagebox.askyesno(
+                "현재 보고서 삭제 확인",
+                "이번 검사에서 생성한 아래 두 파일만 삭제합니다. 이 작업은 되돌릴 수 없습니다.\n\n"
+                + str(receipt.html.path) + "\n" + str(receipt.markdown.path)
+                + "\n\n원본 코드와 다른 보고서는 유지됩니다. 삭제하시겠습니까?",
+                default="no",
+            ):
+                return
+            try:
+                delete_report_pair(receipt)
+            except (ReportCleanupError, OSError) as exc:
+                self.delete_button.configure(state="disabled")
+                self.state_var.set("삭제 거부/실패 — 보고서 파일 상태를 확인하세요.")
+                messagebox.showerror(
+                    "보고서 삭제 거부/실패",
+                    "검증 불일치 또는 I/O 오류로 안전 삭제를 완료하지 못했습니다.\n"
+                    + str(exc),
+                )
+                return
+            self.last_result = None
+            self.open_button.configure(state="disabled")
+            self.delete_button.configure(state="disabled")
+            self.state_var.set("현재 실행 보고서 HTML·Markdown 2개 삭제 완료.")
+            self._show("선택한 현재 보고서 두 파일만 삭제했습니다. 원본 코드와 다른 보고서는 유지됩니다.")
 
         def _open(self) -> None:
             if self.busy or self.last_result is None:
