@@ -16,7 +16,10 @@ class RuleAccuracyTests(unittest.TestCase):
         self.assertEqual(result["js_ts_limited_cases_excluded_from_metric"], len(JS_TS_LIMITED))
         self.assertGreaterEqual(result["tp"], 12)
         self.assertEqual(result["fp"], 0)
-        self.assertGreaterEqual(result["fn"], 2)  # Remaining unsupported dynamic indirection.
+        # The two formerly known indirection misses have direct safe-AST coverage.
+        # This applies only to the fixed, nonrepresentative synthetic corpus.
+        self.assertEqual(result["fn"], 0)
+        self.assertEqual(result["fn"], sum(row["fn"] for row in result["cases"]))
         self.assertEqual(result["real_world_accuracy"], "UNVERIFIED")
         self.assertEqual(result["customer_release_ready"], False)
 
