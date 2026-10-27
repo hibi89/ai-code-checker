@@ -44,6 +44,7 @@ def launch(on_ready=None) -> int:
             self.busy = False
             self.active_control: ScanControl | None = None
             self.preview_request: ScanRequest | None = None
+            self.preview_fingerprint: str | None = None
             self.last_result: ScanResult | None = None
             self._build_widgets(ttk, tk, scrolledtext)
             self.root.after(100, self._poll)
@@ -132,6 +133,7 @@ def launch(on_ready=None) -> int:
             self.result_text.pack(fill="both", expand=True)
             self._show(
                 "미리보기를 먼저 실행한 다음 검사를 시작할 수 있습니다.\n"
+                "미리보기 이후 파일·범위가 달라지면 검사를 차단하고 다시 미리보기를 요구합니다.\n"
                 "결과는 선택한 로컬 폴더에 HTML + Markdown으로 저장됩니다.\n"
                 "complete는 적용한 검사 절차 완료이며 보안성·무결점 판정이 아닙니다.\n"
                 "지원 한도: 최대 200파일, 파일당 1MiB, 전체 8MiB (검증된 보장 최대치는 아님)."
@@ -145,6 +147,7 @@ def launch(on_ready=None) -> int:
 
         def _clear_preview(self) -> None:
             self.preview_request = None
+            self.preview_fingerprint = None
             # A new source or changed input invalidates the previous result.
             # Keep stale HTML from being mistaken for this source's scan.
             self.last_result = None
@@ -268,6 +271,7 @@ def launch(on_ready=None) -> int:
                 on_update=lambda update: self.queue.put(("progress", request, update))
             )
             self.active_control = control
+            preview_fingerprint = self.preview_fingerprint if operation == "scan" else None
             self.progress_bar.configure(maximum=1, value=0)
             self._busy(True)
             self.state_var.set("로컬 입력 처리 중... (취소 요청 가능)")
@@ -275,7 +279,10 @@ def launch(on_ready=None) -> int:
                 try:
                     result = (
                         inspect_input(request, control=control) if operation == "preview"
-                        else run_scan(request, output_dir, name, control=control)
+                        else run_scan(
+                            request, output_dir, name, control=control,
+                            expected_preview_fingerprint=preview_fingerprint,
+                        )
                     )
                     self.queue.put((operation, request, result))
                 except ScanCancelled:
@@ -296,7 +303,7 @@ def launch(on_ready=None) -> int:
 
         def _scan(self) -> None:
             request = self._request()
-            if request != self.preview_request:
+            if request != self.preview_request or not self.preview_fingerprint:
                 self._clear_preview()
                 messagebox.showwarning("미리보기 필요", "입력이 변경되었습니다. 다시 미리보기를 실행하세요.")
                 return
@@ -317,6 +324,7 @@ def launch(on_ready=None) -> int:
                     self._busy(False)
                     self.active_control = None
                     if operation == "cancelled":
+                        self.preview_fingerprint = None
                         self.preview_request = None
                         self.last_result = None
                         self.scan_button.configure(state="disabled")
@@ -326,6 +334,7 @@ def launch(on_ready=None) -> int:
                         self._show("취소 완료. 원본 파일은 변경하지 않았습니다. 다시 진행하려면 미리보기를 실행하세요.")
                     elif operation == "error":
                         error_type, message = payload
+                        self.preview_fingerprint = None
                         self.preview_request = None
                         self.last_result = None
                         self.scan_button.configure(state="disabled")
@@ -334,6 +343,7 @@ def launch(on_ready=None) -> int:
                         self.state_var.set("실패/차단 — 검사 완료로 처리하지 않았습니다.")
                         self._show(f"처리 실패 ({error_type})\n{message}\n\n원본 자료는 변경하지 않았습니다.")
                     elif operation == "preview":
+                        self.preview_fingerprint = payload.fingerprint
                         self.preview_request = request
                         self.state_var.set("미리보기 완료. 검사 버튼을 사용할 수 있습니다.")
                         self.scan_button.configure(state="normal")
