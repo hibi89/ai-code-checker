@@ -546,3 +546,11 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Original/privacy: Existing Gemini v1 unchanged; customer code, EXE/NOTICE original texts, absolute machine paths, secrets never uploaded. No paid API, network integration, OS setting changes, file overwrites or legal claim.
 9. Next GO: confirm same final docs SHA Tests and Windows green then merge; independently validate merged main CI; remaining retail/notice legal items require primary texts/vendor license and human review, not automated approval.
 10. Time: 2026-10-27 KST, GitHub CI real logs. See P1V_NOTICE_GAP_LEDGER_EVIDENCE_20261027.md for proof and limitations.
+
+
+## P1-V merged final source and handoff — 2026-10-27 KST
+
+- Owner-approved offline Windows Code Checker, P1-V [PR #33](https://github.com/hibi89/ai-code-checker/pull/33) **MERGED main** source SHA `83a98739dc966ab4ecf1213a37d7931d146b2057`, final feature head `3e5a8a6d5bf35cc59ce777585b82af8d16acb053`. Earlier baseline `0414ffb11338474df10bac2c14f7a3f9cbd5a5f2`. For revert, revert PR #33; no force push.
+- Verified feature Tests [40524354220](https://github.com/hibi89/ai-code-checker/actions/runs/40524354220) **16/16 PASS** and Windows full unsigned EXE/Defender/P0-D/E/F/G/H/P1-V [40524354171](https://github.com/hibi89/ai-code-checker/actions/runs/40524354171) **PASS** on identical final SHA. Post-merge main Tests [40524769112](https://github.com/hibi89/ai-code-checker/actions/runs/40524769112) must be checked. P1-V Windows prior source run 40523678817 logged 7 package candidates, 26 staged LICENSE originals, 0 missing, 92 unresolved name rows, one PKG no claim. Never call these 92 unlicensed dependencies.
+- Source `scripts/reconcile_notice_gaps.py`, regression `tests/test_notice_gap_ledger.py`, CI `.github/workflows/windows-portable.yml`, local evidence `.build-windows/notice-review-gaps.json`. No new product dependency, user configuration change, executable upload, legal approval or notice publishing. All legal/retail acceptance blockers stay unverified.
+- **Next `ㄱ`:** check live `main` and CI run, then target actual original PSF/TclTk/VC/PyInstaller legal source texts and user-owned Windows acceptance, rather than extending metadata-only summaries. Human approval remains required to turn local notice gaps into an actual customer NOTICE.

@@ -29,3 +29,10 @@ Use an existing local build workspace and a NEW output path; do not overwrite re
 
 ## Outstanding customer release gates
 Human source-backed check for CPython/PSF, Tcl/Tk, PyInstaller bootloader license exception, Microsoft/VC runtime and all actual bundled package original notices and copyrights. No final NOTICE assembled/approved. Independent clean physical Windows executable behavior, Defender/SmartScreen actual customer evidence, OS network packet observation, Korean PDF human visual, owner commercial signoff remain UNVERIFIED. No Vercel or binary distribution. 
+
+
+## Actual feature merge evidence — 2026-10-27 KST
+
+- Final P1-V feature SHA `3e5a8a6d5bf35cc59ce777585b82af8d16acb053`: [Tests 40524354220](https://github.com/hibi89/ai-code-checker/actions/runs/40524354220) **completed success 16/16** and [Windows portable run 40524354171](https://github.com/hibi89/ai-code-checker/actions/runs/40524354171) **completed success**.
+- [PR #33](https://github.com/hibi89/ai-code-checker/pull/33) merged; actual GitHub main source SHA `83a98739dc966ab4ecf1213a37d7931d146b2057`. Main Tests #40524769112 pending on initial reading. Subsequent documentation SHA must be checked independently.
+- No full legal compliance/approved NOTICE/customer binary/retail Windows, SmartScreen, OS packet or PDF human visual evidence is implied. The ledger remains a local diagnostic.
