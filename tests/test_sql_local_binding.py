@@ -22,8 +22,7 @@ class SqlLocalBindingTests(unittest.TestCase):
         code = ('def get_record(uid):\n'
                 '    query = f"SELECT * FROM users WHERE id={uid}"\n'
                 '    return cursor.execute(query)\n')
-        # Return expression is intentionally outside the narrow statement-only scope.
-        self.assertEqual(sql_lines(code), [])
+        self.assertEqual(sql_lines(code), [3])
 
     def test_function_direct_expression_sql_query(self):
         code = ('def get_record(uid):\n'
@@ -61,6 +60,68 @@ class SqlLocalBindingTests(unittest.TestCase):
                 '    query = f"SELECT * FROM t WHERE id={uid}"\n'
                 'def consume(query):\n'
                 '    cursor.execute(query)\n')
+        self.assertEqual(sql_lines(code), [])
+
+    def test_direct_if_arm_query(self):
+        code = ('if enabled:\n'
+                '    query = f"SELECT * FROM users WHERE id={uid}"\n'
+                '    cursor.execute(query)\n')
+        self.assertEqual(sql_lines(code), [3])
+
+    def test_direct_else_arm_query(self):
+        code = ('if enabled:\n'
+                '    print("skip")\n'
+                'else:\n'
+                '    query = "DELETE FROM users WHERE id=" + uid\n'
+                '    cursor.execute(query)\n')
+        self.assertEqual(sql_lines(code), [5])
+
+    def test_return_inside_if_arm(self):
+        code = ('def read(uid):\n'
+                '    if enabled:\n'
+                '        query = f"SELECT * FROM users WHERE id={uid}"\n'
+                '        return cursor.execute(query)\n')
+        self.assertEqual(sql_lines(code), [4])
+
+    def test_no_cross_arm_or_outer_scope_guess(self):
+        cases = (
+            'if enabled:\n    query = f"SELECT * FROM t WHERE x={v}"\n'
+            'else:\n    cursor.execute(query)\n',
+            'query = f"SELECT * FROM t WHERE x={v}"\n'
+            'if enabled:\n    cursor.execute(query)\n',
+            'if enabled:\n    query = f"SELECT * FROM t WHERE x={v}"\n'
+            'cursor.execute(query)\n',
+            'def outer(v):\n    query = f"SELECT * FROM t WHERE x={v}"\n'
+            '    def inner():\n        cursor.execute(query)\n',
+        )
+        for code in cases:
+            with self.subTest(code=code):
+                self.assertEqual(sql_lines(code), [])
+
+    def test_branch_reassignment_invalidates(self):
+        code = ('if enabled:\n'
+                '    query = f"SELECT * FROM t WHERE x={v}"\n'
+                '    if override:\n'
+                '        query = "SELECT * FROM t WHERE x=?"\n'
+                '    cursor.execute(query)\n')
+        self.assertEqual(sql_lines(code), [])
+
+    def test_literal_only_sql_stays_quiet(self):
+        cases = (
+            'cursor.execute("SELECT * " + "FROM t WHERE id=?")\n',
+            'query = "SELECT * FROM t" + " WHERE id=?"\ncursor.execute(query)\n',
+            'query = f"SELECT * FROM t"\ncursor.execute(query)\n',
+            'query = ("SELECT * FROM " + "t") + " WHERE id=?"\n'
+            'cursor.execute(query)\n',
+        )
+        for code in cases:
+            with self.subTest(code=code):
+                self.assertEqual(sql_lines(code), [])
+
+    def test_nested_return_expression_not_claimed(self):
+        code = ('def f(v):\n'
+                '    query = f"SELECT * FROM t WHERE x={v}"\n'
+                '    return wrapper(cursor.execute(query))\n')
         self.assertEqual(sql_lines(code), [])
 
     def test_direct_interpolation_rule_stays_enabled(self):
