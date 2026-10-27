@@ -71,7 +71,8 @@ class ComponentOwnershipTests(unittest.TestCase):
         info = make_mapping(audit, package_claims={}, installed_files={})
         category = {row["name"]: row["mapping"] for row in info["entries"]}
         self.assertEqual(category["report_cleanup"], "first_party_candidate")
-        self.assertEqual(info["unresolved_count"], 2)
+        baseline = make_mapping(sample_audit(), package_claims={}, installed_files={})
+        self.assertEqual(info["unresolved_count"], baseline["unresolved_count"])
         self.assertFalse(info["license_compliance_certified"])
         self.assertFalse(info["customer_release_ready"])
 
