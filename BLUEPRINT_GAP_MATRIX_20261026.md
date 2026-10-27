@@ -97,3 +97,11 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 - **#19 and #20 storage privacy:** UNC-style path blocking does not prove absence of OS network traffic; user-selected cloud sync/mapped drives may leak reports. No automated network/captive test establishes privacy, and no operating system packet capture yet. **Remain UNVERIFIED on customer hardware.**
 - **#23 packaging notices:** first-party module `output_safety` identified in frozen archive mapping, does not establish third-party redistribution rights or legal signoff.
 - Source merge [PR #21](https://github.com/hibi89/ai-code-checker/pull/21) `8485413205007366ffa683ec272a198f1f47f394`, CI general 16/16 / 175 unittest, Windows candidate 1/1, synthetic inventory 3/3 PASS at feature head `27d7825`. See `P1J_OUTPUT_SAFETY_EVIDENCE_20261027.md`. Product release BLOCKED.
+
+
+## P1-K 2026-10-27 acceptance evidence addendum
+
+- **#16 desktop, #18 Windows EXE:** full synthetic Tk workflow now executes from actual frozen Windows onefile process as `--scenario-smoke`, not merely hosted source Python + packaged GUI startup. Verified on feature SHA via [Windows Actions 40496583605](https://github.com/hibi89/ai-code-checker/actions/runs/40496583605), with source [PR #22](https://github.com/hibi89/ai-code-checker/pull/22) merged `39d5db20ac3db3294bd45ce76f6d32c4f9fab65d`.
+- **#13 PDF:** Windows browser synthetic PDF smoke still PASS, actual visual page verification and real user browser print **UNVERIFIED**.
+- **#19 OS/network and #23 notice:** physical Windows Defender/SmartScreen/OS packet capture/actual binary rights and original NOTICE compliance remain UNVERIFIED/BLOCKED; CI GUI smoke provides no evidence for those.
+- New proof document: `P1K_FROZEN_GUI_ACCEPTANCE_20261027.md`. No Vercel or product release.
