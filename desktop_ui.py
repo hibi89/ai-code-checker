@@ -248,9 +248,12 @@ def launch(on_ready=None) -> int:
         def _cancel(self) -> None:
             if not self.busy or self.active_control is None:
                 return
-            self.active_control.cancel()
+            accepted = self.active_control.cancel()
             self.cancel_button.configure(state="disabled")
-            self.state_var.set("취소 요청됨 — 현재 읽기/검사 단계 종료 시 중단합니다.")
+            if accepted:
+                self.state_var.set("취소 요청됨 — 현재 읽기/검사 단계 종료 시 중단합니다.")
+            else:
+                self.state_var.set("보고서 저장이 이미 시작되어 취소할 수 없습니다.")
 
         def _update_progress(self, update: ProgressUpdate) -> None:
             if self.active_control is not None and self.active_control.cancel_requested.is_set():

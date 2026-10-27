@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from threading import Event
+from threading import Event, Lock
 from typing import Callable, Literal
 
 from code_input import InputError, bundle_from_text, load_path
@@ -38,9 +38,27 @@ class ScanControl:
 
     on_update: Callable[[ProgressUpdate], None] | None = None
     cancel_requested: Event = field(default_factory=Event)
+    _publication_lock: Lock = field(default_factory=Lock, init=False, repr=False)
+    _publication_started: bool = field(default=False, init=False, repr=False)
 
-    def cancel(self) -> None:
-        self.cancel_requested.set()
+    def cancel(self) -> bool:
+        """Accept cancellation only before output publication is committed.
+
+        Return False if report writing is already underway. This synchronized
+        result prevents a GUI from acknowledging a cancellation it cannot do.
+        """
+        with self._publication_lock:
+            if self._publication_started:
+                return False
+            self.cancel_requested.set()
+            return True
+
+    def begin_publication(self) -> None:
+        """Atomically close cancellation before the no-overwrite file writer."""
+        with self._publication_lock:
+            if self.cancel_requested.is_set():
+                raise ScanCancelled("보고서 게시 직전 사용자 취소 요청")
+            self._publication_started = True
 
     def check(self) -> None:
         if self.cancel_requested.is_set():
@@ -280,9 +298,9 @@ def run_scan(
     if control is not None:
         control.check()
         control.emit("publishing")
-        # Cancellation is cooperative until this final publication boundary.
-        # Once publishing starts, atomic write_report completes or rolls back.
-        control.check()
+        # This phase notification can itself synchronously request cancellation.
+        # Once begin_publication succeeds, later cancellation is rejected.
+        control.begin_publication()
     html_path, markdown_path = write_report(report, output_dir, name=report_name)
     receipt = capture_report_receipt(html_path, markdown_path)
     if control is not None:
