@@ -246,8 +246,15 @@ class _ImportResolver:
                     # Inner function imports can be traced; other lexical
                     # scopes/closures stay unknown rather than borrowing a
                     # sibling or class import.
-                    if (parent is not closest_scope
-                            or not isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef))):
+                    if parent is not closest_scope:
+                        records = self.function_events.get(parent, {}).get(alias, ())
+                        if (not isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef))
+                                or len(records) != 1 or records[0][2] is None
+                                or records[0][0] >= getattr(closest_scope, "lineno", 0)
+                                or self._control_suites(records[0][3])):
+                            return None
+                        return records[0][2]
+                    if not isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         return None
                     records = self.function_events.get(parent, {}).get(alias, ())
                     earlier = [row for row in records
