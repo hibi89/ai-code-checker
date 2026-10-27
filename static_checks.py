@@ -101,7 +101,9 @@ class _ImportResolver:
             if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
                 bind(node.id, node)
             for child in ast.iter_child_nodes(node):
-                walk(child)
+                # Keep module-level provenance in guarded suites; the exact
+                # branch restriction is enforced later by _control_suites.
+                walk(child, direct=direct)
 
         for statement in tree.body:
             walk(statement, direct=True)
