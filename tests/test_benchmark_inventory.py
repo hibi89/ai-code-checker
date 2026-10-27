@@ -7,7 +7,7 @@ from email.message import Message
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.benchmark_offline import boundary_cases, fixtures, one_case
+from scripts.benchmark_offline import boundary_cases, dense_redaction_case, fixtures, one_case
 from scripts.offline_dependency_inventory import _license_field, inventory
 
 
@@ -25,6 +25,15 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertGreater(result["tracemalloc_peak_mib"], 0)
                 self.assertFalse(result["rss_measured"])
                 self.assertTrue(result["report_html_bytes"] > 100)
+
+    def test_dense_redaction_is_normalization_only_and_line_verified(self):
+        result = dense_redaction_case()
+        self.assertEqual(result["redacted_items"], 6000)
+        self.assertEqual(result["scope"], "input_normalization_only_no_scan_or_report")
+        self.assertGreater(result["input_bytes"], 200_000)
+        self.assertGreater(result["elapsed_seconds"], 0)
+        self.assertFalse(result["rss_measured"])
+        self.assertFalse(result["before_version_direct_comparison"])
 
     def test_fixture_bytes_are_platform_independent(self):
         with tempfile.TemporaryDirectory() as tmp:
