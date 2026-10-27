@@ -89,3 +89,11 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 - **#18/#19 actual Windows/device/privacy:** synthetic hosted CI and UI invoke tests passed, but real customer Windows, OS packets, antivirus, SmartScreen, PDF visual remain unverified.
 - **#4 blocked/cancelled persisted reports:** unchanged; GUI status separated but not persisted report state.
 - Detailed evidence: [P1-I report cleanup ledger](P1I_REPORT_CLEANUP_EVIDENCE_20261027.md); source merge `779b611bf2f932fa219631c32f810fa3253111c4`, verified feature `78d5ad675ee0bf7d2502fc91e8d72db4fe5b9825`.
+
+
+## 2026-10-27 P1-J verified output path guard addendum
+
+- **#22 output integrity / source isolation:** `output_safety.validate_output_location` now blocks reports inside the folder being scanned before source reads; prevents writing via currently detected symlink, junction/reparse components, UNC-style paths, or file-as-folder outputs. Original paired no-overwrite hardlink publication retained. Eight Python synthetic regressions and one Windows scripted scenario PASS. This is preflight only, not atomic against hostile filesystem races.
+- **#19 and #20 storage privacy:** UNC-style path blocking does not prove absence of OS network traffic; user-selected cloud sync/mapped drives may leak reports. No automated network/captive test establishes privacy, and no operating system packet capture yet. **Remain UNVERIFIED on customer hardware.**
+- **#23 packaging notices:** first-party module `output_safety` identified in frozen archive mapping, does not establish third-party redistribution rights or legal signoff.
+- Source merge [PR #21](https://github.com/hibi89/ai-code-checker/pull/21) `8485413205007366ffa683ec272a198f1f47f394`, CI general 16/16 / 175 unittest, Windows candidate 1/1, synthetic inventory 3/3 PASS at feature head `27d7825`. See `P1J_OUTPUT_SAFETY_EVIDENCE_20261027.md`. Product release BLOCKED.
