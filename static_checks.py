@@ -281,22 +281,31 @@ def _sql_direct_local(query: ast.AST, call: ast.Call, resolver: _ImportResolver)
     return False
 
 
+def _static_option_constant(value: ast.AST) -> object:
+    """Return only primitive syntax literals; never evaluate source expressions."""
+    if isinstance(value, ast.Constant):
+        return value.value
+    if (
+        isinstance(value, ast.UnaryOp)
+        and isinstance(value.op, (ast.UAdd, ast.USub))
+        and isinstance(value.operand, ast.Constant)
+        and type(value.operand.value) in (int, float)
+    ):
+        literal = value.operand.value
+        return literal if isinstance(value.op, ast.UAdd) else -literal
+    return None
+
+
 def _literal_shell_enabled(value: ast.AST) -> bool:
     """Only flag syntactically known truthy built-in literals."""
-    return isinstance(value, ast.Constant) and isinstance(
-        value.value, (bool, int, float, str, bytes)
-    ) and bool(value.value)
+    candidate = _static_option_constant(value)
+    return type(candidate) in (bool, int, float, str, bytes) and bool(candidate)
 
 
 def _literal_tls_disabled(value: ast.AST) -> bool:
     """None means 'default' in requests, not explicit certificate bypass."""
-    return isinstance(value, ast.Constant) and (
-        value.value is False
-        or (
-            type(value.value) in (int, float, str, bytes)
-            and not value.value
-        )
-    )
+    candidate = _static_option_constant(value)
+    return type(candidate) in (bool, int, float, str, bytes) and not candidate
 
 
 def _python_findings(source: SourceFile) -> list[CodeFinding]:
