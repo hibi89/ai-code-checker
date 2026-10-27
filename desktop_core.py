@@ -90,6 +90,7 @@ class InputPreview:
     warnings: tuple[str, ...]
     pruned_subtrees: tuple[str, ...] = ()
     fingerprint: str = ""  # Session-only; never show or persist content hashes.
+    excluded_paths: tuple[str, ...] = ()  # Names only; never read excluded file contents.
 
     def display(self) -> str:
         summary = (
@@ -103,6 +104,16 @@ class InputPreview:
             summary += "파일 예시:\n" + "\n".join("  " + item for item in self.paths[:12]) + "\n"
             if len(self.paths) > 12:
                 summary += f"  외 {len(self.paths) - 12}개\n"
+        if self.excluded_paths:
+            summary += "제외·미지원 파일 (내용은 읽거나 표시하지 않음):\n"
+            summary += "\n".join("  " + path for path in self.excluded_paths[:12]) + "\n"
+            if len(self.excluded_paths) > 12:
+                summary += f"  외 {len(self.excluded_paths) - 12}개\n"
+        if self.pruned_subtrees:
+            summary += "하위 탐색 제외 폴더 (내부 파일 수 미확인):\n"
+            summary += "\n".join("  " + path for path in self.pruned_subtrees[:12]) + "\n"
+            if len(self.pruned_subtrees) > 12:
+                summary += f"  외 {len(self.pruned_subtrees) - 12}개\n"
         if self.warnings:
             summary += f"경고: {len(self.warnings)}건 (자세한 내용은 검사 결과 보고서 참조)\n"
         return summary + "미리보기는 파일 읽기·필터 검증이며 정적 코드 검사는 실행하지 않습니다."
@@ -232,6 +243,7 @@ def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -
                     bundle, "multi-txt", request.language,
                     additional_excluded=tuple(item.path for item in additional),
                 ),
+                excluded_paths=tuple(item.path for item in additional),
             )
     pruned = list_pruned_subtrees(request.source, limits=OFFLINE_LIMITS) if kind == "folder" else ()
     if control is not None:
@@ -245,6 +257,7 @@ def inspect_input(request: ScanRequest, *, control: ScanControl | None = None) -
         tuple(item.path for item in bundle.files), tuple(bundle.warnings),
         pruned,
         fingerprint=_preview_fingerprint(bundle, kind, request.language, pruned=pruned),
+        excluded_paths=tuple(bundle.excluded_paths),
     )
 
 

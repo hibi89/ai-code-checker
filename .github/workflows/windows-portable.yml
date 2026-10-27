@@ -31,6 +31,7 @@ on:
       - 'requirements-offline-build.txt'
       - 'scripts/build_windows_portable.ps1'
       - 'scripts/mvp_acceptance.py'
+      - 'verify_local.ps1'
       - 'tests/test_mvp_acceptance.py'
       - 'scripts/windows_acceptance_readonly.ps1'
       - 'scripts/windows_acceptance_contract.py'
@@ -57,6 +58,9 @@ jobs:
           python-version: '3.13'
       - name: Install pinned packaging dependencies
         run: python -m pip install -r requirements-offline-build.txt
+      - name: Verify local single-command Windows smoke
+        shell: powershell
+        run: .\verify_local.ps1 -Quick
       - name: Exercise real Tk widgets on Windows runner (synthetic)
         run: python -m scripts.windows_gui_e2e
       - name: Browser print self-contained Korean HTML to PDF (synthetic)

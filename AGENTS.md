@@ -14,9 +14,17 @@ ChatGPT is the design/implementation/test/review lead. The owner approves moneti
 5. Before coding, compare at least two designs with costs, quality and operations; the owner has approved the offline product direction and 3-day MVP-first implementation process. Any cost/permissions/security/data exposure and material scope change still requires separate prior approval.
 6. Before any risky change: capture branch/SHA, backup/revert route, actual test plan, security risk, licenses. Do not force push.
 7. Fail closed for incomplete scans and reports, and avoid fabricated success. No automatic paid API retries.
-8. Complete a change with tests, branch SHA verification, release check when relevant, and updated STATUS.md and HANDOFF.md. Do not claim a working Windows EXE without Windows testing.
+8. Complete a change with focused tests and exact-head integration verification. Update only materially affected handoff/status documentation, not all docs for every small patch. Do not claim a working Windows EXE without Windows testing.
 9. Any external analyzer is optional, version-pinned, license-checked, configured without executing project scripts or untrusted plugins. Never execute customer-provided code.
 10. Product direction and staged delivery were owner-approved 2026-10-26; publish the approved docs on `main` after checks. Source changes are separate feature branches only. No release until gates pass.
+
+## Fast-track development protocol (owner directive 2026-10-28)
+- Optimize verified working features, not commits/docs/test counts. Batch related source, focused regression and essential handoff in one feature commit. Run focused checks first; run full regression at merge/release checkpoints.
+- Inspect HEAD/PR/CI once at the start, reconfirm concurrent updates before non-force merge; do not repeatedly poll the same completed job. Preserve other owners' branches, originals and rollback paths.
+- Keep AGENTS for durable policy, STATUS for verified state, HANDOFF for resume steps, README for instructions. Do not update three documents after every tiny patch; record only material changes.
+- The local Windows one-command check is: powershell -NoProfile -ExecutionPolicy Bypass -File .\verify_local.ps1. Use -Quick for minimal synthetic smoke; optional -IncludeGuiSmoke exercises GUI/PDF fixtures. JSON evidence is created with a unique temporary filename. No installs, paid APIs, customer-source execution/upload, system security changes or DB mutations.
+- Current bottlenecks (QUALITATIVE, no time-share measurements): (1) separate source/docs commits and remote lookups => one atomic feature commit and fewer reads. (2) 3 OS × 5 Python versions plus audit for each push => focused local tests, full matrix once for integration. (3) fragmented owner-PC test commands => reproducible single safe script. Do not remove mandatory CI, source confidentiality, human release gates or approvals.
+- Resume by finding the next meaningful blueprint gap, proving a core user workflow, then reporting only changed function, exact SHA PASS/FAIL/SKIP, bottleneck action and next goal. Clean customer Windows, SmartScreen, OS packet capture, Korean PDF visual and original third-party LICENSE/NOTICE/legal + owner release consent remain unverified until actually done.
 
 ## Change gates
 - Public GitHub branch is *not confidential*. Commercially sensitive future packaging code and customer data must not be committed here.
