@@ -31,7 +31,9 @@ class PasteVirtualFilenameTests(unittest.TestCase):
                     self.assertIn(actual, html)
                     if language == "python":
                         self.assertGreaterEqual(result.verified, 1)
-                        self.assertIn(actual + ":1", result.markdown_path.read_text(encoding="utf-8"))
+                        # Markdown escapes punctuation in path labels; line evidence stays intact.
+                        escaped = actual.replace("-", r"\-").replace(".", r"\.")
+                        self.assertIn(escaped + ":1", result.markdown_path.read_text(encoding="utf-8"))
 
     def test_name_change_invalidates_preview_and_publishes_nothing(self) -> None:
         before = ScanRequest("paste", text="eval(value)\n", language="python", filename="original.py")
