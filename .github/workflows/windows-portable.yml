@@ -30,6 +30,9 @@ on:
       - 'scripts/build_windows_portable.ps1'
       - 'scripts/windows_acceptance_readonly.ps1'
       - 'scripts/windows_acceptance_contract.py'
+      - 'scripts/windows_defender_file_scan.ps1'
+      - 'scripts/windows_defender_scan_contract.py'
+      - 'tests/test_windows_defender_scan_contract.py'
       - 'tests/test_windows_acceptance_contract.py'
       - '.github/workflows/windows-portable.yml'
   workflow_dispatch:
@@ -63,6 +66,12 @@ jobs:
           ./scripts/windows_acceptance_readonly.ps1 -ExePath 'dist-windows/CodeCheckerOffline.exe' -OutputPath '.build-windows/windows-acceptance-readonly.json'
       - name: Verify receipt hash and keep all human release gates unverified
         run: python -m scripts.windows_acceptance_contract --evidence .build-windows/windows-acceptance-readonly.json --exe dist-windows/CodeCheckerOffline.exe
+      - name: Observe actual local Defender custom scan command without automatic remediation
+        shell: pwsh
+        run: |
+          ./scripts/windows_defender_file_scan.ps1 -ExePath 'dist-windows/CodeCheckerOffline.exe' -OutputPath '.build-windows/defender-custom-scan.json' -TimeoutSeconds 120
+      - name: Validate Defender receipt and keep malware-free/customer release UNVERIFIED
+        run: python -m scripts.windows_defender_scan_contract --evidence .build-windows/defender-custom-scan.json --exe dist-windows/CodeCheckerOffline.exe
       - name: Audit actual frozen EXE CArchive, nested PYZ and local license file evidence
         run: python -m scripts.audit_frozen_exe --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/frozen-exe-evidence.json
       - name: Confirm manifest is kept local and flags manual NOTICE review
