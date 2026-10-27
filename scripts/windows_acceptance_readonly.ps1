@@ -92,7 +92,7 @@ $serialized = $evidence | ConvertTo-Json -Depth 6
 $stream = [System.IO.File]::Open($outFile, [System.IO.FileMode]::CreateNew,
     [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
 try {
-    $writer = New-Object System.IO.StreamWriter($stream, (New-Object System.Text.UTF8Encoding($false)))
+    $writer = [System.IO.StreamWriter]::new($stream, [System.Text.UTF8Encoding]::new($false))
     try { $writer.Write($serialized); $writer.Flush() }
     finally { $writer.Dispose() }
 } finally {
