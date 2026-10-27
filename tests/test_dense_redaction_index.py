@@ -35,7 +35,7 @@ class DenseRedactionLineIndexTests(unittest.TestCase):
             '-----END PRIVATE KEY-----\n'
             '"""\n'
             'API_KEY = "synthetic_credential_value_123456789"\n'
-            'token = "ghp_' + 'A' * 24 + '"\n'
+            'value = "ghp_' + 'A' * 24 + '"\n'
             'contact = "owner@synthetic.invalid"\n'
             'phone = "010-1234-5678"\n'
             'rrn = "900101-1234567"\n'
