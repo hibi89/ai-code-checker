@@ -77,7 +77,7 @@ class _ImportResolver:
                 for alias in node.names:
                     local = alias.asname or alias.name.split(".")[0]
                     origin = ((alias.name, "__module__")
-                              if direct and alias.name in {"subprocess", "pickle", "requests"}
+                              if direct and alias.name in {"subprocess", "pickle", "requests", "os", "asyncio"}
                               else None)
                     bind(local, node, origin)
                 return
@@ -90,7 +90,7 @@ class _ImportResolver:
                         local = alias.asname or alias.name
                         pkg = node.module if node.level == 0 else None
                         origin = ((pkg, alias.name)
-                                  if direct and pkg in {"subprocess", "pickle", "requests"}
+                                  if direct and pkg in {"subprocess", "pickle", "requests", "os", "asyncio"}
                                   else None)
                         bind(local, node, origin)
                 return
@@ -228,6 +228,7 @@ _SQL_START = re.compile(
     re.IGNORECASE,
 )
 _SUBPROCESS_CALLS = {"run", "Popen", "call", "check_call", "check_output"}
+_DIRECT_SHELL_CALLS = {"os": {"system", "popen"}, "asyncio": {"create_subprocess_shell"}}
 _REQUESTS_CALLS = {"get", "post", "put", "patch", "delete", "head", "options", "request"}
 
 
@@ -243,7 +244,7 @@ def _literal_imported_module(node: ast.AST, resolver: _ImportResolver) -> str | 
             or not isinstance(node.args[0].value, str)):
         return None
     module = node.args[0].value
-    return module if module in {"builtins", "subprocess"} else None
+    return module if module in {"builtins", "subprocess", "os", "asyncio"} else None
 
 
 def _dynamic_import_target(call: ast.Call, resolver: _ImportResolver) -> tuple[str, str] | None:
@@ -487,12 +488,22 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
             and _literal_shell_enabled(keyword.value)
             for keyword in node.keywords
         )
-        if shell_true and (
+        # os.system/os.popen and asyncio.create_subprocess_shell always
+        # invoke a shell; unlike subprocess.run/Popen shell=True is not needed.
+        # Resolve only known import provenance to avoid unrelated-method FPs.
+        direct_shell = any(
+            resolver.imported(node, package, names)
+            or (literal_dynamic_target is not None
+                and literal_dynamic_target[0] == package
+                and literal_dynamic_target[1] in names)
+            for package, names in _DIRECT_SHELL_CALLS.items()
+        )
+        if direct_shell or (shell_true and (
             resolver.imported(node, "subprocess", _SUBPROCESS_CALLS)
             or (literal_dynamic_target is not None
                 and literal_dynamic_target[0] == "subprocess"
                 and literal_dynamic_target[1] in _SUBPROCESS_CALLS)
-        ):
+        )):
             findings.append(_finding(
                 source, "HIGH", "security", "셸 명령을 문자열로 실행함",
                 line_number,
