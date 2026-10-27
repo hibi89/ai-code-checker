@@ -12,7 +12,10 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from desktop_core import ScanRequest, ScanResult, inspect_input, run_scan
+from desktop_core import (
+    ProgressUpdate, ScanCancelled, ScanControl, ScanRequest, ScanResult,
+    inspect_input, run_scan,
+)
 
 
 def launch(on_ready=None) -> int:
@@ -38,6 +41,7 @@ def launch(on_ready=None) -> int:
             self.state_var = tk.StringVar(value="먼저 파일·폴더 또는 붙여넣기를 선택하세요.")
             self.queue: queue.Queue[tuple[str, ScanRequest, object]] = queue.Queue()
             self.busy = False
+            self.active_control: ScanControl | None = None
             self.preview_request: ScanRequest | None = None
             self.last_result: ScanResult | None = None
             self._build_widgets(ttk, tk, scrolledtext)
@@ -100,8 +104,14 @@ def launch(on_ready=None) -> int:
             self.scan_button = ttk.Button(actions, text="② 로컬 검사 및 보고서 생성", command=self._scan, state="disabled")
             self.scan_button.pack(side="left", padx=(0, 10))
             self.open_button = ttk.Button(actions, text="HTML 결과 열기", command=self._open, state="disabled")
-            self.open_button.pack(side="left")
+            self.open_button.pack(side="left", padx=(0, 10))
+            self.cancel_button = ttk.Button(
+                actions, text="진행 중 취소", command=self._cancel, state="disabled"
+            )
+            self.cancel_button.pack(side="left")
 
+            self.progress_bar = ttk.Progressbar(container, orient="horizontal", mode="determinate", maximum=1)
+            self.progress_bar.pack(fill="x", pady=(4, 2))
             ttk.Label(container, textvariable=self.state_var).pack(anchor="w", pady=(6, 5))
             self.result_text = scrolledtext.ScrolledText(
                 container, height=13, state="disabled", wrap="word", font=("Malgun Gothic", 10)
@@ -199,19 +209,58 @@ def launch(on_ready=None) -> int:
             self.output_entry.configure(state=state)
             self.open_button.configure(state="disabled" if enabled or self.last_result is None else "normal")
             self.scan_button.configure(state="disabled" if enabled or self.preview_request is None else "normal")
+            self.cancel_button.configure(state="normal" if enabled else "disabled")
+
+        def _cancel(self) -> None:
+            if not self.busy or self.active_control is None:
+                return
+            self.active_control.cancel()
+            self.cancel_button.configure(state="disabled")
+            self.state_var.set("취소 요청됨 — 현재 읽기/검사 단계 종료 시 중단합니다.")
+
+        def _update_progress(self, update: ProgressUpdate) -> None:
+            if self.active_control is not None and self.active_control.cancel_requested.is_set():
+                return
+            labels = {
+                "reading": "입력 읽기/정규화 중 — 파일 수 집계 전",
+                "scan": "정적 규칙 검사 중",
+                "report": "보고서 근거 대조 중",
+                "publishing": "HTML/Markdown 파일 저장 중 — 취소 불가 구간",
+                "done": "보고서 저장 완료",
+                "preview": "입력 미리보기 작성 완료",
+            }
+            if update.phase == "scan" and update.total > 0:
+                self.progress_bar.configure(maximum=update.total, value=update.completed)
+                self.state_var.set(
+                    f"{labels[update.phase]}: {update.completed}/{update.total}개 파일"
+                )
+            else:
+                if update.phase == "reading":
+                    self.progress_bar.configure(maximum=1, value=0)
+                self.state_var.set(labels[update.phase])
+            if update.phase in {"publishing", "done"}:
+                # Publishing has an atomic no-overwrite boundary and cannot be interrupted.
+                self.cancel_button.configure(state="disabled")
 
         def _dispatch(self, operation: str, request: ScanRequest, output_dir: str = "", name: str = "") -> None:
             if self.busy:
                 return
+            control = ScanControl(
+                on_update=lambda update: self.queue.put(("progress", request, update))
+            )
+            self.active_control = control
+            self.progress_bar.configure(maximum=1, value=0)
             self._busy(True)
-            self.state_var.set("로컬 입력 처리 중... (완료될 때까지 종료를 제한합니다)")
+            self.state_var.set("로컬 입력 처리 중... (취소 요청 가능)")
             def task() -> None:
                 try:
                     result = (
-                        inspect_input(request) if operation == "preview"
-                        else run_scan(request, output_dir, name)
+                        inspect_input(request, control=control) if operation == "preview"
+                        else run_scan(request, output_dir, name, control=control)
                     )
                     self.queue.put((operation, request, result))
+                except ScanCancelled:
+                    self.queue.put(("cancelled", request, None))
                 except Exception as exc:
                     # Never print or log customer code or provider error payloads.
                     self.queue.put(("error", request, (type(exc).__name__, str(exc))))
@@ -243,8 +292,19 @@ def launch(on_ready=None) -> int:
             try:
                 while True:
                     operation, request, payload = self.queue.get_nowait()
+                    if operation == "progress":
+                        self._update_progress(payload)
+                        continue
                     self._busy(False)
-                    if operation == "error":
+                    self.active_control = None
+                    if operation == "cancelled":
+                        self.preview_request = None
+                        self.last_result = None
+                        self.scan_button.configure(state="disabled")
+                        self.open_button.configure(state="disabled")
+                        self.state_var.set("작업 취소됨 — 새 보고서를 생성하지 않았습니다.")
+                        self._show("취소 완료. 원본 파일은 변경하지 않았습니다. 다시 진행하려면 미리보기를 실행하세요.")
+                    elif operation == "error":
                         error_type, message = payload
                         self.preview_request = None
                         self.last_result = None
