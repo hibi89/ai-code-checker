@@ -19,3 +19,11 @@ Local-only, no customer code execution, no API key/upload/telemetry, no addition
 
 ## Next ㄱ
 Re-fetch PR #31 live head, ensure both Tests matrix and Windows packaged candidate workflow PASS on the exact same final source HEAD. Inspect any failures first (no blind retries). Merge PR only with green, confirm main commit and post-merge CI. Update STATUS/HANDOFF/RESUME from actual evidence. No force push. No Vercel production deployment for local app.
+
+
+## Final merge evidence (2026-10-27 KST)
+
+- Feature `691d4a4780d37fe708a4e3700c001d114b2e82ef`: GitHub [Tests 40517380762](https://github.com/hibi89/ai-code-checker/actions/runs/40517380762) **completed success (16/16)**, [Windows EXE/Tk 40517380728](https://github.com/hibi89/ai-code-checker/actions/runs/40517380728) **completed success**; Windows Python3.12 test runner log reports `Ran 248 tests`.
+- [PR #31](https://github.com/hibi89/ai-code-checker/pull/31) merge success; actual GitHub `main` source SHA `1b94358e0ede9e4df9f15f7c1398faec73e6f7ff`.
+- Post-merge `main` Tests [40518405592](https://github.com/hibi89/ai-code-checker/actions/runs/40518405592) queued at initial read. No assertion about that run until completion.
+- Feature evidence establishes hosted CI/synthetic acceptance only. Original legal NOTICE, clean retail Windows, independent Defender/SmartScreen scan, actual OS packet observation, Korean PDF human visual, user approval all pending. No binary release.

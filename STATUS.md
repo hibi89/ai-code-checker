@@ -334,3 +334,13 @@ Repository: https://github.com/hibi89/ai-code-checker (Public/MIT). Production/V
 - **Current full-head CI/merge:** PENDING. DO NOT claim final head green or main source changed until current exact PR HEAD/workflow status is checked. Latest previously verified main Tests at baseline `e52152c` succeeded.
 - No model API, telemetry, internet source transfer, new runtime package, Windows OS settings or binary release. Customer Windows Defender/SmartScreen/actual packet trace/human Korean PDF visual and original third-party NOTICE/legal plus owner sales approval remain **BLOCKED/UNVERIFIED**. No Vercel.
 - Next `ㄱ`: inspect exact latest PR #31 SHA, Tests matrix and Windows EXE CI, merge only green, verify main Actions, then reconcile handoff docs. See `P1T_RECENT_REPORT_EVIDENCE_20261027.md`.
+
+
+## P1-T recent report chooser — merged 2026-10-27 KST
+
+- [PR #31](https://github.com/hibi89/ai-code-checker/pull/31) **MERGED** `main` source SHA `1b94358e0ede9e4df9f15f7c1398faec73e6f7ff`; final branch `feature/p1t-recent-report-list` SHA `691d4a4780d37fe708a4e3700c001d114b2e82ef`.
+- **Functional delivery:** on-demand bounded (512 eligible HTML candidate) recent local historical reports list, newest modification time first, default 20 report pairs, GUI `최근 목록` dialog, revalidate selected paired HTML/MD before opening; original file chooser retained and past-session reports never obtain current-session delete authority.
+- **Final feature checks:** [Tests 40517380762](https://github.com/hibi89/ai-code-checker/actions/runs/40517380762) **16/16 jobs SUCCESS**, Windows Python3.12 observed `Ran 248 tests`; [Windows packaged EXE 40517380728](https://github.com/hibi89/ai-code-checker/actions/runs/40517380728) **success**. GitHub post-merge main Tests [40518405592](https://github.com/hibi89/ai-code-checker/actions/runs/40518405592) not yet verified when this entry written.
+- **Resolved real CI failures:** Windows `DirEntry.stat` link count portability; Tk smoke test expected count 10 vs new 11; unexpected dialog fail-fast. All fixed prior to final green PR. No new dependencies/AI/API/telemetry, customer-source execution or data upload.
+- **Release not approved:** physical clean consumer Windows, independent Defender actual scan/SmartScreen, OS packet capture, human visual Korean PDF and original third-party NOTICE/legal obligations remain **UNVERIFIED/BLOCKED**. No Vercel or customer binary distribution.
+- **Next `ㄱ`:** fetch live main HEAD and post-merge Actions; reconcile documents/CI then move to a measurable acceptance blocker without repeatedly changing only docs. Full context in `HANDOFF.md`.
