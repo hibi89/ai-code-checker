@@ -18,6 +18,11 @@ try {
   & $exe --gui-smoke
   if ($LASTEXITCODE -ne 0) { throw 'Packaged Tk GUI startup smoke failed.' }
   Write-Output 'PACKAGED_TK_WINDOW_STARTUP_PASS'
+  # Unlike --gui-smoke, this runs real preview, scan and report controls inside
+  # the one-file executable with synthetic local code. No customer data or upload.
+  & $exe --scenario-smoke
+  if ($LASTEXITCODE -ne 0) { throw 'Packaged full Tk workflow acceptance smoke failed.' }
+  Write-Output 'PACKAGED_TK_FULL_WORKFLOW_PASS'
   $hash = Get-FileHash -LiteralPath $exe -Algorithm SHA256
   Write-Output 'CANDIDATE_BUILT_SMOKE_PASS'
   Write-Output "PATH=$exe"
