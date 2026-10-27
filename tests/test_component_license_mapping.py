@@ -65,6 +65,17 @@ class ComponentOwnershipTests(unittest.TestCase):
                          "installed_native_exact_relative_filename_candidate")
         self.assertEqual(kinds["mystery.dll"], "unresolved_native_or_system_binary")
 
+    def test_new_bundled_cleanup_module_is_recognized_as_first_party(self):
+        audit = sample_audit()
+        audit["archive"]["pyz_modules"].append({"module": "report_cleanup"})
+        info = make_mapping(audit, package_claims={}, installed_files={})
+        category = {row["name"]: row["mapping"] for row in info["entries"]}
+        self.assertEqual(category["report_cleanup"], "first_party_candidate")
+        baseline = make_mapping(sample_audit(), package_claims={}, installed_files={})
+        self.assertEqual(info["unresolved_count"], baseline["unresolved_count"])
+        self.assertFalse(info["license_compliance_certified"])
+        self.assertFalse(info["customer_release_ready"])
+
     def test_ambiguous_package_cannot_be_assigned_a_single_owner(self):
         audit = sample_audit()
         audit["python_build_distributions"].append({

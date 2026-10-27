@@ -15,6 +15,7 @@ from code_input import InputError, bundle_from_text, load_path
 from offline_core import OFFLINE_LIMITS, _split_delimited_txt, scan_path, scan_text
 from offline_report import build_report, write_report
 from offline_coverage import list_pruned_subtrees
+from report_cleanup import ReportReceipt, capture_report_receipt
 
 
 class ScanCancelled(Exception):
@@ -99,6 +100,7 @@ class ScanResult:
     html_path: Path
     markdown_path: Path
     pruned_subtrees: int = 0
+    report_receipt: ReportReceipt | None = None
 
     def display(self) -> str:
         return (
@@ -216,6 +218,7 @@ def run_scan(
         # Once publishing starts, atomic write_report completes or rolls back.
         control.check()
     html_path, markdown_path = write_report(report, output_dir, name=report_name)
+    receipt = capture_report_receipt(html_path, markdown_path)
     if control is not None:
         control.emit("done", 1, 1)
     counts = scan.counts
@@ -223,5 +226,5 @@ def run_scan(
         report.status, counts["enumerated"], counts["analyzed"], counts["limited"],
         counts["failed"], counts["excluded"], counts["unsupported"],
         len(report.findings), report.verified_count, html_path, markdown_path,
-        counts["pruned_subtrees"],
+        counts["pruned_subtrees"], receipt,
     )

@@ -103,6 +103,39 @@ def main() -> int:
                     if not all(p.exists() and p.with_suffix(".md").exists() for p in saved_reports):
                         fail("paired HTML Markdown missing")
                         return
+                    # Exercise the real Tk delete button against a separately
+                    # generated synthetic report, preserving the four prior reports.
+                    from desktop_core import ScanRequest, run_scan
+                    try:
+                        cleanup_result = run_scan(
+                            ScanRequest("paste", text="eval('1')\n", language="python"),
+                            report_root, "code-checker-gui-cleanup-e2e",
+                        )
+                        window.last_result = cleanup_result
+                        window.delete_button.configure(state="normal")
+                        with patch("tkinter.messagebox.askyesno", return_value=False):
+                            window.delete_button.invoke()
+                        if not cleanup_result.html_path.exists() or not cleanup_result.markdown_path.exists():
+                            fail("declined deletion removed files")
+                            return
+                        with patch("tkinter.messagebox.askyesno", return_value=True):
+                            window.delete_button.invoke()
+                        if cleanup_result.html_path.exists() or cleanup_result.markdown_path.exists():
+                            fail("approved deletion left report pair")
+                            return
+                        if window.last_result is not None or not window.open_button.instate(["disabled"]):
+                            fail("deleted report remains active")
+                            return
+                        if not window.delete_button.instate(["disabled"]):
+                            fail("deleted report button still enabled")
+                            return
+                        if not all(p.exists() for p in saved_reports):
+                            fail("deleting current report removed old reports")
+                            return
+                        results.append("confirmed current-session report pair delete PASS")
+                    except Exception as exc:
+                        fail("report cleanup Tk error: " + repr(exc))
+                        return
                     window.root.destroy()
                     return
                 name, expected = scenarios[scenario_index]
@@ -259,7 +292,7 @@ def main() -> int:
             rc = 1
         for result in results:
             print("GUI_E2E: " + result)
-        if errors or rc != 0 or len(results) != 7:
+        if errors or rc != 0 or len(results) != 8:
             print("GUI_E2E_FAILURE: " + json.dumps(errors, ensure_ascii=False), file=sys.stderr)
             return 1
         print("WINDOWS_TK_WIDGET_INTEGRATION_PASS")
