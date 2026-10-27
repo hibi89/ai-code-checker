@@ -580,3 +580,16 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. Data/privacy: existing optional Gemini v1 unchanged, user/customer data never used, no upload or paid API.
 9. Launch blocked: retail user Windows, OS packets, SmartScreen, human PDF visuals, primary legal NOTICE, owner release signoff.
 10. Next work: high-impact functionality defect with reproducible failing regression first, then branch, PR, green Tests+Windows, merge. No documentation-only cycle.
+
+## 2026-10-28 P2-2 dynamic-literal import handoff
+
+1. Goal: accelerate substantive offline v2 scanner accuracy beyond verified minimum MVP.
+2. Repository: hibi89/ai-code-checker; main merge 967ddbc2f42662da9c1f0f2136e2b5be00bb7314; PR #36 merged. Tested feature 0986772e59caf410c76076018d3054cead2af80d.
+3. Code: Implementation files static_checks.py, tests/test_rule_accuracy.py, scripts/evaluate_rule_accuracy.py: AST-only recognition of unshadowed builtin literal __import__('builtins').eval/exec and __import__('subprocess').run/Popen/etc shell truthy, also unshadowed builtin getattr of a known literal module and literal function name. Dynamic/unknown names, shadowed __import__/getattr, unrelated modules, shell=False, bare attribute access excluded.
+4. CI: Verified EXACT feature SHA: Tests https://github.com/hibi89/ai-code-checker/actions/runs/40532704038 16/16 success, Windows packaged EXE/Tk/Defender smoke https://github.com/hibi89/ai-code-checker/actions/runs/40532703707 success, performance/dependency inventory https://github.com/hibi89/ai-code-checker/actions/runs/40532703963 3/3 success.
+5. Corpus: Measured on a fixed NONREPRESENTATIVE synthetic corpus: 103 Python cases, 41 TP, 0 FP, 0 FN, 100% in-corpus recall, NOT real-world detection accuracy. Ubuntu Python 3.11: 276 unit tests passed. Legacy model path unchanged.
+6. Failure repaired: Initial feature CI failed only because an obsolete test asserted two known false negatives must remain; corrected test on next SHA. Re-run full final PR head clean. Prior failed jobs never counted toward final proof.
+7. Latest main postmerge CI: After merge main Tests run https://github.com/hibi89/ai-code-checker/actions/runs/40533179753 was queued when recorded. Do not infer pass before checking same SHA.
+8. Privacy/runtime: no source execution, new dependencies, paid model/API, customer data uploads or binary distribution; original Gemini v1 preserved.
+9. Legal/release status: Functional developer MVP remains ready in synthetic CI scope. Customer EXE release still BLOCKED: independent real Windows acceptance, SmartScreen/Defender reputation, OS network packet verification, primary original LICENSE/NOTICE legal signoff, real Korean PDF visual and explicit owner commercialization approval. No customer code, paid API, model key, executable artifact upload or OS settings changes.
+10. Next executable work: Next GO: verify latest main CI and fix a genuinely measurable scanner or user-workflow defect; avoid planning-only/doc churn. Advance upstream design ahead of schedule only with a regression that proves the behavior.
