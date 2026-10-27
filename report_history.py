@@ -14,12 +14,10 @@ from output_safety import validate_output_location
 
 _MAX_REPORT_BYTES = 32 * 1024 * 1024
 _REPARSE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
-_HTML_MARKERS = (
-    b"<!doctype html><html lang='ko'>",
-    b"<title>\xec\xbd\x94\xeb\x93\x9c\xec\xb2\xb4\xec\xbb\xa4 \xec\x98\xa4\xed\x94\x84\xeb\x9d\xbc\xec\x9d\xb8 \xeb\xb3\xb4\xea\xb3\xa0\xec\x84\x9c</title>",
-    b"Content-Security-Policy",
-    b"default-src 'none'",
-)
+_HTML_PREFIX = (
+    """<!doctype html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta http-equiv='Content-Security-Policy' content="default-src 'none';style-src 'unsafe-inline'; img-src 'none'; script-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'"><title>코드체커 오프라인 보고서</title>"""
+).encode("utf-8")
+
 _MD_MARKER = "# 코드체커 오프라인 진단 보고서".encode("utf-8")
 
 
@@ -79,6 +77,6 @@ def validate_historical_report(output_dir: str | Path, selected: str | Path) -> 
     markdown = html.with_suffix(".md")
     header = _read_report_header(html, suffix=".html")
     md_header = _read_report_header(markdown, suffix=".md")
-    if not all(marker in header for marker in _HTML_MARKERS) or not md_header.startswith(_MD_MARKER):
+    if not header.startswith(_HTML_PREFIX) or not md_header.startswith(_MD_MARKER):
         raise InputError("코드체커에서 생성한 HTML·Markdown 보고서 형식을 확인할 수 없습니다.")
     return html
