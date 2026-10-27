@@ -200,26 +200,55 @@ def _sql_literal_prefix(node: ast.AST) -> str:
     return ""
 
 
+def _sql_literal_only(node: ast.AST) -> bool:
+    """Recognize string-only combinations without evaluating project code."""
+    if isinstance(node, ast.Constant):
+        return isinstance(node.value, str)
+    if isinstance(node, ast.JoinedStr):
+        return all(isinstance(item, ast.Constant) and isinstance(item.value, str)
+                   for item in node.values)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _sql_literal_only(node.left) and _sql_literal_only(node.right)
+    return False
+
+
 def _sql_dynamic(node: ast.AST) -> bool:
+    """An SQL prefix is not enough: require a nonliteral expression."""
     return (
-        (isinstance(node, ast.JoinedStr) or
-         (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add)))
+        isinstance(node, (ast.JoinedStr, ast.BinOp))
+        and (not isinstance(node, ast.BinOp) or isinstance(node.op, ast.Add))
+        and not _sql_literal_only(node)
         and bool(_SQL_START.match(_sql_literal_prefix(node)))
     )
 
 
 def _sql_direct_local(query: ast.AST, call: ast.Call, resolver: _ImportResolver) -> bool:
-    """Conservative linear local binding only; no control-flow or alias inference."""
+    """Track only direct statements/returns and assignments in one ordered block.
+
+    For conditionals, candidate assignment and execution must be within the
+    same if/else arm. Values inherited from outside the arm are not inferred.
+    Nested writes invalidate the candidate rather than claiming dataflow.
+    """
     if not isinstance(query, ast.Name):
         return False
     statement = resolver.parents.get(call)
-    scope = resolver.parents.get(statement)
-    if not isinstance(statement, ast.Expr) or not isinstance(
-        scope, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef)
-    ):
+    if not isinstance(statement, (ast.Expr, ast.Return)) or statement.value is not call:
         return False
+    scope = resolver.parents.get(statement)
+    if isinstance(scope, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef)):
+        block = scope.body
+    elif isinstance(scope, ast.If):
+        if statement in scope.body:
+            block = scope.body
+        elif statement in scope.orelse:
+            block = scope.orelse
+        else:
+            return False
+    else:
+        return False
+
     candidate = False
-    for earlier in scope.body:
+    for earlier in block:
         if earlier is statement:
             return candidate
         if (isinstance(earlier, ast.Assign) and len(earlier.targets) == 1
