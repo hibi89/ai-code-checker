@@ -16,7 +16,7 @@ class RuleAccuracyTests(unittest.TestCase):
         self.assertEqual(result["js_ts_limited_cases_excluded_from_metric"], len(JS_TS_LIMITED))
         self.assertGreaterEqual(result["tp"], 12)
         self.assertEqual(result["fp"], 0)
-        self.assertGreaterEqual(result["fn"], 3)  # Known unsupported indirection.
+        self.assertGreaterEqual(result["fn"], 2)  # Remaining unsupported dynamic indirection.
         self.assertEqual(result["real_world_accuracy"], "UNVERIFIED")
         self.assertEqual(result["customer_release_ready"], False)
 
