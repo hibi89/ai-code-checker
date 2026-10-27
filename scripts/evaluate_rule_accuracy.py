@@ -108,7 +108,24 @@ PYTHON_CASES = (
     Case("sql-format-no-placeholder", 'cursor.execute("SELECT * FROM users".format(uid))\n', ()),
     Case("sql-percent-escaped-only", 'cursor.execute("SELECT %% FROM users" % uid)\n', ()),
     Case("sql-parameterized-unchanged", 'cursor.execute("SELECT * FROM users WHERE id=%s", (uid,))\n', ()),
-    # Intentional remaining known misses: dynamic import / indirect builtin.
+    # Direct literal dynamic imports are recognized only when their helper
+    # builtins have not been shadowed. No source code is executed.
+    Case("dynamic-builtins-direct-eval", '__import__("builtins").eval(value)\n', (("PY-DYNAMIC-EXEC", 1),)),
+    Case("dynamic-builtins-getattr-exec", 'getattr(__import__("builtins"), "exec")(code)\n', (("PY-DYNAMIC-EXEC", 1),)),
+    Case("dynamic-subprocess-getattr", 'getattr(__import__("subprocess"), "Popen")(cmd, shell=True)\n', (("PY-SHELL", 1),)),
+    Case("dynamic-subprocess-false", '__import__("subprocess").run(cmd, shell=False)\n', ()),
+    Case("dynamic-subprocess-other-module", '__import__("unrelated").run(cmd, shell=True)\n', ()),
+    Case("dynamic-subprocess-other-method", '__import__("subprocess").safe_call(cmd, shell=True)\n', ()),
+    Case("dynamic-subprocess-computed-module", '__import__(package).run(cmd, shell=True)\n', ()),
+    Case("dynamic-subprocess-extra-import-argument", '__import__("subprocess", globals()).run(cmd, shell=True)\n', ()),
+    Case("dynamic-builtins-unrelated-attribute", '__import__("builtins").print(value)\n', ()),
+    Case("dynamic-builtins-getattr-variable-name", 'getattr(__import__("builtins"), method)(value)\n', ()),
+    Case("dynamic-builtins-getattr-extra-argument", 'getattr(__import__("builtins"), "eval", fallback)(value)\n', ()),
+    Case("dynamic-subprocess-shadow-import", 'def check(__import__):\n    return __import__("subprocess").run(cmd, shell=True)\n', ()),
+    Case("dynamic-builtins-shadow-getattr", 'def check(getattr):\n    return getattr(__import__("builtins"), "eval")(value)\n', ()),
+    Case("dynamic-subprocess-module-rebound", '__import__ = fake\n__import__("subprocess").run(cmd, shell=True)\n', ()),
+    Case("dynamic-getattr-global-rebound", 'getattr = fake\ngetattr(__import__("builtins"), "eval")(value)\n', ()),
+    Case("dynamic-builtins-getattr-value-no-execution", 'getattr(__import__("builtins"), "eval")\n', ()),
     Case("dynamic-getattr-known-miss", 'getattr(__import__("builtins"), "eval")(value)\n', (("PY-DYNAMIC-EXEC", 1),)),
     Case("shell-dynamic-import-known-miss", '__import__("subprocess").run(cmd, shell=True)\n', (("PY-SHELL", 1),)),
 )

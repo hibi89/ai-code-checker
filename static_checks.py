@@ -190,6 +190,42 @@ _SUBPROCESS_CALLS = {"run", "Popen", "call", "check_call", "check_output"}
 _REQUESTS_CALLS = {"get", "post", "put", "patch", "delete", "head", "options", "request"}
 
 
+def _literal_imported_module(node: ast.AST, resolver: _ImportResolver) -> str | None:
+    """Only the *builtin* __import__('literal') with no other arguments.
+
+    The original source is never imported or executed. Aliases, dynamically
+    computed module names and shadowed __import__ are intentionally skipped.
+    """
+    if (not isinstance(node, ast.Call) or not resolver.builtin(node, "__import__")
+            or len(node.args) != 1 or node.keywords
+            or not isinstance(node.args[0], ast.Constant)
+            or not isinstance(node.args[0].value, str)):
+        return None
+    module = node.args[0].value
+    return module if module in {"builtins", "subprocess"} else None
+
+
+def _dynamic_import_target(call: ast.Call, resolver: _ImportResolver) -> tuple[str, str] | None:
+    """Recognize direct literal module-function calls, not arbitrary call chains.
+
+    Supports __import__('subprocess').run(...) and
+    getattr(__import__('builtins'), 'eval')(...). Both dynamic lookup
+    operators must resolve to unshadowed builtins by lexical inspection.
+    The result means a syntactic risk candidate, not actual runtime identity.
+    """
+    callee = call.func
+    if isinstance(callee, ast.Attribute):
+        module = _literal_imported_module(callee.value, resolver)
+        return (module, callee.attr) if module else None
+    if (isinstance(callee, ast.Call) and resolver.builtin(callee, "getattr")
+            and len(callee.args) == 2 and not callee.keywords
+            and isinstance(callee.args[1], ast.Constant)
+            and isinstance(callee.args[1].value, str)):
+        module = _literal_imported_module(callee.args[0], resolver)
+        return (module, callee.args[1].value) if module else None
+    return None
+
+
 def _sql_literal_prefix(node: ast.AST) -> str:
     """Only identify visible leading SQL text; never guess from dynamic values."""
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -388,9 +424,17 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
         line_number = getattr(node, "lineno", None)
         function_name = node.func.id if isinstance(node.func, ast.Name) else None
         attribute_name = node.func.attr if isinstance(node.func, ast.Attribute) else None
-        if function_name in {"eval", "exec"} and resolver.builtin(node, function_name):
+        literal_dynamic_target = _dynamic_import_target(node, resolver)
+        if ((function_name in {"eval", "exec"} and resolver.builtin(node, function_name))
+                or (literal_dynamic_target is not None
+                    and literal_dynamic_target[0] == "builtins"
+                    and literal_dynamic_target[1] in {"eval", "exec"})):
+            risky_builtin = (
+                literal_dynamic_target[1] if literal_dynamic_target is not None
+                and literal_dynamic_target[0] == "builtins" else function_name
+            )
             findings.append(_finding(
-                source, "HIGH", "security", f"동적 코드 실행 호출: {function_name}",
+                source, "HIGH", "security", f"동적 코드 실행 호출: {risky_builtin}",
                 line_number,
                 "외부 입력이 전달되면 임의 코드 실행으로 이어질 수 있습니다.",
                 "동적 실행이 꼭 필요한지 확인하고, 가능하면 명시적 파서나 허용 목록 기반 로직으로 대체하세요.",
@@ -402,7 +446,12 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
             and _literal_shell_enabled(keyword.value)
             for keyword in node.keywords
         )
-        if shell_true and resolver.imported(node, "subprocess", _SUBPROCESS_CALLS):
+        if shell_true and (
+            resolver.imported(node, "subprocess", _SUBPROCESS_CALLS)
+            or (literal_dynamic_target is not None
+                and literal_dynamic_target[0] == "subprocess"
+                and literal_dynamic_target[1] in _SUBPROCESS_CALLS)
+        ):
             findings.append(_finding(
                 source, "HIGH", "security", "셸 명령을 문자열로 실행함",
                 line_number,

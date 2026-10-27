@@ -103,6 +103,43 @@ class RuleAccuracyTests(unittest.TestCase):
                 report = build_report(scan_text(code, filename="synthetic.py"))
                 self.assertFalse(any(r.rule_id == "PY-SQL-CONCAT" for r in report.findings))
 
+    def test_literal_dynamic_import_risks_use_exact_original_line(self):
+        cases = (
+            ('getattr(__import__("builtins"), "eval")(value)\n', "PY-DYNAMIC-EXEC"),
+            ('__import__("builtins").eval(value)\n', "PY-DYNAMIC-EXEC"),
+            ('getattr(__import__("builtins"), "exec")(code)\n', "PY-DYNAMIC-EXEC"),
+            ('__import__("subprocess").run(cmd, shell=True)\n', "PY-SHELL"),
+            ('getattr(__import__("subprocess"), "Popen")(cmd, shell=True)\n', "PY-SHELL"),
+        )
+        for sample, expected in cases:
+            with self.subTest(sample=sample):
+                report = build_report(scan_text("# harmless\n" + sample, filename="fixture.py"))
+                self.assertEqual(
+                    [(r.rule_id, r.finding.start_line) for r in report.findings],
+                    [(expected, 2)],
+                )
+                self.assertEqual(report.verified_count, 1)
+                self.assertEqual(report.status, "complete")
+
+    def test_literal_dynamic_import_shadow_or_nonliteral_is_not_matched(self):
+        safe = (
+            '__import__("subprocess").run(cmd, shell=False)\n',
+            '__import__(module).run(cmd, shell=True)\n',
+            '__import__("another").run(cmd, shell=True)\n',
+            '__import__("subprocess", globals()).run(cmd, shell=True)\n',
+            'def f(__import__):\n    return __import__("subprocess").run(cmd, shell=True)\n',
+            'def f(getattr):\n    return getattr(__import__("builtins"), "eval")(code)\n',
+            '__import__ = other\n__import__("subprocess").run(cmd, shell=True)\n',
+            'getattr = other\ngetattr(__import__("builtins"), "eval")(value)\n',
+            'getattr(__import__("builtins"), "eval")\n',
+            'getattr(__import__("builtins"), attr)(value)\n',
+            'getattr(__import__("builtins"), "eval", fallback)(value)\n',
+        )
+        for sample in safe:
+            with self.subTest(sample=sample):
+                report = build_report(scan_text(sample, filename="fixture.py"))
+                self.assertEqual(report.findings, ())
+
     def test_js_ts_do_not_claim_ast_analyzer(self):
         for filename, code in (("x.js", "fetch(url);\n"), ("x.ts", "let a: number = 1;\n")):
             scan = scan_text(code, filename=filename)
