@@ -68,10 +68,14 @@ PYTHON_CASES = (
     Case("builtin-eval-shadow", "eval = lambda value: value\neval(source)\n", ()),
     Case("builtin-exec-param", "def apply(exec):\n    exec(source)\n", ()),
     Case("builtin-eval-real", "eval(source)\n", (("PY-DYNAMIC-EXEC", 1),)),
-    # Intentional known misses: unsupported dynamic indirection/dataflow.
+    Case("sql-composed-local", 'query = f"SELECT * FROM t WHERE x={v}"\nconn.execute(query)\n', (("PY-SQL-CONCAT", 2),)),
+    Case("sql-local-function", 'def f(v):\n    query = f"SELECT * FROM t WHERE x={v}"\n    conn.execute(query)\n', (("PY-SQL-CONCAT", 3),)),
+    Case("sql-local-annotated", 'query: str = "SELECT * FROM t WHERE x=" + v\nconn.execute(query)\n', (("PY-SQL-CONCAT", 2),)),
+    Case("sql-local-safe-rebind", 'query = f"SELECT * FROM t WHERE x={v}"\nquery = "SELECT * FROM t WHERE x=?"\nconn.execute(query)\n', ()),
+    Case("sql-local-conditional-shadow", 'query = f"SELECT * FROM t WHERE x={v}"\nif cond:\n    query = safe_query\nconn.execute(query)\n', ()),
+    # Intentional remaining known misses: dynamic import / indirect builtin.
     Case("dynamic-getattr-known-miss", 'getattr(__import__("builtins"), "eval")(value)\n', (("PY-DYNAMIC-EXEC", 1),)),
     Case("shell-dynamic-import-known-miss", '__import__("subprocess").run(cmd, shell=True)\n', (("PY-SHELL", 1),)),
-    Case("sql-composed-variable-known-miss", 'query = f"SELECT * FROM t WHERE x={v}"\nconn.execute(query)\n', (("PY-SQL-CONCAT", 2),)),
 )
 
 JS_TS_LIMITED = (
