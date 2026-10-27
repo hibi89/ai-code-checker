@@ -113,3 +113,10 @@ Source baseline for this audit: main merge `f0c257058f43298167e6777f315db01ae294
 - **#13 visual PDF:** Existing headless browser print remains synthetic only, human visual inspection UNVERIFIED.
 - **#23 binary licenses:** original third-party NOTICE and redistribution approval remain BLOCKED; signature status observation alone does not approve distribution.
 - **Release gates:** evidence schema hardcodes retail user acceptance, SmartScreen, OS packets, Defender file scan, human Korean PDF visual and third-party legal NOTICE as UNVERIFIED. No user OS changes; CI Tests 16/16 / 185 Python cases and Windows EXE + read-only receipt 1/1 PASS on feature `19496ba1`, merged source `f7fccd8`. See `P1L_WINDOWS_READONLY_ACCEPTANCE_20261027.md`.
+
+
+## P1-M 2026-10-27 mapped Windows network-drive output update
+
+- **Storage privacy #19/#22:** previous UNC, symlink/junction and in-source output protections expanded to Windows mapped drive letters with Win32 GetDriveTypeW; remote type 4, missing/unknown and optical denied before output traversal, local type 2/3/6 accepted. [PR #24](https://github.com/hibi89/ai-code-checker/pull/24) merged main source `72c89d36828267ffb44edb1d9dd1ee47e65dc5b2`.
+- **Tests:** CI Tests [40499792387](https://github.com/hibi89/ai-code-checker/actions/runs/40499792387) 16/16 SUCCESS, 190 Windows Python3.11 unit tests; Windows EXE [40499792348](https://github.com/hibi89/ai-code-checker/actions/runs/40499792348) 1/1 SUCCESS. Mocked remote drive and real Windows local drive observation PASS.
+- **Not closed:** network-mapped **input** source path may still read from network, cloud-synchronized local folders, filesystem TOCTOU, real OS packet capture, customer retail Defender/SmartScreen, Korean PDF visual, native third-party legal NOTICE and manual commercial release approval. See `P1M_WINDOWS_MAPPED_DRIVE_SAFETY_20261027.md`.
