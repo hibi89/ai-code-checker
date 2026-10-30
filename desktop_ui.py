@@ -12,7 +12,9 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from report_cleanup import ReportCleanupError, delete_report_pair
+from report_cleanup import (
+    ReportCleanupError, delete_report_pair, validate_current_report_receipt,
+)
 from report_history import list_historical_reports, validate_historical_report
 from output_safety import validate_output_location
 from code_input import InputError
@@ -424,14 +426,22 @@ def launch(on_ready=None) -> int:
             if self.busy or self.last_result is None:
                 return
             try:
-                path = self.last_result.html_path.resolve(strict=True)
+                # A current report may have been replaced or edited since the
+                # scan. Never open it as a trusted current-session result
+                # unless the HTML AND Markdown still match the captured pair.
+                path = validate_current_report_receipt(self.last_result.report_receipt)
+                path = path.resolve(strict=True)
                 if sys.platform == "win32":
                     os.startfile(str(path))
                 else:
                     import webbrowser
                     webbrowser.open_new_tab(path.as_uri())
-            except (OSError, ValueError) as exc:
-                messagebox.showerror("열기 실패", f"로컬 HTML을 열지 못했습니다 ({type(exc).__name__}).")
+            except (ReportCleanupError, OSError, ValueError):
+                messagebox.showerror(
+                    "현재 보고서 열기 거부",
+                    "보고서가 생성된 후 수정·교체되었거나 두 파일의 상태를 검증할 수 없습니다. "
+                    "기존 파일은 Windows 파일 관리자로 확인하고, 새 분석 결과는 다시 검사해 생성하세요.",
+                )
 
         def _browse_recent_reports(self) -> None:
             """Show bounded local history sorted by file modification time."""

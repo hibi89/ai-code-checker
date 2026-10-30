@@ -205,6 +205,28 @@ def main() -> int:
                             ScanRequest("paste", text="eval('1')\n", language="python"),
                             report_root, "code-checker-gui-cleanup-e2e",
                         )
+                        # A report changed on disk must never be launched
+                        # through the trusted current-report button. Keep this
+                        # synthetic fixture separate from historical reports.
+                        tamper_result = run_scan(
+                            ScanRequest("paste", text="eval('synthetic')\n", language="python"),
+                            rootdir / "tampered-open-fixture", "current-tamper",
+                        )
+                        window.last_result = tamper_result
+                        window.open_button.configure(state="normal")
+                        old_html = tamper_result.html_path.read_bytes()
+                        changed_html = old_html.replace(b"<title>", b"<TITLE>", 1)
+                        if changed_html == old_html:
+                            fail("missing report title fixture to tamper")
+                            return
+                        tamper_result.html_path.write_bytes(changed_html)
+                        with patch("os.startfile") as denied_open, patch(
+                            "tkinter.messagebox.showerror"
+                        ) as warned:
+                            window.open_button.invoke()
+                            denied_open.assert_not_called()
+                            warned.assert_called_once()
+                        results.append("Tk current report tamper-open blocked PASS")
                         window.last_result = cleanup_result
                         window.delete_button.configure(state="normal")
                         with patch("tkinter.messagebox.askyesno", return_value=False):
@@ -397,7 +419,7 @@ def main() -> int:
             rc = 1
         for result in results:
             print("GUI_E2E: " + result)
-        if errors or rc != 0 or len(results) != 11:
+        if errors or rc != 0 or len(results) != 12:
             print("GUI_E2E_FAILURE: " + json.dumps(errors, ensure_ascii=False), file=sys.stderr)
             return 1
         print("WINDOWS_TK_WIDGET_INTEGRATION_PASS")

@@ -10,6 +10,7 @@ from unittest.mock import patch
 from desktop_core import ScanRequest, run_scan
 from report_cleanup import (
     ReportCleanupError, capture_report_receipt, delete_report_pair,
+    validate_current_report_receipt,
 )
 
 
@@ -86,6 +87,52 @@ class ReportCleanupTests(unittest.TestCase):
             self.assertTrue(result.html_path.exists())
             self.assertTrue(result.markdown_path.exists())
             self.assertTrue(linked.exists())
+
+    def test_current_report_open_accepts_unchanged_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            report = self.make_pair(Path(tmp))
+            self.assertEqual(
+                validate_current_report_receipt(report.report_receipt),
+                report.html_path,
+            )
+
+    def test_current_report_open_blocks_same_size_html_modification(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            report = self.make_pair(Path(tmp))
+            original = report.html_path.read_bytes()
+            changed = original.replace(b"<title>", b"<TITLE>", 1)
+            self.assertNotEqual(original, changed)
+            self.assertEqual(len(original), len(changed))
+            report.html_path.write_bytes(changed)
+            with self.assertRaises(ReportCleanupError):
+                validate_current_report_receipt(report.report_receipt)
+            self.assertTrue(report.html_path.exists())
+            self.assertTrue(report.markdown_path.exists())
+
+    def test_current_report_open_blocks_changed_or_missing_markdown(self) -> None:
+        for missing in (False, True):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as tmp:
+                report = self.make_pair(Path(tmp))
+                if missing:
+                    report.markdown_path.unlink()
+                else:
+                    report.markdown_path.write_bytes(b"# different markdown\n")
+                with self.assertRaises(ReportCleanupError):
+                    validate_current_report_receipt(report.report_receipt)
+                self.assertTrue(report.html_path.exists())
+
+    def test_current_report_open_requires_verified_receipt_and_single_link(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = self.make_pair(root)
+            with self.assertRaises(ReportCleanupError):
+                validate_current_report_receipt(None)
+            alias = root / "other.html"
+            os.link(report.html_path, alias)
+            with self.assertRaises(ReportCleanupError):
+                validate_current_report_receipt(report.report_receipt)
+            self.assertTrue(report.html_path.exists())
+            self.assertTrue(alias.exists())
 
     def test_no_arbitrary_pair_or_output_directory_deletion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
