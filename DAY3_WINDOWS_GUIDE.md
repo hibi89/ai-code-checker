@@ -17,7 +17,7 @@ Choose source file/TXT/ZIP, folder, or paste. For TXT/paste, select a language; 
 
 The GUI does not import the legacy Gemini client. No customer project is executed, dependencies are not installed by the application, and no account, model key or cloud backend is required to scan. The GUI uses a worker thread and disables closing while the operation runs. Cancellation is not yet implemented.
 
-Default output directory is under the current user's home folder: CodeCheckerReports. Report names contain current local date/time and microseconds. Existing reports are never overwritten. Reports can include masked excerpts or source paths; keep and delete them locally. Do not use cloud-synced folders without considering the data transfer risk.
+Default output directory is under the current user's home folder: CodeCheckerReports. Report names contain current local date/time and microseconds. Existing reports are never overwritten. Reports can include masked excerpts or source paths; keep and delete them locally. Known automatic-sync report destinations (OneDrive, Dropbox, Google Drive and iCloudDrive, including configured Windows OneDrive roots) are now rejected before the report is written. Use a nonsynchronized local folder. This is best-effort prevention, not proof that a third-party backup program cannot upload files.
 
 ## Optional Windows executable candidate
 

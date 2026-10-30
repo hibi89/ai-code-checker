@@ -2,11 +2,12 @@
 
 This is a safety guard, not a guarantee against a hostile concurrent process
 swapping a filesystem component after preflight. No drive or network inspection
-is performed and synchronized directories can still be user-selected.
+is performed and unknown synchronized directories can still be user-selected.
 """
 from __future__ import annotations
 
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -45,14 +46,41 @@ def _require_local_output_drive(destination: Path) -> None:
         raise InputError("네트워크 연결·알 수 없는 Windows 드라이브에 보고서를 저장하지 않습니다.")
 
 
+# Only known sync-directory patterns and explicitly configured OneDrive roots.
+# This cannot detect arbitrary backup clients or folder-specific sync policies.
+_KNOWN_SYNC_DIRECTORY = re.compile(
+    r"(?i)^(?:onedrive(?: - .+)?|dropbox|google drive|icloud(?: ?drive)?)$"
+)
+
+
+def _refuse_known_sync_output(destination: Path) -> None:
+    """Fail closed before any report write to common auto-upload locations."""
+    if any(_KNOWN_SYNC_DIRECTORY.fullmatch(piece) for piece in destination.parts):
+        raise InputError("OneDrive 등 알려진 자동 동기화 폴더로 보고서를 저장할 수 없습니다. "
+                         "동기화되지 않는 로컬 폴더를 선택하세요.")
+    for key in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial"):
+        raw_root = os.environ.get(key)
+        if not raw_root:
+            continue
+        try:
+            root = Path(raw_root).expanduser().absolute()
+        except (OSError, RuntimeError, ValueError):
+            # An unresolvable advertised sync root cannot prove privacy.
+            raise InputError("클라우드 동기화 루트의 안전성을 확인할 수 없습니다.")
+        # Path equality is component-based and preserves directory boundaries.
+        if destination == root or root in destination.parents:
+            raise InputError("Windows OneDrive 동기화 경로로 보고서를 저장할 수 없습니다. "
+                             "비동기화 로컬 폴더를 선택하세요.")
+
+
 def validate_output_location(
     output_dir: str | Path, *, input_directory: str | Path | None = None,
 ) -> Path:
     """Reject output through links/junctions, UNC paths and inside scanned folder.
 
     Does not create any file or directory. Windows mapped remote drives are
-    refused, but a local folder synchronized by cloud software cannot always
-    be identified. Other scans may use an ordinary separate local folder.
+    refused, and known cloud-sync directories are rejected. Arbitrary cloud
+    backup software and custom synchronization roots cannot be identified. Other scans may use an ordinary separate local folder.
     """
     raw = os.fspath(output_dir)
     if not isinstance(raw, str) or not raw.strip() or "\x00" in raw:
@@ -60,6 +88,7 @@ def validate_output_location(
     if raw.startswith(("\\\\", "//")):
         raise InputError("네트워크 공유 또는 장치 경로로 보고서를 저장하지 않습니다.")
     destination = Path(raw).expanduser().absolute()
+    _refuse_known_sync_output(destination)
     try:
         # Check drive type before any lstat/resolve that may touch a mapped share.
         _require_local_output_drive(destination)
