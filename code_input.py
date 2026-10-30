@@ -290,6 +290,41 @@ def _validate_relative_path(raw_path: str) -> str:
     return pure.as_posix()
 
 
+def _read_checked_source(path: Path, observed: os.stat_result, max_bytes: int) -> bytes:
+    """Read only the same bounded, non-linked regular file that was inspected.
+
+    The descriptor and pathname are checked after opening and reading to
+    reject ordinary file-replacement races. No customer code is executed.
+    """
+    def identity(value: os.stat_result) -> tuple[int, int, int, int]:
+        return (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    if (not stat.S_ISREG(observed.st_mode)
+            or getattr(observed, "st_file_attributes", 0) & reparse
+            or path.is_symlink() or observed.st_size > max_bytes):
+        raise InputError("일반 로컬 소스 파일이 아니거나 파일 크기 제한을 초과했습니다.")
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags)
+    try:
+        opened = os.fstat(fd)
+        if (not stat.S_ISREG(opened.st_mode)
+                or getattr(opened, "st_file_attributes", 0) & reparse
+                or path.is_symlink() or identity(opened) != identity(observed)):
+            raise InputError("검사할 파일이 열리는 동안 변경되었습니다. 다시 미리보기를 실행하세요.")
+        with os.fdopen(fd, "rb", closefd=False) as stream:
+            raw = stream.read(max_bytes + 1)
+        after = os.fstat(fd)
+        on_disk = path.lstat()
+        if (len(raw) > max_bytes or path.is_symlink()
+                or identity(after) != identity(observed)
+                or identity(on_disk) != identity(observed)):
+            raise InputError("검사할 파일이 읽히는 동안 변경되었습니다. 다시 미리보기를 실행하세요.")
+        return raw
+    finally:
+        os.close(fd)
+
+
 def _bundle_from_records(
     records: Iterable[tuple[str, bytes]],
     limits: InputLimits,
@@ -398,8 +433,7 @@ def load_directory(root_path: str | Path, limits: InputLimits = InputLimits()) -
                     raise InputError(f"파일 크기 제한 초과: {relative_path}")
                 if sum(len(raw) for _, raw in records) + size > limits.max_total_bytes:
                     raise InputError("프로젝트 전체 입력 크기 제한을 초과했습니다. 분석을 중단했습니다.")
-                with file_path.open("rb") as stream:
-                    raw = stream.read(limits.max_file_bytes + 1)
+                raw = _read_checked_source(file_path, file_stat, limits.max_file_bytes)
             except OSError as error:
                 raise InputError(f"파일을 안전하게 읽지 못했습니다: {relative_path}") from error
             if len(raw) > limits.max_file_bytes:
@@ -497,8 +531,8 @@ def load_single_file(file_path: str | Path, limits: InputLimits = InputLimits())
     if not _is_supported(resolved.name):
         raise InputError("지원하지 않는 파일 형식입니다.")
     try:
-        with resolved.open("rb") as stream:
-            raw = stream.read(limits.max_file_bytes + 1)
+        observed = resolved.lstat()
+        raw = _read_checked_source(resolved, observed, limits.max_file_bytes)
     except OSError as error:
         raise InputError("입력 파일을 안전하게 읽지 못했습니다.") from error
     warnings: list[str] = []
