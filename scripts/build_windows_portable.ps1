@@ -42,7 +42,7 @@ function Assert-OwnerPrivatePath([string]$RawPath) {
   }
   foreach ($envRoot in @($env:OneDrive, $env:OneDriveConsumer, $env:OneDriveCommercial)) {
     if (-not [string]::IsNullOrWhiteSpace($envRoot)) {
-      $canonical = [System.IO.Path]::GetFullPath($envRoot).TrimEnd('\', '/')
+      $canonical = [System.IO.Path]::GetFullPath($envRoot).TrimEnd([char[]]@('\', '/'))
       if ($full.Equals($canonical, [System.StringComparison]::OrdinalIgnoreCase) -or
           $full.StartsWith(($canonical + '\'), [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Owner acceptance refuses configured OneDrive roots.'
