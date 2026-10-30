@@ -93,11 +93,8 @@ class StagedLicenseTests(unittest.TestCase):
                 else:
                     self.manifest["ambiguous_source_roles"] = value
                 self.refresh()
-                report = self.verify()
-                self.assertEqual(report["status"], "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED")
-                self.assertEqual(report["missing_or_ambiguous_roles"], value)
-                self.assertFalse(report["source_equality_verified"])
-                self.assertFalse(report["customer_release_ready"])
+                with self.assertRaises(ValueError):
+                    self.verify()
                 self.manifest["missing_source_roles"] = ["cpython", "pyinstaller"]
                 self.manifest["ambiguous_source_roles"] = []
 

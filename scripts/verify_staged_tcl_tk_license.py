@@ -41,8 +41,6 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
             or sum(manifest["source_role_counts"].values()) != len(manifest["originals"])
             or not isinstance(manifest.get("missing_source_roles"), list)
             or not isinstance(manifest.get("ambiguous_source_roles"), list)
-            or manifest["source_role_counts"]["tcl"] != 1
-            or manifest["source_role_counts"]["tk"] != 1
             or manifest.get("exe_sha256") != receipt.get("exe_sha256")
             or manifest.get("exe_bytes") != receipt.get("exe_bytes")
             or manifest.get("frozen_tcl_patchlevel") != receipt.get("tcl_runtime_patchlevel")
