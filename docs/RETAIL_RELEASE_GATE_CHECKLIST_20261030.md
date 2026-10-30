@@ -94,3 +94,11 @@ python -m scripts.windows_local_exe_smoke_contract --evidence .build-windows\win
 - [PR #54](https://github.com/hibi89/ai-code-checker/pull/54)는 오프라인 GUI의 Pydantic/Gemini import를 완전히 분리하고 PyInstaller의 강제 Pydantic 번들을 제거했다. 과거 installed wheels에 기반해 만든 후보 license draft/EXE SHA는 **새 빌드에 재사용 불가**.
 - [실제 Windows CI 41085565053](https://github.com/hibi89/ai-code-checker/actions/runs/41085565053), source feature `f39eaf67ecaccec4fe7933a6a85ec0cebcd40ffb`에서 EXE SHA256 `c551fb7d56c6e33d7c91acb3a6de26087be15b397293f09c36179e579a9a420e`: `GEMINI_PYDANTIC_BUNDLED=False`, CArchive 997(이전 1,018), PYZ 141(이전 548), 추가 owner review 72(이전 92), installed distribution review **1(PyInstaller)**(이전 8). 이것은 **검토량 감소이지 1개 라이선스만 준수하면 된다는 의미가 아니다**.
 - CPython 3.13과 Tcl/Tk 번들·정확한 runtime DLLs, PyInstaller bootloader 및 미분류 CArchive 72개에 대한 원본 소유자/버전/라이선스·고지 의무는 확인되지 않았다. Windows 검수·OS 패킷·한글 PDF 시각·사용자 판매 승인도 미완료. **RELEASE_BLOCKED** 유지.
+
+## 9. 2026-10-31 — Tcl 원본 미발견 원인 조사 중단 및 공식 출처 기반 수동 전환
+
+- PR [#56](https://github.com/hibi89/ai-code-checker/pull/56)는 기존 `tcl/tcl8.x`뿐 아니라 Python의 `Lib/tcl8.x`, `Lib/tcl/tcl8.x`, 일부 nested Tk의 원본 `license.terms`를 **원본 bytes 그대로** 찾도록 개선. 서로 다른 원문이 발견되면 자동 채택 금지.
+- 실제 Windows 빌드 [CI 41090681085](https://github.com/hibi89/ai-code-checker/actions/runs/41090681085)에서는 여전히 **Tcl original = 0**(Tk=1, CPython=1, PyInstaller=1). **두 차례의 설치 경로 추측 실패 이후 같은 경로 조사를 반복하지 않는다.**
+- **대안/공식 1차 출처:** [Tcl/Tk Licensing Terms](https://www.tcl-lang.org/software/tcltk/license.html)는 핵심 Tcl/Tk 전체 버전에 공통 적용한다고 명시하고 기존 저작권·라이선스 통지를 그대로 유지할 것을 요구한다. 이는 **특정 배포판의 Tcl DLL 버전·수정사항·별도 확장·다른 벤더 리소스에 대한 검수 면제 또는 기존 설치 파일 확보를 의미하지 않는다**. 공식 페이지를 확인하고 정확한 고객 배포용 원문·적용 컴포넌트·고지문 포함 여부를 수동 검토할 것. 외부 파일 자동 다운로드/임의 NOTICE 생성 없음.
+- 동일 실제 EXE [Windows CI 41090681085](https://github.com/hibi89/ai-code-checker/actions/runs/41090681085) 근거: **CArchive 997, PYZ 141, 명칭 미분류 72**, Analysis build source 후보 63, **동봉 native 바이트와 소스 일치 57**, Analysis 미연결 9, 그중 EXE TOC 고유 이름 8, EXE TOC와 PKG TOC 모두 미연결 **1**. 다음 검수는 **1개 완전 미연결 → 나머지 8개 → 기존 소스 63개의 원문 소유자·LICENSE/NOTICE** 순서. 빌드 파일명/바이트 동일성은 저작권·라이선스·재배포권 승인 아님.
+- **여전히 차단:** 소유자 승인 없는 ZIP·EXE 공개 배포/크몽 등록, 법률 준수 자동 인증, 소비자 PC GUI/SmartScreen/Defender/네트워크 패킷/한글 PDF 육안. Python 의존성은 오프라인 제거했으나 CPython/Tcl/Tk 및 PyInstaller 예외·런타임 통지는 검수해야 한다.

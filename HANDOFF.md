@@ -793,3 +793,16 @@ Git history contains original v1 plus merged MVP; rollback by main SHA f0c2570 o
 8. **원본·백업·인증·수정 금지:** GitHub SHA/PR 이력으로 이전 상태 복구. CPython/Tk/PyInstaller 원본 라이선스 복사는 CI 임시 위치이며 영구 보존이나 사용자 PC 존재를 뜻하지 않음; 민감한 설치 경로/원문/EXE/고객 소스/키는 공개 GitHub에 올리지 않는다. 번들 소스/환경/크몽 계정 무단 변경 금지.
 9. **다음 우선순위·완료 기준·승인:** 우선 Tcl 실제 버전 일치 원본 LICENSE 입수 또는 명시적 미확보 기록; CPython/Tk/PyInstaller 원본 통지·재배포 조건과 72개 미분류 바이너리 소유자 점검. 다음 소비자 일반 Windows 10/11에서 사용자가 GUI 실제 실행, SmartScreen/Defender 관찰, OS 패킷, 한글 PDF 육안/지원·환불 규정 수락. 유료/외부 전송/배포·판매 명시적 사용자 승인 필요.
 10. **갱신 KST·확인 시점·범위·기준 SHA:** 2026-10-31 KST. 기능 검증은 feature `0a7c21083228f24306bf73bf3c47a27d4254ce1d` CI 및 runner local original bytes까지. 일반 소비자 실기기/고객 NOTICE·법적 재배포·실제 상용 판매 **미검증**. 문서 커밋 SHA와 최신 main CI를 후속에서 재조회.
+
+## 2026-10-31 KST — PR #56 해총 Tcl 원본 조사/전환 10항 인수인계
+
+1. **목표/요구/기술:** 크몽 29,000원 **제안가** 오프라인 Windows Tk 코드체커, Python AST·HTML/Markdown/로컬 PDF 인쇄, 기존 Gemini CLI 보존; 판매 별도 승인.
+2. **완료/결정:** `scripts/stage_runtime_original_licenses.py`가 CPython 설치 트리의 다른 알려진 Tcl/Tk 경로까지 원본 바이트 SHA 확보 시도; 불일치 원문 복수 발견 시 ambiguity 기록. 공개 웹 원문을 몰래 customer NOTICE로 자동 채택하지 않음.
+3. **명령/테스트:** `python -m unittest discover -s tests -v`; [feature CI 41090680955](https://github.com/hibi89/ai-code-checker/actions/runs/41090680955) **16/16 PASS**, [Windows 41090681085](https://github.com/hibi89/ai-code-checker/actions/runs/41090681085) **SUCCESS**. 기존 `python -m scripts.stage_runtime_original_licenses --exe ... --audit ... --out-dir ...` 동일 실빌드에서 로컬만 실행. 일반 고객 OS 미검증.
+4. **완료/대기/차단:** 테스트/병합 완료, Tcl 실제 원문은 0개로 **여전히 미확보**, 원본 CPython/Tk/PyInstaller 3개. EXE 재배포권/실기기 검수/판매 차단.
+5. **실패 근거/Stop·Pivot:** top-level Tcl 0개, alternate Python Lib layout 후도 Tcl 0개(반복 동일 실패). 임의 경로 탐색 중단. 공식 [Tcl/Tk 전체 core 릴리스 라이선스](https://www.tcl-lang.org/software/tcltk/license.html)의 정확 문구·동봉 버전을 수동 비교하는 전략으로 전환. 공통 조건을 특정 DLL/확장 권한 자동 승격 금지.
+6. **Repo/브랜치/SHA:** `hibi89/ai-code-checker` main merge `e42b2aa9f8b895e93959d16e9faba265655b0eac`, feature `feature/tcl-license-path-check` head `e76e2d9dc542c8c3543b1470ab8a48b9fb9d486a`, rollback 이전 main `625ea2a24ac34023e8aa9d6f85d8d690df4ea1d9`. 파일 `scripts/stage_runtime_original_licenses.py`, `tests/test_stage_runtime_original_licenses.py`. 문서 후속 SHA 확인.
+7. **Production/환경:** Vercel/URL 미적용; GitHub Windows hosted runner Python3.13/PyInstaller6.22.3; 공개 EXE 없음, 로컬 임시 원문 CI artifact 업로드 없음.
+8. **원본/백업/인증:** Git 이전 SHA 보존, force push 없음; 실제 EXE·license 원본 텍스트·소유자 절대경로·고객 코드·토큰 공개 GitHub 반영 금지. 원본 3개는 CI 임시 runner에만 존재해 영구 저장/고객 납품 아님.
+9. **다음 우선순위/승인:** 동일 실빌드 원본 매핑 72중 57 byte match, 63 Analysis 후보, Analysis 불명 9/EXE TOC 불명 **1**을 먼저 조사. Tcl 공식 core 라이선스와 실제 동봉 버전 수동 대조, 정확 고객 LICENSE/NOTICE, 실제 Python 없는 소비자 Windows UI/Defender/SmartScreen/OS 네트워크/PDF 육안, 상품 정책·가격·배포 전 사용자 최종 승인.
+10. **KST/증거/상태:** 2026-10-31 KST GitHub feature CI·Windows real packaged binary local audit만 검증. 실제 Windows 소비자 사용, Tcl 정확 바이너리 법적 준수, 최종 크몽 판매 **미검증**. 문서 기준 merge `e42b2aa...`, 최신 문서 HEAD/CI 필수 재조회.
