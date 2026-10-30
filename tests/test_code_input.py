@@ -5,8 +5,9 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
-from code_input import InputError, InputLimits, bundle_from_text, load_directory, load_zip
+from code_input import InputError, InputLimits, bundle_from_text, load_directory, load_single_file, load_zip
 
 
 class CodeInputTests(unittest.TestCase):
@@ -111,6 +112,50 @@ class CodeInputTests(unittest.TestCase):
             bundle = load_directory(root)
 
         self.assertEqual([source.path for source in bundle.files], ["src/main.py"])
+
+    def test_directory_source_replaced_after_lstat_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "main.py"
+            source.write_bytes(b"print('safe')\\n".replace(b"\\\\n", b"\\n"))
+            replacement = root / "replacement.tmp"
+            replacement.write_bytes(b"print('evil')\\n".replace(b"\\\\n", b"\\n"))
+            actual_open = os.open
+            swapped = False
+
+            def swap_before_open(path, flags, *args, **kwargs):
+                nonlocal swapped
+                if Path(path) == source and not swapped:
+                    os.replace(replacement, source)
+                    swapped = True
+                return actual_open(path, flags, *args, **kwargs)
+
+            with patch("code_input.os.open", side_effect=swap_before_open):
+                with self.assertRaisesRegex(InputError, "변경되었습니다"):
+                    load_directory(root)
+            self.assertTrue(swapped)
+
+    def test_single_source_replaced_after_lstat_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "main.py"
+            source.write_bytes(b"print('safe')\\n".replace(b"\\\\n", b"\\n"))
+            replacement = root / "replacement.tmp"
+            replacement.write_bytes(b"print('evil')\\n".replace(b"\\\\n", b"\\n"))
+            actual_open = os.open
+            swapped = False
+
+            def swap_before_open(path, flags, *args, **kwargs):
+                nonlocal swapped
+                if Path(path) == source and not swapped:
+                    os.replace(replacement, source)
+                    swapped = True
+                return actual_open(path, flags, *args, **kwargs)
+
+            with patch("code_input.os.open", side_effect=swap_before_open):
+                with self.assertRaisesRegex(InputError, "변경되었습니다"):
+                    load_single_file(source)
+            self.assertTrue(swapped)
 
     @unittest.skipUnless(hasattr(os, "mkfifo"), "named pipes require POSIX")
     def test_named_pipe_is_excluded_without_opening(self) -> None:
