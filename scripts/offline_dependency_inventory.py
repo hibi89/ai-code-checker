@@ -22,7 +22,7 @@ except ImportError:
         return re.sub(r"[-_.]+", "-", name).lower()
 
 
-DEFAULT_ROOTS = {"pydantic": "2.12.5", "pyinstaller": "6.22.3"}
+DEFAULT_ROOTS = {"pyinstaller": "6.22.3"}
 
 
 def _license_field(dist):

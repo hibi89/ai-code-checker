@@ -19,7 +19,7 @@ from code_input import (
     _is_ignored_path, _is_sensitive_path, _is_supported, _validate_relative_path,
     bundle_from_text, load_path,
 )
-from review_models import CodeFinding
+from offline_models import CodeFinding
 from static_checks import run_static_checks
 from offline_coverage import list_pruned_subtrees
 from input_safety import validate_offline_input_path

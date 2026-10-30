@@ -1,3 +1,2 @@
-# Local GUI developer/runtime dependencies only; no Gemini/google-genai required.
-# Pinning is for the development candidate. Audit and refresh before a signed release.
-pydantic==2.12.5
+# Offline Tk GUI and scanner runtime use only Python's standard library.
+# Legacy Gemini CLI dependencies remain in requirements.txt.
