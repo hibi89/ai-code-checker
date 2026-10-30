@@ -83,6 +83,18 @@ class LastUnmatchedArchiveTests(unittest.TestCase):
         self.assertEqual(result["recognized_option_name_count"], 0)
         self.assertFalse(result["records"][0]["option_name_matches_known_syntax"])
 
+    def test_only_bounded_single_token_logical_archive_names_are_displayed(self):
+        self.pkg["records"][0]["name"] = "mystery.dat"
+        self.audit["archive"]["top_level"][1]["name"] = "mystery.dat"
+        self.pkg["records"][0]["carchive_typecode"] = "x"
+        self.audit["archive"]["top_level"][1]["typecode"] = "x"
+        row = self.inspect()["records"][0]
+        self.assertEqual(row["safe_single_token_archive_label"], "mystery.dat")
+        self.pkg["records"][0]["name"] = "private/mystery.dat"
+        self.audit["archive"]["top_level"][1]["name"] = "private/mystery.dat"
+        self.assertIsNone(self.inspect()["records"][0]["safe_single_token_archive_label"])
+        self.assertFalse(self.inspect()["customer_release_ready"])
+
     def test_same_size_binary_mutation_rejected(self):
         self.exe.write_bytes(self.exe.read_bytes().replace(b"never", b"NeVer"))
         with self.assertRaises(ValueError):
