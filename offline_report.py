@@ -21,7 +21,67 @@ from offline_core import LANGUAGE_SUFFIX, FileCoverage, OfflineScan, scan_path
 from review_models import CodeFinding
 
 
-REPORT_CSS = "/* Self-contained, no URL, remote asset, script, or additional dependency. */\n:root{color-scheme:light;--ink:#182338;--muted:#465671;--line:#dbe3ee;--accent:#184f90;--paper:#fff;--canvas:#f3f6fb}\n*{box-sizing:border-box}\nhtml{-webkit-text-size-adjust:100%}\nbody{font-family:\"Malgun Gothic\",\"Apple SD Gothic Neo\",\"Noto Sans CJK KR\",system-ui,sans-serif;\n max-width:1080px;margin:0 auto;padding:36px 36px 52px;background:var(--canvas);\n color:var(--ink);line-height:1.65;font-size:14px;overflow-wrap:anywhere}\nh1{font-size:28px;line-height:1.35;letter-spacing:-.025em;color:#15345b;margin:0 0 12px;\n border-bottom:4px solid var(--accent);padding:0 0 16px}\nh2{font-size:19px;line-height:1.35;color:#183b66;margin:0 0 16px;\n padding-bottom:10px;border-bottom:1px solid var(--line)}\nh3{font-size:15px;line-height:1.5;color:#183b66;margin:0 0 12px}\np{margin:9px 0 14px}\nbody>p{color:#253a57}\nsection{margin:20px 0;background:var(--paper);border:1px solid var(--line);\n border-radius:12px;padding:22px 24px;box-shadow:0 2px 8px rgba(23,55,94,.035)}\ntable{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}\nthead{display:table-header-group}\nth,td{padding:10px 12px;text-align:left;vertical-align:top;overflow-wrap:anywhere;\n border-bottom:1px solid var(--line)}\nth{background:#e9f1fb;color:#163c68;font-weight:700}\ntbody tr:nth-child(even){background:#f8fafd}\nsection table{margin-top:10px}\narticle{border:1px solid #cbd9ea;border-left:4px solid #235e9c;\n border-radius:8px;padding:18px 20px;margin:16px 0;background:#fbfdff}\narticle p{margin:7px 0}\ncode{font-family:Consolas,\"D2Coding\",monospace;white-space:pre-wrap;\n overflow-wrap:anywhere;background:#eef4fb;padding:1px 4px;border-radius:4px}\n.small{color:var(--muted);font-size:12px}\nul{padding-left:22px}\nli{margin:7px 0}\n@media(max-width:720px){\n body{padding:18px 12px;font-size:13px}\n h1{font-size:23px}\n section{padding:16px 12px;margin:14px 0}\n table{font-size:12px}\n th,td{padding:7px 5px}\n article{padding:12px}\n}\n@page{size:A4;margin:14mm 13mm 16mm}\n@media print{\n :root{--ink:#161f2f;--muted:#444d5f;--line:#cfd8e2;--canvas:#fff}\n html,body{width:auto;max-width:none;background:#fff;color:#161f2f;\n  padding:0;margin:0;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}\n h1{font-size:20pt;margin-bottom:10pt;padding-bottom:10pt}\n h2{font-size:14pt;margin-bottom:10pt}\n h3{font-size:11pt}\n h1,h2,h3,th{break-after:avoid;page-break-after:avoid}\n p{orphans:2;widows:2}\n section{box-shadow:none;border:0;border-radius:0;padding:0;margin:14pt 0 16pt;\n  break-inside:auto;overflow:visible}\n article{box-shadow:none;margin:9pt 0;break-inside:auto;padding:10pt 12pt}\n article h3{break-after:avoid}\n tr{break-inside:avoid;page-break-inside:avoid}\n thead{display:table-header-group}\n table{table-layout:fixed;font-size:9pt}\n th,td{padding:5pt 6pt}\n code{background:#f0f3f7}\n}\n"
+REPORT_CSS = """
+/* Self-contained, no URL, remote asset, script, or additional dependency. */
+:root{color-scheme:light;--ink:#182338;--muted:#465671;--line:#dbe3ee;--accent:#184f90;--paper:#fff;--canvas:#f3f6fb}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans CJK KR",system-ui,sans-serif;
+ max-width:1080px;margin:0 auto;padding:36px 36px 52px;background:var(--canvas);
+ color:var(--ink);line-height:1.65;font-size:14px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;letter-spacing:-.025em;color:#15345b;margin:0 0 12px;
+ border-bottom:4px solid var(--accent);padding:0 0 16px}
+h2{font-size:19px;line-height:1.35;color:#183b66;margin:0 0 16px;
+ padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;line-height:1.5;color:#183b66;margin:0 0 12px}
+p{margin:9px 0 14px}
+body>p{color:#253a57}
+section{margin:20px 0;background:var(--paper);border:1px solid var(--line);
+ border-radius:12px;padding:22px 24px;box-shadow:0 2px 8px rgba(23,55,94,.035)}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+thead{display:table-header-group}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;overflow-wrap:anywhere;
+ border-bottom:1px solid var(--line)}
+th{background:#e9f1fb;color:#163c68;font-weight:700}
+tbody tr:nth-child(even){background:#f8fafd}
+section table{margin-top:10px}
+article{border:1px solid #cbd9ea;border-left:4px solid #235e9c;
+ border-radius:8px;padding:18px 20px;margin:16px 0;background:#fbfdff}
+article p{margin:7px 0}
+code{font-family:Consolas,"D2Coding",monospace;white-space:pre-wrap;
+ overflow-wrap:anywhere;background:#eef4fb;padding:1px 4px;border-radius:4px}
+.small{color:var(--muted);font-size:12px}
+ul{padding-left:22px}
+li{margin:7px 0}
+@media(max-width:720px){
+ body{padding:18px 12px;font-size:13px}
+ h1{font-size:23px}
+ section{padding:16px 12px;margin:14px 0}
+ table{font-size:12px}
+ th,td{padding:7px 5px}
+ article{padding:12px}
+}
+@page{size:A4;margin:14mm 13mm 16mm}
+@media print{
+ :root{--ink:#161f2f;--muted:#444d5f;--line:#cfd8e2;--canvas:#fff}
+ html,body{width:auto;max-width:none;background:#fff;color:#161f2f;
+  padding:0;margin:0;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ h1{font-size:20pt;margin-bottom:10pt;padding-bottom:10pt}
+ h2{font-size:14pt;margin-bottom:10pt}
+ h3{font-size:11pt}
+ h1,h2,h3,th{break-after:avoid;page-break-after:avoid}
+ p{orphans:2;widows:2}
+ section{box-shadow:none;border:0;border-radius:0;padding:0;margin:14pt 0 16pt;
+  break-inside:auto;overflow:visible}
+ article{box-shadow:none;margin:9pt 0;break-inside:auto;padding:10pt 12pt}
+ article h3{break-after:avoid}
+ tr{break-inside:avoid;page-break-inside:avoid}
+ thead{display:table-header-group}
+ table{table-layout:fixed;font-size:9pt}
+ th,td{padding:5pt 6pt}
+ code{background:#f0f3f7}
+}
+"""
 
 
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
