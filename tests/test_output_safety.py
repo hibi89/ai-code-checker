@@ -15,6 +15,52 @@ from output_safety import _windows_drive_type, validate_output_location
 
 
 class OutputPathSafetyTests(unittest.TestCase):
+    def test_known_cloud_synced_reports_are_refused_before_source_read(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for folder in ("OneDrive", "OneDrive - Contoso", "Dropbox", "Google Drive",
+                           "iCloudDrive", "iCloud Drive"):
+                with self.subTest(folder=folder):
+                    target = root / folder / "reports"
+                    with patch("desktop_core.scan_text", side_effect=AssertionError("source read")):
+                        with self.assertRaisesRegex(InputError, "동기화"):
+                            run_scan(
+                                ScanRequest("paste", text="print('fixture')\n", language="python"),
+                                target, "blocked",
+                            )
+                    self.assertFalse(target.exists())
+
+    def test_windows_onedrive_env_root_prevents_reports_even_under_custom_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "My Custom Files"
+            destination = root / "reports"
+            for key in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial"):
+                with self.subTest(key=key):
+                    with patch.dict(os.environ, {key: str(root)}, clear=True):
+                        with self.assertRaisesRegex(InputError, "OneDrive"):
+                            validate_output_location(destination)
+                    self.assertFalse(destination.exists())
+
+    def test_similar_names_and_adjacent_folders_still_work(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            candidate = root / "OneDrive-LocalNotSynced" / "reports"
+            real_sync = root / "OneDrive"
+            with patch.dict(os.environ, {"OneDrive": str(real_sync)}, clear=True):
+                self.assertEqual(validate_output_location(candidate), candidate)
+                report = build_report(scan_text("print('safe')\n", filename="main.py"))
+                html, md = write_report(report, candidate, name="new-report")
+                self.assertTrue(html.is_file())
+                self.assertTrue(md.is_file())
+
+    def test_direct_report_writer_blocks_cloud_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "Google Drive" / "reports"
+            report = build_report(scan_text("eval('synthetic')\n", filename="fixture.py"))
+            with self.assertRaisesRegex(InputError, "동기화"):
+                write_report(report, destination, name="must-not-write")
+            self.assertFalse(destination.exists())
+
     def test_folder_scan_refuses_same_root_before_reading(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             project = Path(temp) / "project"

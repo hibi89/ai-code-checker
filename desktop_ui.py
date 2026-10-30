@@ -122,7 +122,7 @@ def launch(on_ready=None) -> int:
             self.recent_button.pack(side="left")
             ttk.Label(
                 target,
-                text="네트워크 공유·연결 드라이브 저장 차단 · OneDrive 등 동기화 폴더는 직접 피하세요.",
+                text="네트워크 드라이브·알려진 동기화 폴더 저장 차단 · 비동기화 로컬 폴더를 선택하세요.",
             ).pack(anchor="w", pady=(6, 0))
 
             actions = ttk.Frame(container)
