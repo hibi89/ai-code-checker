@@ -7,6 +7,8 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
+import code_input
+
 from code_input import InputError, InputLimits, bundle_from_text, load_directory, load_single_file, load_zip
 
 
@@ -118,22 +120,23 @@ class CodeInputTests(unittest.TestCase):
             root = Path(temp)
             source = root / "main.py"
             source.write_bytes(b"pass")
-            # Windows stat identity can omit equal-size replacements.
-            # Assert only a metadata-detectable swap on Windows; POSIX still
-            # exercises a same-size replacement with a distinct inode.
             replacement = root / "replacement.tmp"
+            # Windows pathname stat identities may not catch equal-size swaps.
             replacement.write_bytes(b"eval(x)" if os.name == "nt" else b"eval")
-            actual_open = os.open
+            original_read = code_input._read_checked_source
             swapped = False
 
-            def swap_before_open(path, flags, *args, **kwargs):
+            def swap_after_lstat(path, observed, max_bytes):
                 nonlocal swapped
-                if Path(path) == source and not swapped:
-                    os.replace(replacement, source)
-                    swapped = True
-                return actual_open(path, flags, *args, **kwargs)
+                self.assertEqual(path.name.lower(), "main.py")
+                self.assertFalse(swapped, "Unexpected second read")
+                os.replace(replacement, source)
+                swapped = True
+                return original_read(path, observed, max_bytes)
 
-            with patch("code_input.os.open", side_effect=swap_before_open):
+            # Inject at the precise boundary AFTER lstat. Do not match
+            # Windows path spellings/casing or globally patch os.open.
+            with patch("code_input._read_checked_source", side_effect=swap_after_lstat):
                 with self.assertRaisesRegex(InputError, "변경되었습니다"):
                     load_directory(root)
             self.assertTrue(swapped)
@@ -143,22 +146,20 @@ class CodeInputTests(unittest.TestCase):
             root = Path(temp)
             source = root / "main.py"
             source.write_bytes(b"pass")
-            # Windows stat identity can omit equal-size replacements.
-            # Assert only a metadata-detectable swap on Windows; POSIX still
-            # exercises a same-size replacement with a distinct inode.
             replacement = root / "replacement.tmp"
             replacement.write_bytes(b"eval(x)" if os.name == "nt" else b"eval")
-            actual_open = os.open
+            original_read = code_input._read_checked_source
             swapped = False
 
-            def swap_before_open(path, flags, *args, **kwargs):
+            def swap_after_lstat(path, observed, max_bytes):
                 nonlocal swapped
-                if Path(path) == source and not swapped:
-                    os.replace(replacement, source)
-                    swapped = True
-                return actual_open(path, flags, *args, **kwargs)
+                self.assertEqual(path.name.lower(), "main.py")
+                self.assertFalse(swapped, "Unexpected second read")
+                os.replace(replacement, source)
+                swapped = True
+                return original_read(path, observed, max_bytes)
 
-            with patch("code_input.os.open", side_effect=swap_before_open):
+            with patch("code_input._read_checked_source", side_effect=swap_after_lstat):
                 with self.assertRaisesRegex(InputError, "변경되었습니다"):
                     load_single_file(source)
             self.assertTrue(swapped)
