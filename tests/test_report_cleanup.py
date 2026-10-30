@@ -116,7 +116,7 @@ class ReportCleanupTests(unittest.TestCase):
                 if missing:
                     report.markdown_path.unlink()
                 else:
-                    report.markdown_path.write_bytes(b"# different markdown\\n")
+                    report.markdown_path.write_bytes(b"# different markdown\n")
                 with self.assertRaises(ReportCleanupError):
                     validate_current_report_receipt(report.report_receipt)
                 self.assertTrue(report.html_path.exists())
