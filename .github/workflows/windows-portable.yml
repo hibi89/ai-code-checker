@@ -20,6 +20,8 @@ on:
       - 'scripts/map_frozen_licenses.py'
       - 'scripts/reconcile_notice_gaps.py'
       - 'scripts/build_notice_review_queue.py'
+      - 'scripts/render_notice_review_worksheet.py'
+      - 'tests/test_render_notice_review_worksheet.py'
       - 'tests/test_notice_review_queue.py'
       - 'tests/test_notice_gap_ledger.py'
       - 'scripts/reconcile_native_build.py'
@@ -186,6 +188,10 @@ jobs:
       - name: Generate actual EXE-hash-bound per-component local review queue
         run: |
           python -m scripts.build_notice_review_queue --audit .build-windows/frozen-exe-evidence.json --mapping .build-windows/ownership-candidates.json --native .build-windows/native-provenance.json --exe-toc .build-windows/exe-toc-evidence.json --pkg-toc .build-windows/pkg-toc-evidence.json --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/notice-review-queue.json
+      - name: Generate printable owner and copyright review checklist for same local EXE
+        run: |
+          python -m scripts.render_notice_review_worksheet --audit .build-windows/frozen-exe-evidence.json --mapping .build-windows/ownership-candidates.json --native .build-windows/native-provenance.json --exe-toc .build-windows/exe-toc-evidence.json --pkg-toc .build-windows/pkg-toc-evidence.json --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/manual-owner-notice-review.html
+          python -c "from pathlib import Path; p=Path('.build-windows/manual-owner-notice-review.html'); x=p.read_text(encoding='utf-8'); assert p.stat().st_size>1000; assert '<html lang=' in x and 'Content-Security-Policy' in x; assert 'NOT APPROVED' in x and 'Release remains blocked' in x; assert '<script' not in x; print('EXACT_EXE_OFFLINE_PRINTABLE_OWNER_REVIEW_ONLY_NO_CUSTOMER_RELEASE')"
       - name: Keep detailed license review local and distribution blocked
         run: |
           python -c "import json; from pathlib import Path; p=Path('.build-windows/notice-review-queue.json'); x=json.loads(p.read_text(encoding='utf-8')); assert x['five_stage_evidence_reconciled'] and x['actual_exe_hash_verified']; assert x['unresolved_entry_count']==len(x['unresolved_entries_requiring_review']); assert len(x['manual_review_tasks'])==7; assert all(not v['redistribution_permission_verified'] and v['human_owner_version_and_license_review']=='REQUIRED' for v in x['unresolved_entries_requiring_review']); assert x['original_license_texts_included'] is False and x['third_party_notice_ready'] is False and x['license_compliance_certified'] is False and x['customer_release_ready'] is False; print('LOCAL_NOTICE_REVIEW_EACH_UNRESOLVED_ITEM_REQUIRES_HUMAN_VERIFICATION')"
