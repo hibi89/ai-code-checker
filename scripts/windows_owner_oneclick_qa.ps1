@@ -166,17 +166,16 @@ Windows 10/11 computer. Keep Defender and SmartScreen enabled; if Windows
 blocks an unsigned candidate, record BLOCKED and do NOT bypass the warning
 merely to make an acceptance test pass.
 
-- [ ] EXE launches without developer Python or additional installs
-- [ ] Human opens the real GUI and confirms Korean labels/controls
-- [ ] Human tests paste, file, folder, and ZIP input preview, then scan
-- [ ] Human opens HTML and Markdown reports; reruns and checks cleanup
-- [ ] Windows SmartScreen/Defender warning and detection outcome observed
-- [ ] No unexpected connections with an approved OS-level capture method
-- [ ] Korean Edge/Chrome Print-to-PDF visually inspected, multiple pages
-- [ ] Exact Tcl and Tk 8.6.15 original license terms separately compared
-- [ ] All 71 previously unresolved bundled items reviewed for owner/NOTICE
-- [ ] Final customer ZIP, LICENSE/NOTICE, support and refund policy reviewed
-- [ ] Owner explicitly approves a specific EXE SHA and the release package
+- [ ] [buyer_pc_without_python] EXE launches on an ordinary Windows PC without Python or extra installs
+- [ ] [user_driven_gui_and_scan] Human verifies GUI Korean labels; paste/file/folder/ZIP preview, scan, HTML/Markdown, rerun and cleanup
+- [ ] [smartscreen_actual_warning] Actual SmartScreen outcome recorded; never bypass a block just to pass
+- [ ] [defender_buyer_pc_findings] Actual buyer-PC Defender detection/status separately recorded
+- [ ] [os_level_network_packets] Approved OS-level capture confirms whether unexpected connections occurred
+- [ ] [korean_html_pdf_visual] Multi-page Korean HTML and Edge/Chrome Print-to-PDF visually inspected
+- [ ] [original_tcl_tk_license_terms] Both exact Tcl and Tk 8.6.15 original license texts separately compared
+- [ ] [other_bundled_vendor_ownership_and_notice] All unresolved bundled items reviewed for owner/version/redistribution/NOTICE
+- [ ] [customer_zip_license_refund_support] Exact customer ZIP and LICENSE/NOTICE, support and refund terms reviewed
+- [ ] [owner_release_approval] Owner explicitly approves this EXE SHA and the exact final package
 
 This file is a manual worksheet, not proof any box was completed. Never
 upload original EXE, source code, account tokens, screenshots or findings
