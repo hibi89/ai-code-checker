@@ -35,7 +35,7 @@ def launch(on_ready=None) -> int:
     class CodeCheckerWindow:
         def __init__(self, root: tk.Tk) -> None:
             self.root = root
-            self.root.title("코드체커 — 오프라인 위험 진단 (개발용 MVP)")
+            self.root.title("코드체커 — 로컬 코드 위험 점검")
             self.root.minsize(780, 680)
             self.root.geometry("930x790")
             self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -63,7 +63,7 @@ def launch(on_ready=None) -> int:
                 container, text="오프라인 코드체커", font=("Malgun Gothic", 18, "bold")
             ).pack(anchor="w")
             ttk.Label(
-                container, text="Python AST + 제한적 정적 규칙 · 고객 코드 실행/전송 없음 · AI 키 불필요"
+                container, text="Python AST + 제한적 정적 규칙 · 기본 로컬 분석 · AI 키 불필요"
             ).pack(anchor="w", pady=(2, 14))
 
             choose = ttk.LabelFrame(container, text="1. 입력 선택", padding=12)
