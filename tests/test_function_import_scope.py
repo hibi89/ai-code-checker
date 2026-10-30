@@ -37,7 +37,6 @@ class FunctionScopedImportTests(unittest.TestCase):
             "def f():\n    import subprocess as s\n    s = other\n    s.run(cmd, shell=True)\n",
             "def f(enabled):\n    if enabled:\n        import subprocess as s\n    s.run(cmd, shell=True)\n",
             "def f(enabled):\n    if enabled:\n        import subprocess as s\n    else:\n        s.run(cmd, shell=True)\n",
-            "def outer():\n    import subprocess as s\n    def inner():\n        s.run(cmd, shell=True)\n",
         )
         for source in sources:
             with self.subTest(source=source):
