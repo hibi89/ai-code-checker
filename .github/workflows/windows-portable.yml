@@ -110,9 +110,35 @@ jobs:
       - name: Observe actual frozen Tcl Tk patchlevels for license reviewer (not approval)
         shell: pwsh
         run: |
-          & './dist-windows/CodeCheckerOffline.exe' --runtime-version-receipt '.build-windows/runtime-version-receipt.json'
-          if ($LASTEXITCODE -ne 0) { throw 'Frozen Tcl/Tk version probe failed' }
-          python -m scripts.runtime_version_receipt --verify .build-windows/runtime-version-receipt.json dist-windows/CodeCheckerOffline.exe
+          # A --windowed GUI EXE may return control to PowerShell before it
+          # finishes; use the same bounded child-process wait as the existing
+          # synthetic Windows EXE smoke rather than an immediate LASTEXITCODE.
+          $exe = (Resolve-Path -LiteralPath 'dist-windows/CodeCheckerOffline.exe').Path
+          $folder = (Resolve-Path -LiteralPath '.build-windows').Path
+          $receipt = Join-Path $folder 'runtime-version-receipt.json'
+          if (Test-Path -LiteralPath $receipt) { throw 'Refuse existing runtime receipt' }
+          $info = [System.Diagnostics.ProcessStartInfo]::new()
+          $info.FileName = $exe
+          $info.ArgumentList.Add('--runtime-version-receipt')
+          $info.ArgumentList.Add($receipt)
+          $info.WorkingDirectory = (Get-Location).Path
+          $info.UseShellExecute = $false
+          $info.CreateNoWindow = $true
+          $process = [System.Diagnostics.Process]::new()
+          try {
+            $process.StartInfo = $info
+            if (-not $process.Start()) { throw 'Cannot start frozen runtime probe' }
+            if (-not $process.WaitForExit(60000)) {
+              try { $process.Kill() } catch { }
+              try { [void]$process.WaitForExit(5000) } catch { }
+              throw 'Frozen runtime probe exceeded 60-second timeout'
+            }
+            if ($process.ExitCode -ne 0) { throw "Frozen runtime probe exited $($process.ExitCode)" }
+          } finally {
+            $process.Dispose()
+          }
+          if (-not (Test-Path -LiteralPath $receipt -PathType Leaf)) { throw 'Frozen runtime receipt missing' }
+          python -m scripts.runtime_version_receipt --verify $receipt $exe
           if ($LASTEXITCODE -ne 0) { throw 'Frozen runtime receipt mismatch' }
       - name: Stage EXE-bound CPython Tcl Tk PyInstaller original license candidates locally
         run: |
