@@ -73,3 +73,18 @@ python -m scripts.build_notice_review_queue --audit .build-windows/frozen-exe-ev
 - [GitHub Windows CI 41077287199](https://github.com/hibi89/ai-code-checker/actions/runs/41077287199)에서 **실제 EXE SHA 일치 PASS**, CArchive 1018, PYZ 548, 미확인 92항목, 설치 패키지 검토 8개, original license-file 후보 26개 관찰. **법무 검토 92건 완료가 아니라 검토해야 할 항목 92건을 모두 계상한 상태**다.
 - 세부 JSON은 `.build-windows` 내부의 임시 **로컬 전용 파일**이다. CI artifact, 공개 GitHub, 크몽으로 자동 업로드하지 않으므로 이후 사용자 PC에서 동일 EXE로 다시 생성해야 실제 검토할 수 있다. 해당 로스터는 고객 원본 LICENSE 텍스트나 재배포 권한을 포함하지 않는다.
 - `third_party_notice_ready=False`, `customer_release_ready=False` 유지. 실제 바이너리/저작권 원문 매칭과 고객용 NOTICE의 승인 및 소비자 PC 수락까지 **판매 불가**.
+
+## 7. 2026-10-31 — 고객 PC에서 Python 없는 EXE 합성 검수
+
+이 단계는 **이미 검토용으로 만들어진 동일 EXE가 있을 때만** 진행하며, 소스·토큰·고객 코드·OS 보안 설정을 변경하지 않는다. 기본 PowerShell과 두 파일(`CodeCheckerOffline.exe` 및 `scripts/windows_local_exe_smoke.ps1`)만으로 기존 EXE의 GUI 기동과 합성 미리보기→스캔→HTML/Markdown 결과 생성 경로를 점검한다. 출력은 존재하는 **로컬 폴더**의 새 JSON 경로로 저장한다. 동일 실행 파일의 SHA-256이 시작/종료 시 같은지 확인하고, 검사 시간 한도를 넘기면 **본 스크립트가 시작한 EXE 스모크 프로세스만** 종료한다.
+
+```powershell
+# 개발자 또는 소유자의 로컬 복사본에서, 이미 만든 검수용 EXE를 대상으로 실행
+.\scripts\windows_local_exe_smoke.ps1 -ExePath 'dist-windows\CodeCheckerOffline.exe' -OutputPath '.build-windows\windows-owner-smoke.json' -TimeoutSeconds 120
+# 선택: Python이 설치된 검수 PC에서만 영수증/실물 해시 일치 검증
+python -m scripts.windows_local_exe_smoke_contract --evidence .build-windows\windows-owner-smoke.json --exe dist-windows\CodeCheckerOffline.exe
+```
+
+- 실제 [CI 41082339221](https://github.com/hibi89/ai-code-checker/actions/runs/41082339221)에서 기존 Windows 후보 EXE로 검수 스크립트 **PASS**, [일반 CI 41082339195](https://github.com/hibi89/ai-code-checker/actions/runs/41082339195) **16/16 성공**. Windows CI 호스트는 소비자 PC가 아니다.
+- `--gui-smoke`와 `--scenario-smoke`는 **합성 시나리오**일 뿐, 실제 구매자가 마우스로 조작했거나 Windows SmartScreen 평판/Defender 고객 OS/OS 패킷이 검증됐다는 뜻이 아니다. 이 7개 게이트는 로컬 영수증에도 `UNVERIFIED`로 남는다.
+- 실제 GUI 버튼·일반 Windows 10/11 독립 실행·한글 PDF 시각 검수·네트워크 패킷·NOTICE 원문·최종 사용자 출시 승인을 별도 증거로 확보하기 전까지 **판매·배포 금지**. 현재 CI EXE 산출물은 공개 다운로드 제공 없음.

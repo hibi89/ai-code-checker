@@ -1,5 +1,8 @@
 # AI Code Checker
 
+> **2026-10-31 크몽 판매용 오프라인 Windows Code Checker:** Gemini 기반 기존 **사람 검수 대행 CLI와 별개의 제품**입니다. GUI·Python AST/제한 일반 정적 검사·한국어 HTML/Markdown·브라우저 PDF와 Windows 포터블 EXE **개발자 검수 후보**가 구현됐습니다. [오프라인 단독 상품 초안](KMONG_OFFLINE_PRODUCT_DRAFT.md) · [실제 고객 PC/라이선스 출시 차단 기준](docs/RETAIL_RELEASE_GATE_CHECKLIST_20261030.md). **가격 29,000원은 제안**, 실제 EXE 공개 배포·크몽 판매·고객 Windows 실기기/SmartScreen·OS 패킷·한글 PDF 육안·제3자 라이선스/NOTICE 승인은 아직 없습니다. 기존 아래 Gemini CLI 설명을 오프라인 제품에 적용하지 마세요.
+
+
 > **2026-10-27 MVP 우선순위 변경:** 10월 28일까지의 개발 목표는 **오프라인 입력 선택 → 미리보기 → 검사 → 로컬 HTML·Markdown 보고서 저장·열기**가 동작하는 최소 버전입니다. 실제 소스·테스트·CI로 검증한 기능 범위에서만 완료를 선언합니다. GUI 디자인 고도화, 추가 분석 규칙, 확장 기능, 상용 라이선스 최종 서류는 MVP 이후로 이관합니다. **미검증 고객 PC·SmartScreen·라이선스 NOTICE를 통과한 것으로 표시하거나 EXE를 판매·배포하지 않습니다.** [MVP 실행·합격 기준](MVP_FREEZE_20261028.md).
 
 
