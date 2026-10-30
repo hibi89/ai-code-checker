@@ -7,7 +7,7 @@ import re
 import string
 
 from code_input import CodeBundle, SourceFile
-from review_models import CodeFinding
+from offline_models import CodeFinding
 
 
 def _line_text(source: SourceFile, line_number: int | None) -> str:
