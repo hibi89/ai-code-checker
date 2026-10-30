@@ -65,6 +65,42 @@ class ComponentOwnershipTests(unittest.TestCase):
                          "installed_native_exact_relative_filename_candidate")
         self.assertEqual(kinds["mystery.dll"], "unresolved_native_or_system_binary")
 
+    def test_real_nested_pyz_container_is_not_an_extra_unlicensed_payload(self):
+        audit = sample_audit()
+        # Only the nested archive record itself receives this special
+        # classification. All embedded module rows keep their normal,
+        # independently-reviewed owner guesses and release blocks.
+        audit["archive"]["top_level"].append({"name": "PYZ.pyz", "typecode": "z"})
+        audit["archive"]["pyz_modules"][0]["archive"] = "PYZ.pyz"
+        result = make_mapping(audit, package_claims={}, installed_files={})
+        rows = {row["name"]: row for row in result["entries"]}
+        self.assertEqual(rows["PYZ.pyz"]["mapping"],
+                         "pyinstaller_pyz_container_format_candidate")
+        self.assertEqual(rows["unknown.vendor"]["mapping"], "unresolved")
+        self.assertFalse(result["license_compliance_certified"])
+        self.assertFalse(result["customer_release_ready"])
+        baseline = make_mapping(sample_audit(), package_claims={}, installed_files={})
+        self.assertEqual(result["unresolved_count"], baseline["unresolved_count"])
+        self.assertEqual(result["total_rows"], baseline["total_rows"] + 1)
+
+    def test_unmatched_pyz_name_type_or_unverified_nested_contents_remains_unknown(self):
+        for name, typecode, child_archive in (
+            ("PYZ.pyz", "b", "PYZ.pyz"),
+            ("surprise.pyz", "z", "surprise.pyz"),
+            ("PYZ.pyz", "z", None),
+        ):
+            with self.subTest(name=name, kind=typecode, child=child_archive):
+                audit = sample_audit()
+                audit["archive"]["top_level"].append({"name": name, "typecode": typecode})
+                if child_archive is not None:
+                    audit["archive"]["pyz_modules"][0]["archive"] = child_archive
+                result = make_mapping(audit, package_claims={}, installed_files={})
+                row = next(x for x in result["entries"]
+                           if x["kind"] == "CArchive" and x["name"] == name)
+                self.assertEqual(row["mapping"],
+                                 "unresolved_archive_resource_or_bootloader")
+                self.assertFalse(result["customer_release_ready"])
+
     def test_new_bundled_cleanup_module_is_recognized_as_first_party(self):
         audit = sample_audit()
         audit["archive"]["pyz_modules"].append({"module": "report_cleanup"})
