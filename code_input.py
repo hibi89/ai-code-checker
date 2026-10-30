@@ -302,8 +302,9 @@ def _read_checked_source(path: Path, observed: os.stat_result, max_bytes: int) -
         return (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
 
     def same_interface_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
-        # Compare these only lstat-to-lstat or fstat-to-fstat. This lets
-        # Windows notice many equal-size replacements even when st_ino is 0.
+        # Compare only lstat-to-lstat or fstat-to-fstat. Windows file
+        # metadata may NOT identify equal-size, near-simultaneous swaps;
+        # never describe this as atomic or complete replacement detection.
         return common_identity(value) + (
             value.st_ctime_ns, getattr(value, "st_birthtime_ns", value.st_ctime_ns),
         )
