@@ -18,7 +18,7 @@ from pathlib import Path
 from code_input import InputError, SourceFile
 from output_safety import validate_output_location
 from offline_core import LANGUAGE_SUFFIX, FileCoverage, OfflineScan, scan_path
-from review_models import CodeFinding
+from offline_models import CodeFinding
 
 
 REPORT_CSS = """
