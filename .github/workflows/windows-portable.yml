@@ -116,7 +116,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Frozen runtime receipt mismatch' }
       - name: Stage EXE-bound CPython Tcl Tk PyInstaller original license candidates locally
         run: |
-          python -m scripts.stage_runtime_original_licenses --exe dist-windows/CodeCheckerOffline.exe --audit .build-windows/frozen-exe-evidence.json --out-dir .build-windows/runtime-original-license-candidates
+          python -m scripts.stage_runtime_original_licenses --exe dist-windows/CodeCheckerOffline.exe --audit .build-windows/frozen-exe-evidence.json --runtime-receipt .build-windows/runtime-version-receipt.json --out-dir .build-windows/runtime-original-license-candidates
       - name: Verify original source hashes and retain human NOTICE release blocks
         run: |
           python -c "import hashlib,json; from pathlib import Path; root=Path('.build-windows/runtime-original-license-candidates'); x=json.loads((root/'manifest.json').read_text(encoding='utf-8')); a=json.loads(Path('.build-windows/frozen-exe-evidence.json').read_text(encoding='utf-8')); assert x['exe_sha256']==a['exe_sha256']; assert x['original_candidate_file_count']==len(x['originals'])>0; assert sum(x['source_role_counts'].values())==len(x['originals']); assert set(x['source_role_counts'])=={'cpython','tcl','tk','pyinstaller'}; assert x['actual_exe_sha256_confirmed'] is True; assert all(hashlib.sha256((root/r['candidate_file']).read_bytes()).hexdigest()==r['sha256'] for r in x['originals']); assert x['third_party_license_notice_human_review_required'] is True and x['customer_notice_ready'] is False and x['customer_release_ready'] is False and x['copyright_and_redistribution_rights_verified'] is False; print('LOCAL_EXACT_RUNTIME_ORIGINAL_TEXT_HASHES_RECORDED_NO_LEGAL_SIGNOFF')"
