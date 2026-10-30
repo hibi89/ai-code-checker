@@ -53,6 +53,8 @@ on:
       - 'scripts/windows_local_exe_smoke_contract.py'
       - 'tests/test_windows_local_exe_smoke_contract.py'
       - 'scripts/windows_acceptance_contract.py'
+      - 'scripts/consolidate_windows_retail_evidence.py'
+      - 'tests/test_consolidate_windows_retail_evidence.py'
       - 'scripts/windows_defender_file_scan.ps1'
       - 'scripts/windows_defender_scan_contract.py'
       - 'tests/test_windows_defender_scan_contract.py'
@@ -198,6 +200,10 @@ jobs:
       - name: Preserve every manual license review and release blocker
         run: |
           python -c "import json; from pathlib import Path; x=json.loads(Path('.build-windows/notice-review-gaps.json').read_text(encoding='utf-8')); assert x['metadata_complete'] is True; assert x['candidate_distribution_count']==0; assert x['selected_installed_distribution_count']==len(x['distribution_review'])>=1; assert x['selected_installed_distribution_count']>=x['candidate_distribution_count']; assert len(x['manual_review_tasks'])==7; assert x['original_license_texts_embedded_in_output'] is False; assert x['notice_ready_to_distribute'] is False; assert x['copyright_and_binary_owners_verified'] is False; assert x['license_compliance_certified'] is False; assert x['customer_release_ready'] is False; print('LOCAL_NOTICE_GAP_LEDGER_ACCOUNTED_REVIEW_REQUIRED')"
+      - name: Bind OS, GUI, runtime and Defender evidence to same EXE without retail approval
+        run: |
+          python -m scripts.consolidate_windows_retail_evidence --exe dist-windows/CodeCheckerOffline.exe --readonly .build-windows/windows-acceptance-readonly.json --smoke .build-windows/windows-local-exe-smoke.json --runtime .build-windows/runtime-version-receipt.json --defender .build-windows/defender-custom-scan.json --out .build-windows/exact-exe-retail-preflight-summary.json
+          python -c "import json; from pathlib import Path; p=Path('.build-windows/exact-exe-retail-preflight-summary.json'); x=json.loads(p.read_text(encoding='utf-8')); assert x['status']=='EXACT_BINARY_RECEIPTS_VALID_RELEASE_BLOCKED'; assert all(v=='UNVERIFIED' for v in x['human_release_gates'].values()); assert x['customer_release_ready'] is False and x['legal_notice_approved'] is False and x['malware_free_certified'] is False and x['real_buyer_pc_test_certified'] is False; print('LOCAL_WINDOWS_EVIDENCE_CONSOLIDATED_NO_RETAIL_APPROVAL')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
         run: |
