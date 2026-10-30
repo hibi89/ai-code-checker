@@ -1,5 +1,8 @@
 > **2026-10-28 해총 전 저장소 최상위 공통 운영 공지 (소유자 승인):** [개발 가속·로컬검증·병목제거 통합 정본](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/DEV_ACCELERATION_AND_VERIFICATION_20261028.md) 확인. 현 시점 활성은 **KIC(+DL)·PayPal·UGREEN·LA 4개**만이다. 이 프로젝트는 **임시 개발 대기**(폐기·기존 기록 삭제 아님)로, 소유자의 재개 지시 없이 `ㄱ`만으로 신규 개발·CI·배포를 진행하지 않는다. 활성 프로젝트 일반 기능 구현은 **GPT-6 Instant**, 최초 설계·난제·해총 독립검수는 높은 추론. 파일 단위 GitHub 반복·다수 상태 문서 갱신·동일 SHA 반복 조회를 줄이고, 기능 단위 검증/정확한 PASS·FAIL·SKIP·커밋 SHA만 보고한다. 기존 제품 설계 동결, 외부 승인, 보안·고객데이터/원본·출시 게이트는 그대로 유지. 이 공지는 운영 통지이며 기능 완성 선언이 아니다.
 
+> **2026-10-30 KST 사용자 재개 지시 (10/28 일시 대기 공지보다 최신):** Code Checker의 **크몽 판매용 오프라인 Windows 제품 개발을 다시 활성화**했다. Codex 사용량을 아끼고 GPT-6 해총이 직접 구현/검증한다. 해커톤과 기존 Gemini v1을 보존하고, 실제 사용자 Windows·라이선스·출시 게이트는 그대로 적용한다. 새 채팅은 최신 main/CI와 [CODE_CHECKER_RESUME.md](CODE_CHECKER_RESUME.md) → HANDOFF/STATUS 순으로 확인하라. `ㄱ` 은 기존 승인 범위의 다음 개발 단위 진행이지 EXE 공개 배포·유료 API·보안 설정 변경·판매 승인 신호가 아니다.
+
+
 # Code Checker — Agent Operating Rules
 
 ## Source of truth and resume order

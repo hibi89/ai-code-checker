@@ -1,5 +1,8 @@
 # CODE CHECKER — 즉시 재개
 
+> **2026-10-30 KST 해총 최신 출발점:** 사용자 직접 재개 승인. 실제 **main 소스 병합 `2862fe196903f48fb15ad4d7dc0e3150571479d3`** (PR #47/48). PR #47 lexical closure rule accuracy + 테스트 충돌 수정, [일반 CI 41066125692](https://github.com/hibi89/ai-code-checker/actions/runs/41066125692) 16/16 PASS 및 main postmerge [41066465477](https://github.com/hibi89/ai-code-checker/actions/runs/41066465477) PASS. PR #48 Windows acceptance evidence가 연결 드라이브/링크 상위 경로를 거부하고 실제 PowerShell 회귀가 [일반 PR CI 41067277885](https://github.com/hibi89/ai-code-checker/actions/runs/41067277885) 16/16 PASS; [Windows EXE candidate 41067277703](https://github.com/hibi89/ai-code-checker/actions/runs/41067277703) SUCCESS. 새 독립형 상품 초안 [KMONG_OFFLINE_PRODUCT_DRAFT.md](KMONG_OFFLINE_PRODUCT_DRAFT.md): **29,000원, 고객이 직접 실행하는 오프라인 소프트웨어**. 예전 KMONG_LISTING_DRAFT.md는 별도 Gemini 사람 검수 대행 서비스이며 혼동 금지. 실제 소비자 Windows, SmartScreen, OS 네트워크 패킷, 한국어 PDF 육안, 제3자 원본 LICENSE/NOTICE, 사용자 판매 승인은 **미검증/차단**. **main HEAD/CI는 시작 때 반드시 재조회**. 다음은 사용 PC 실제 수용·라이선스 원문 및 NOTICE 검수 실행 패키지 준비, 안전한 소스 오류가 발견될 때만 기능 보강. Codex 사용하지 않음. Vercel 미적용.
+
+
 **트리거:** `[코드체커 깃헙 확인해]` 또는 `ㄱ`.
 
 1. GitHub `hibi89/ai-code-checker`의 최신 `main` SHA/PR/feature branch/Actions 확인.
