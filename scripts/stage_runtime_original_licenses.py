@@ -63,30 +63,67 @@ def _safe_regular_file(path: Path, root: Path) -> bytes | None:
         return None
 
 
-def _runtime_candidates(root: Path) -> dict[str, tuple[str, bytes]]:
+def _runtime_candidates(root: Path) -> tuple[dict[str, tuple[str, bytes]], list[str]]:
+    """Inspect only bounded standard Python/Tcl/Tk install layouts.
+
+    Some Windows distributions put tcl8.x in Lib/, not the top-level tcl/
+    tree. Distinct installed source contents are AMBIGUOUS, not silently
+    picked by whichever path is enumerated first.
+    """
     found: dict[str, tuple[str, bytes]] = {}
     for name in ("LICENSE.txt", "LICENSE"):
         raw = _safe_regular_file(root / name, root)
         if raw is not None:
             found["cpython"] = (name, raw)
             break
-    tcl_root = root / "tcl"
-    try:
-        children = list(tcl_root.iterdir())
-    except OSError:
-        children = []
-    if len(children) > 128:
-        raise ValueError("Too many Tcl/Tk runtime folders")
-    for prefix in ("tcl", "tk"):
-        for directory in sorted(children, key=lambda p: p.name):
-            if not _TCL_DIR.fullmatch(directory.name) or not directory.name.lower().startswith(prefix):
+    candidate_roots = (
+        root / "tcl", root / "Lib", root / "Lib" / "tcl", root,
+    )
+    alternatives: dict[str, list[tuple[str, bytes]]] = {"tcl": [], "tk": []}
+    for location in candidate_roots:
+        try:
+            children = list(location.iterdir())
+        except OSError:
+            children = []
+        if len(children) > 256:
+            # An expected installation directory is not necessarily small;
+            # skip it rather than scanning a large unrelated tree.
+            continue
+        for directory in sorted(children, key=lambda p: p.name.casefold()):
+            if not _TCL_DIR.fullmatch(directory.name):
                 continue
-            path = directory / "license.terms"
-            raw = _safe_regular_file(path, root)
+            prefix = "tcl" if directory.name.lower().startswith("tcl") else "tk"
+            raw = _safe_regular_file(directory / "license.terms", root)
             if raw is not None:
-                found[prefix] = (directory.name + "/license.terms", raw)
-                break
-    return found
+                relative = (directory / "license.terms").relative_to(root).as_posix()
+                alternatives[prefix].append((relative, raw))
+            # Some installed Tcl library trees include the matching Tk
+            # directory beneath Tcl; inspect only a fixed sibling pattern.
+            if prefix == "tcl":
+                try:
+                    tk_dirs = list(directory.iterdir())
+                except OSError:
+                    tk_dirs = []
+                if len(tk_dirs) > 128:
+                    continue
+                for subdir in sorted(tk_dirs, key=lambda p: p.name.casefold()):
+                    if not _TCL_DIR.fullmatch(subdir.name) or not subdir.name.lower().startswith("tk"):
+                        continue
+                    raw = _safe_regular_file(subdir / "license.terms", root)
+                    if raw is not None:
+                        relative = (subdir / "license.terms").relative_to(root).as_posix()
+                        alternatives["tk"].append((relative, raw))
+    ambiguities = []
+    for role in ("tcl", "tk"):
+        matches = alternatives[role]
+        if not matches:
+            continue
+        by_digest = {hashlib.sha256(raw).hexdigest() for _, raw in matches}
+        if len(by_digest) != 1:
+            ambiguities.append(role)
+            continue
+        found[role] = min(matches, key=lambda item: (len(item[0]), item[0].casefold()))
+    return found, ambiguities
 
 
 def _pyinstaller_candidates(dist) -> list[tuple[str, bytes]]:
@@ -131,7 +168,7 @@ def stage_candidates(exe: Path, audit: dict, python_root: Path, dist, out_dir: P
             or python_root.resolve() in out_dir.parent.resolve().parents):
         raise ValueError("Output may not modify installed runtime tree")
 
-    root_sources = _runtime_candidates(python_root)
+    root_sources, ambiguous_source_roles = _runtime_candidates(python_root)
     py_sources = _pyinstaller_candidates(dist)
     # The exact build distribution may have no RECORD listed license text.
     # Leave missing entries unresolved instead of generating substitute words.
@@ -174,6 +211,7 @@ def stage_candidates(exe: Path, audit: dict, python_root: Path, dist, out_dir: P
         "original_candidate_file_count": len(rows),
         "source_role_counts": counts,
         "missing_source_roles": missing,
+        "ambiguous_source_roles": ambiguous_source_roles,
         "originals": rows,
         "candidate_files_stored_only_in_local_build_folder": True,
         "actual_exe_sha256_confirmed": True,
@@ -215,6 +253,7 @@ def main() -> int:
     print("TK_SOURCE_FILES=" + str(report["source_role_counts"]["tk"]))
     print("PYINSTALLER_SOURCE_FILES=" + str(report["source_role_counts"]["pyinstaller"]))
     print("MISSING_SOURCE_ROLE_COUNT=" + str(len(report["missing_source_roles"])))
+    print("AMBIGUOUS_SOURCE_ROLE_COUNT=" + str(len(report["ambiguous_source_roles"])))
     print("COPYRIGHT_AND_REDISTRIBUTION_APPROVED=False")
     print("CUSTOMER_NOTICE_READY=False")
     print("CUSTOMER_RELEASE_READY=False")
