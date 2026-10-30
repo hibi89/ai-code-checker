@@ -2,6 +2,8 @@
 
 > **증거 범위:** Tcl/Tk 공식 upstream Git 소스 `license.terms`의 **원문 위치와 Git blob SHA**를 직접 확인. 본 문서는 Code Checker 실제 frozen EXE에 들어간 바이너리/원본 일치, 법률 준수 또는 고객 NOTICE 승인이 아니다. 원문 전체나 실행파일은 Public GitHub에 복사하지 않았다.
 
+> **2026-10-31 KST 추가 실제 frozen EXE 증거 (과거 '런타임 버전 미확인' 서술보다 최신):** [PR #60 Windows CI 41103150482](https://github.com/hibi89/ai-code-checker/actions/runs/41103150482) head `a000d82bb5e95898300762036a59307cbb875a8e`, GitHub Windows hosted 빌드 EXE SHA-256 `a980db59bfa1093e461914d937f08d26255af1b6a7c2890c57cced340ca5e5ce`에서 실제 interpreter Tcl `8.6.15`, Tk `8.6.15`, `EXACT_FROZEN_RUNTIME_VERSION_RECEIPT_PASS`가 확인됐다. **이 버전은 아래 공식 8.6.15 tagged-source 원문과 검토대상 버전이 대응한다는 사실만 입증**하며, 정확 installed original bytes를 로컬에 가져와 PR61 도구로 대조하거나 DLL owner·동봉 ZIP NOTICE와 라이선스 법적 조건 검토를 통과했다는 뜻은 아니다. 해당 CI는 후속 구성물 분류 assertion 실패로 전체 FAIL, 수정 feature [PR #60](https://github.com/hibi89/ai-code-checker/pull/60) head `b8c43e1` CI 대기. 공식 license byte verifier [PR #61](https://github.com/hibi89/ai-code-checker/pull/61)은 `main`에 merge SHA `00fcfd1`로 반영됐지만 해당 EXE와 실제 원본 2개를 넣어 수행한 실검증은 **미실시**.
+
 ## 1. 확인된 공식 라이선스 원본
 
 | 공식 프로젝트/태그 | 고정 소스 | Git blob SHA (SHA-1) | 공식 태그 commit |
