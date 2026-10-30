@@ -88,3 +88,9 @@ python -m scripts.windows_local_exe_smoke_contract --evidence .build-windows\win
 - 실제 [CI 41082339221](https://github.com/hibi89/ai-code-checker/actions/runs/41082339221)에서 기존 Windows 후보 EXE로 검수 스크립트 **PASS**, [일반 CI 41082339195](https://github.com/hibi89/ai-code-checker/actions/runs/41082339195) **16/16 성공**. Windows CI 호스트는 소비자 PC가 아니다.
 - `--gui-smoke`와 `--scenario-smoke`는 **합성 시나리오**일 뿐, 실제 구매자가 마우스로 조작했거나 Windows SmartScreen 평판/Defender 고객 OS/OS 패킷이 검증됐다는 뜻이 아니다. 이 7개 게이트는 로컬 영수증에도 `UNVERIFIED`로 남는다.
 - 실제 GUI 버튼·일반 Windows 10/11 독립 실행·한글 PDF 시각 검수·네트워크 패킷·NOTICE 원문·최종 사용자 출시 승인을 별도 증거로 확보하기 전까지 **판매·배포 금지**. 현재 CI EXE 산출물은 공개 다운로드 제공 없음.
+
+## 8. 2026-10-31 — Pydantic-free EXE로 실제 구성요소 검토량 감소
+
+- [PR #54](https://github.com/hibi89/ai-code-checker/pull/54)는 오프라인 GUI의 Pydantic/Gemini import를 완전히 분리하고 PyInstaller의 강제 Pydantic 번들을 제거했다. 과거 installed wheels에 기반해 만든 후보 license draft/EXE SHA는 **새 빌드에 재사용 불가**.
+- [실제 Windows CI 41085565053](https://github.com/hibi89/ai-code-checker/actions/runs/41085565053), source feature `f39eaf67ecaccec4fe7933a6a85ec0cebcd40ffb`에서 EXE SHA256 `c551fb7d56c6e33d7c91acb3a6de26087be15b397293f09c36179e579a9a420e`: `GEMINI_PYDANTIC_BUNDLED=False`, CArchive 997(이전 1,018), PYZ 141(이전 548), 추가 owner review 72(이전 92), installed distribution review **1(PyInstaller)**(이전 8). 이것은 **검토량 감소이지 1개 라이선스만 준수하면 된다는 의미가 아니다**.
+- CPython 3.13과 Tcl/Tk 번들·정확한 runtime DLLs, PyInstaller bootloader 및 미분류 CArchive 72개에 대한 원본 소유자/버전/라이선스·고지 의무는 확인되지 않았다. Windows 검수·OS 패킷·한글 PDF 시각·사용자 판매 승인도 미완료. **RELEASE_BLOCKED** 유지.

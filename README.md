@@ -36,7 +36,7 @@ Current local v2 limits: 200 files, 1 MiB per file and 8 MiB total, explicitly s
 
 ## v2 오프라인 사용법 (개발자 미리보기)
 
-다음 기본 검사 경로에는 Gemini API 키·고객 소스 업로드·서버가 필요 없습니다. GUI에는 별도 최소 의존성 목록 requirements-offline.txt (Pydantic만)을 사용합니다. EXE 후보는 별도 검증 단계입니다.
+다음 기본 검사 경로에는 Gemini API 키·고객 소스 업로드·서버가 필요 없습니다. GUI·오프라인 검사에는 별도 설치해야 하는 Python 패키지가 없으며 `requirements-offline.txt`는 빈 의존성 목록입니다. Windows EXE 빌드에는 `requirements-offline-build.txt`의 PyInstaller를 사용합니다. **Gemini용 Pydantic은 기존 CLI에만 남으며 오프라인 EXE에 포함되지 않습니다.** EXE 후보는 별도 소비자 PC 검증 단계입니다.
 
     python -m pip install -r requirements-offline.txt
     python offline_report.py .\source.txt --language python --output-dir .\reports --name scan01
