@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from scripts.stage_runtime_original_licenses import stage_candidates
+from scripts.stage_runtime_original_licenses import _safe_regular_file, stage_candidates
 
 
 class FakePyInstaller:
@@ -162,6 +164,32 @@ class RuntimeOriginalLicenseTests(unittest.TestCase):
         for row in result["originals"]:
             self.assertNotEqual((self.out / row["candidate_file"]).read_bytes(),
                                 target.read_bytes())
+
+    def test_replaced_original_between_lstat_and_open_is_rejected(self):
+        """A same-sized source replacement must never be staged as an original."""
+        source = self.runtime / "LICENSE.txt"
+        original = source.read_bytes()
+        replacement = self.runtime / "replacement.txt"
+        replacement.write_bytes(b"X" * len(original))
+        real_open = os.open
+        switched = False
+
+        def replace_before_open(path, flags, *args, **kwargs):
+            nonlocal switched
+            if Path(path) == source and not switched:
+                os.replace(replacement, source)
+                switched = True
+            return real_open(path, flags, *args, **kwargs)
+
+        with patch("scripts.stage_runtime_original_licenses.os.open",
+                   side_effect=replace_before_open):
+            self.assertIsNone(_safe_regular_file(source, self.runtime))
+        self.assertTrue(switched)
+        self.assertEqual(source.read_bytes(), b"X" * len(original))
+
+    def test_source_read_still_preserves_exact_original_bytes(self):
+        source = self.runtime / "LICENSE.txt"
+        self.assertEqual(_safe_regular_file(source, self.runtime), source.read_bytes())
 
     def test_output_in_installed_runtime_tree_is_refused(self):
         out = self.runtime / "staging-not-allowed"
