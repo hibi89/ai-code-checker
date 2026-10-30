@@ -1,3 +1,15 @@
+> **2026-10-31 KST — CODE CHECKER 개발 재개·10항 인수인계 최신화 (PR #58 완료 / PR #59 검증 대기)**
+> ① **목표/기술:** 별도 서버/유료 API 없는 Python 3.11+ Tkinter/AST 기반 Windows 오프라인 코드 위험검사·한국어 보고서·선택 PyInstaller, 기존 최종 설계 보존.
+> ② **완료/결정:** [해총 backend-first/CI 병렬 지침](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/strategy/20261031_OWNER_BACKEND_FIRST_48H_EXECUTION_PROTOCOL.md) 준수. 원본 LICENSE 후검사 디스크립터 동일성·bounded read 강화 [PR #58](https://github.com/hibi89/ai-code-checker/pull/58) MERGED, 기존 v1/EXE 보존. 코어 입력 폴더·단일 파일 TOCTOU 방어 [PR #59](https://github.com/hibi89/ai-code-checker/pull/59) OPEN.
+> ③ **테스트:** PR #58 [일반 41095889319](https://github.com/hibi89/ai-code-checker/actions/runs/41095889319) **16/16 PASS**, [Windows 41095889348](https://github.com/hibi89/ai-code-checker/actions/runs/41095889348) **PASS**. PR #59 [Windows 41096257139](https://github.com/hibi89/ai-code-checker/actions/runs/41096257139) **PASS**, [일반 41096257079](https://github.com/hibi89/ai-code-checker/actions/runs/41096257079), [perf 41096257186](https://github.com/hibi89/ai-code-checker/actions/runs/41096257186) **QUEUED at record time**. 명령: `python -m unittest discover -s tests -v`; `python desktop_ui.py --self-test`. 실제 고객 PC NOT RUN.
+> ④ **진행:** PR #58 병합 DONE, PR #59 CI·main 통합 IN PROGRESS, Tcl/Tk/CPython/PyInstaller 원본·71개 NOTICE 분류·Windows 수용·판매 BLOCKED.
+> ⑤ **오류/전환:** 소스·라이선스 파일의 사전 `lstat` 뒤 `Path.open` 경합을 확인, `os.open` 후 `fstat`·동일성 검증으로 변경. Windows에서 완전 원자 스냅샷이라고 주장 금지. 이전 Tcl 경로 추측/일반 CI 반복 금지.
+> ⑥ **저장소/브랜치/SHA:** `hibi89/ai-code-checker@main` feature merge `003ff58e052f7653575407a22c5fd4803f1368e6`; PR #59 `feature/p0-input-read-fd-identity-20261031` head `21ec3ec51ed5665f98581d18eef12a6b2356a698`. 변경 경로 `scripts/stage_runtime_original_licenses.py`, `tests/test_stage_runtime_original_licenses.py`, PR #59 `code_input.py`, `tests/test_code_input.py`.
+> ⑦ **환경/배포:** Windows GitHub Actions hosted Python, offline GUI `python desktop_ui.py`, 빌드 `scripts/build_windows_portable.ps1`. Vercel/Production URL 미적용, 고객용 공개 EXE 없음.
+> ⑧ **원본·보안/복구:** PR #58 이전 main `7add062d6e62e7803fff8bdccdfbf548971e56f0` rollback 기준. customer source/LICENSE 원문/EXE/token/.env 공개 업로드 금지, 원본 읽기 전용·외부 호출 없음, force push 금지.
+> ⑨ **다음 단계/승인:** PR #59 일반/성능 CI 완료와 exact SHA·충돌 확인 → 병합 → main 회귀·기능 E2E → 실제 사용자 Windows/NOTICE 원문 수용. 원본 라이선스·OS 네트워크/SmartScreen·Defender·한글 PDF·크몽 가격·출시 결정은 사용자 실기기/별도 승인 필요.
+> ⑩ **기준:** 2026-10-31 KST, GitHub PR/Actions 확인 범위. 일반 PR #59 및 실제 소비자 E2E 미검증. 이 문서 생성으로 제품 100%/상용출시 완료가 되지 않음.
+
 > **2026-10-31 해총 공시 수신 / 최신 운영 지시:** [48h 코어 집중·기술스택/재사용 모듈 사전 확정·CI 병렬 처리](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/strategy/20261031_OWNER_BACKEND_FIRST_48H_EXECUTION_PROTOCOL.md). 개발 담당은 `hibi89/ai-code-checker@main`; 소스 작업은 기존 feature/PR 정책을 따른다. 다음 `ㄱ`에서 최신 코드/스택·개발 설계 대비 누락·원본 LICENSE/NOTICE/미분류 EXE 구성요소·Windows 실실행 증거를 점검 후 **진짜 핵심 기능 또는 실출시 차단 해소 작업 묶음**을 실행한다. 변경 기능 필수 스모크는 즉시 수행하고 CI는 run/SHA를 남겨 독립 작업을 병행한다. 실패한 CI/Windows·Privacy·권리/출시 게이트는 무시하지 않음. 현재 제품 범위/코드/사용자 데이터/기존 Gemini v1/출시 권한은 변경하지 않는다. **이번 커밋은 공시만, 새 기능/CI/실고객 검증 없음.**
 
 # CODE CHECKER — HANDOFF (10 required sections)
