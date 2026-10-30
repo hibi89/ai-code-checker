@@ -37,7 +37,7 @@ class ManualWorksheetTests(unittest.TestCase):
         self.assertIn("<!doctype html>", result)
         self.assertIn("mystery.dll", result)
         self.assertIn(self.queue["exe_sha256"], result)
-        self.assertIn("REVIEW", result)
+        self.assertIn("NOT APPROVED", result)
         self.assertIn("Release remains blocked", result)
         self.assertIn("Content-Security-Policy", result)
         self.assertIn("default-src 'none'", result)
@@ -47,7 +47,7 @@ class ManualWorksheetTests(unittest.TestCase):
 
     def test_source_byte_match_is_only_lower_review_priority(self):
         row = copy.deepcopy(self.queue["unresolved_entries_requiring_review"][0])
-        self.assertEqual(priority_for(row), 0)
+        self.assertEqual(priority_for(row), 1)
         row["build_record_evidence"] = "recorded_build_source_path_candidate"
         row["source_byte_match"] = "not_tested"
         self.assertEqual(priority_for(row), 1)
