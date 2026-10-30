@@ -52,6 +52,18 @@ class LastUnmatchedArchiveTests(unittest.TestCase):
     def inspect(self) -> dict:
         return classify_unmatched(self.audit, self.pkg, self.exe)
 
+    def test_no_remaining_unmatched_items_is_a_valid_verified_state(self):
+        # The actual PYZ.pyz container is now mapped by P0-E, so the
+        # last P0-H unmatched item can correctly disappear.
+        self.pkg["records"] = []
+        self.pkg["previously_unmatched_exe_toc"] = 0
+        self.pkg["pkg_no_record_claims"] = 0
+        result = self.inspect()
+        self.assertEqual(result["previously_no_pkg_toc_claims"], 0)
+        self.assertEqual(result["runtime_option_metadata_count"], 0)
+        self.assertEqual(result["unresolved_payload_count"], 0)
+        self.assertFalse(result["customer_release_ready"])
+
     def test_runtime_option_has_no_separate_file_and_no_license_approval(self):
         result = self.inspect()
         self.assertEqual(result["runtime_option_metadata_count"], 1)
