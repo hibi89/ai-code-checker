@@ -81,6 +81,7 @@ def classify_unmatched(audit: dict, pkg: dict, exe: Path) -> dict:
             # public CI logs or persisted review summaries.
             "logical_archive_name_sha256": hashlib.sha256(name.encode("utf-8")).hexdigest(),
             "carchive_typecode": kind,
+            "safe_single_token_archive_label": (name if re.fullmatch(r"[a-z][a-z0-9_.+-]{0,95}", name) else None),
             "classification": category,
             "option_name_matches_known_syntax": recognized,
             "runtime_option_not_a_separate_embedded_file": kind == "o",
@@ -141,6 +142,8 @@ def main() -> int:
     print("RUNTIME_OPTION_METADATA=" + str(classified["runtime_option_metadata_count"]))
     print("RECOGNIZED_OPTION_NAME=" + str(classified["recognized_option_name_count"]))
     print("UNRESOLVED_PAYLOAD=" + str(classified["unresolved_payload_count"]))
+    print("UNRESOLVED_TYPECODES=" + ",".join(sorted({r["carchive_typecode"] for r in classified["records"] if r["classification"] == "UNRESOLVED_ARCHIVE_PAYLOAD_OR_RESOURCE"})))
+    print("SAFE_UNRESOLVED_LOGICAL_LABELS=" + ",".join(sorted(r["safe_single_token_archive_label"] for r in classified["records"] if r["classification"] == "UNRESOLVED_ARCHIVE_PAYLOAD_OR_RESOURCE" and r["safe_single_token_archive_label"] is not None)))
     print("CUSTOMER_NOTICE_READY=False")
     print("CUSTOMER_RELEASE_READY=False")
     return 0
