@@ -11,17 +11,44 @@ if ($env:OS -ne 'Windows_NT') { throw 'Windows is required.' }
 if ([string]::IsNullOrWhiteSpace($ExePath) -or [string]::IsNullOrWhiteSpace($OutputPath)) {
     throw 'Both paths are required.'
 }
-if ($ExePath.StartsWith('\\') -or $ExePath.StartsWith('//') -or
-    $OutputPath.StartsWith('\\') -or $OutputPath.StartsWith('//')) {
-    throw 'UNC or device paths are not accepted.'
+# Read-only volume and parent checks: a drive-letter path can still be
+# a mapped network share. Do not follow junction/symlink parents.
+function Assert-LocalPath([string]$RawPath) {
+    if ([string]::IsNullOrWhiteSpace($RawPath) -or
+        $RawPath.StartsWith('\\') -or $RawPath.StartsWith('//')) {
+        throw 'UNC or device paths are not accepted.'
+    }
+    $full = [System.IO.Path]::GetFullPath($RawPath)
+    $root = [System.IO.Path]::GetPathRoot($full)
+    if ([string]::IsNullOrWhiteSpace($root) -or
+        $root.StartsWith('\\') -or $root.StartsWith('//')) {
+        throw 'Local filesystem volume required.'
+    }
+    $drive = [System.IO.DriveInfo]::new($root)
+    if ($drive.DriveType.ToString() -notin @('Fixed', 'Removable', 'Ram')) {
+        throw 'Remote or unknown filesystem volume is not allowed.'
+    }
+    $cursor = [System.IO.Path]::GetDirectoryName($full)
+    while (-not [string]::IsNullOrWhiteSpace($cursor)) {
+        $item = Get-Item -LiteralPath $cursor -ErrorAction Stop
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'Reparse or linked parent is not allowed.'
+        }
+        $next = [System.IO.Path]::GetDirectoryName($cursor)
+        if ([string]::IsNullOrWhiteSpace($next) -or $next -eq $cursor) { break }
+        $cursor = $next
+    }
+    return $full
 }
-$exe = Get-Item -LiteralPath $ExePath -ErrorAction Stop
+$exeFull = Assert-LocalPath $ExePath
+$outFull = Assert-LocalPath $OutputPath
+$exe = Get-Item -LiteralPath $exeFull -ErrorAction Stop
 if (-not ($exe -is [System.IO.FileInfo]) -or $exe.Extension -ine '.exe' -or
     $exe.Length -le 0 -or $exe.Length -gt 268435456 -or
     (($exe.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0)) {
     throw 'Expected an existing regular local EXE, no links, maximum 256 MiB.'
 }
-$parent = Split-Path -Parent ([System.IO.Path]::GetFullPath($OutputPath))
+$parent = Split-Path -Parent $outFull
 if (-not [System.IO.Directory]::Exists($parent)) {
     throw 'Existing local evidence destination folder required.'
 }
@@ -29,7 +56,7 @@ $parentItem = Get-Item -LiteralPath $parent
 if (($parentItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
     throw 'Evidence output directory cannot be a reparse point.'
 }
-$outFile = [System.IO.Path]::GetFullPath($OutputPath)
+$outFile = $outFull
 if ([System.IO.File]::Exists($outFile) -or [System.IO.Directory]::Exists($outFile)) {
     throw 'No overwrite of previous evidence is allowed.'
 }
