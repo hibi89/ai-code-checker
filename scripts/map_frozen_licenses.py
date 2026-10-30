@@ -28,7 +28,7 @@ MAX_MAPPINGS = 30000
 FIRST_PARTY = frozenset({
     "desktop_core", "desktop_ui", "offline_core", "offline_coverage",
     "offline_report", "report_cleanup", "report_history", "output_safety", "input_safety", "code_input", "static_checks", "review_models",
-    "reporting", "reviewer", "main",
+    "reporting", "reviewer", "main", "offline_models",
 })
 
 
