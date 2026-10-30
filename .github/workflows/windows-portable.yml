@@ -9,6 +9,8 @@ on:
       - 'scripts/windows_browser_pdf_smoke.py'
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/stage_runtime_original_licenses.py'
+      - 'scripts/runtime_version_receipt.py'
+      - 'tests/test_runtime_version_receipt.py'
       - 'tests/test_stage_runtime_original_licenses.py'
       - 'offline_models.py'
       - 'review_models.py'
@@ -105,6 +107,13 @@ jobs:
         run: python -m scripts.windows_defender_scan_contract --evidence .build-windows/defender-custom-scan.json --exe dist-windows/CodeCheckerOffline.exe
       - name: Audit actual frozen EXE CArchive, nested PYZ and local license file evidence
         run: python -m scripts.audit_frozen_exe --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/frozen-exe-evidence.json
+      - name: Observe actual frozen Tcl Tk patchlevels for license reviewer (not approval)
+        shell: pwsh
+        run: |
+          & './dist-windows/CodeCheckerOffline.exe' --runtime-version-receipt '.build-windows/runtime-version-receipt.json'
+          if ($LASTEXITCODE -ne 0) { throw 'Frozen Tcl/Tk version probe failed' }
+          python -m scripts.runtime_version_receipt --verify .build-windows/runtime-version-receipt.json dist-windows/CodeCheckerOffline.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Frozen runtime receipt mismatch' }
       - name: Stage EXE-bound CPython Tcl Tk PyInstaller original license candidates locally
         run: |
           python -m scripts.stage_runtime_original_licenses --exe dist-windows/CodeCheckerOffline.exe --audit .build-windows/frozen-exe-evidence.json --out-dir .build-windows/runtime-original-license-candidates
