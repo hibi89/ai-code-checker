@@ -6,19 +6,9 @@ from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import BaseModel, Field
+from offline_models import CodeFinding, Perspective, Severity
 
 
-Severity = Literal["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
-Perspective = Literal[
-    "security",
-    "reliability",
-    "testing",
-    "architecture",
-    "maintainability",
-    "performance",
-    "resource_use",
-    "complexity_cost",
-]
 CheckStatus = Literal["issue_found", "no_clear_issue", "not_enough_context"]
 
 
@@ -46,22 +36,6 @@ class AIReview(BaseModel):
     checks: list[PerspectiveCheck] = Field(description="One status item for each of the eight perspectives")
     findings: list[AIReviewFinding] = Field(description="Concrete source-based findings; empty when none are supported")
     limitations: list[str] = Field(description="Specific limitations caused by missing context or unsupported files")
-
-
-@dataclass(frozen=True)
-class CodeFinding:
-    severity: Severity
-    perspective: Perspective
-    title: str
-    file_path: str
-    start_line: int | None
-    end_line: int | None
-    evidence: str
-    impact: str
-    recommendation: str
-    confidence: int
-    source: Literal["static", "ai"]
-    citation_verified: bool
 
 
 @dataclass(frozen=True)
