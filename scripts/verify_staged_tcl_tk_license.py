@@ -1,0 +1,110 @@
+"""Bind locally STAGED Tcl/Tk original bytes to upstream tags and actual EXE.
+
+Only developer-local, already staged source candidates are read. Do not expose
+license texts in logs, artifacts, public repos or automatically approve NOTICE.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import stat
+from pathlib import Path
+
+from scripts.verify_upstream_tcl_tk_license import (
+    MAX_LICENSE, MAX_RECEIPT, _safe_read, compare_originals,
+)
+
+FORMAT = "code_checker_runtime_original_license_candidates_v1"
+MAX_MANIFEST = 128 * 1024
+_REPARSE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+
+def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
+    info = staged.lstat()
+    if (not stat.S_ISDIR(info.st_mode) or staged.is_symlink()
+            or getattr(info, "st_file_attributes", 0) & _REPARSE):
+        raise ValueError("Staged folder must be a real local directory")
+    raw_manifest = _safe_read(staged / "manifest.json", MAX_MANIFEST)
+    manifest = json.loads(raw_manifest)
+    if (not isinstance(manifest, dict) or manifest.get("format") != FORMAT
+            or manifest.get("actual_exe_sha256_confirmed") is not True
+            or manifest.get("frozen_tcl_tk_runtime_receipt_verified") is not True
+            or manifest.get("customer_release_ready") is not False
+            or manifest.get("customer_notice_ready") is not False
+            or manifest.get("copyright_and_redistribution_rights_verified") is not False
+            or not isinstance(manifest.get("originals"), list)
+            or manifest.get("original_candidate_file_count") != len(manifest["originals"])
+            or not isinstance(manifest.get("source_role_counts"), dict)
+            or set(manifest["source_role_counts"]) != {"cpython", "tcl", "tk", "pyinstaller"}
+            or sum(manifest["source_role_counts"].values()) != len(manifest["originals"])
+            or not isinstance(manifest.get("missing_source_roles"), list)
+            or not isinstance(manifest.get("ambiguous_source_roles"), list)
+            or any(role in manifest["missing_source_roles"] + manifest["ambiguous_source_roles"]
+                   for role in ("tcl", "tk"))
+            or manifest["source_role_counts"]["tcl"] != 1
+            or manifest["source_role_counts"]["tk"] != 1
+            or manifest.get("exe_sha256") != receipt.get("exe_sha256")
+            or manifest.get("exe_bytes") != receipt.get("exe_bytes")
+            or manifest.get("frozen_tcl_patchlevel") != receipt.get("tcl_runtime_patchlevel")
+            or manifest.get("frozen_tk_patchlevel") != receipt.get("tk_runtime_patchlevel")):
+        raise ValueError("Incomplete/mismatched frozen runtime original manifest")
+
+    originals = {}
+    for role in ("tcl", "tk"):
+        rows = [row for row in manifest["originals"]
+                if isinstance(row, dict) and row.get("role") == role]
+        if len(rows) != 1:
+            raise ValueError("Ambiguous installed source original")
+        row = rows[0]
+        name = role + "-01.original"
+        if (row.get("candidate_file") != name
+                or row.get("installed_source_basename") != "license.terms"
+                or row.get("source_kind") != "installed_python_runtime_tree"
+                or row.get("human_review_required") is not True
+                or row.get("corresponding_frozen_entry_or_copyright_owner_verified") is not False
+                or not isinstance(row.get("sha256"), str)
+                or not isinstance(row.get("bytes"), int)
+                or isinstance(row.get("bytes"), bool)):
+            raise ValueError("Unexpected or preapproved source candidate")
+        raw = _safe_read(staged / name, MAX_LICENSE)
+        if len(raw) != row["bytes"] or hashlib.sha256(raw).hexdigest() != row["sha256"]:
+            raise ValueError("Installed original differs from staged manifest")
+        originals[role] = raw
+
+    result = compare_originals(receipt, exe, originals["tcl"], originals["tk"])
+    result["staged_installed_source_hashes_verified"] = True
+    result["staged_manifest_sha256"] = hashlib.sha256(raw_manifest).hexdigest()
+    result["installed_source_binary_copyright_owner_verified"] = False
+    result["note"] = "Original source text equality, not binary origin/NOTICE permission."
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Local staged runtime Tcl/Tk original comparison")
+    parser.add_argument("--exe", required=True, type=Path)
+    parser.add_argument("--runtime-receipt", required=True, type=Path)
+    parser.add_argument("--staged-dir", required=True, type=Path)
+    parser.add_argument("--out", required=True, type=Path)
+    args = parser.parse_args(argv)
+    try:
+        if (args.out.exists() or args.out.is_symlink()
+                or not args.out.parent.is_dir() or args.out.parent.is_symlink()
+                or args.out.parent == args.staged_dir):
+            raise ValueError("Output must be new and separate from originals")
+        receipt = json.loads(_safe_read(args.runtime_receipt, MAX_RECEIPT))
+        report = verify_staged(args.exe, receipt, args.staged_dir)
+        with args.out.open("x", encoding="utf-8") as target:
+            json.dump(report, target, sort_keys=True, indent=2, ensure_ascii=True)
+        print("ACTUAL_EXE_STAGED_TCLTK_UPSTREAM_SOURCE_MATCH_PASS")
+        print("ORIGINAL_LICENSE_TEXT_OUTPUT=False")
+        print("BINARY_OWNER_AND_REDISTRIBUTION_REVIEW=REQUIRED")
+        print("CUSTOMER_RELEASE_READY=False")
+        return 0
+    except (OSError, ValueError, TypeError, KeyError, OverflowError, json.JSONDecodeError):
+        print("ACTUAL_EXE_STAGED_TCLTK_UPSTREAM_SOURCE_MATCH_INVALID")
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

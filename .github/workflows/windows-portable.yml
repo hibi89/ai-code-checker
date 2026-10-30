@@ -9,6 +9,8 @@ on:
       - 'scripts/windows_browser_pdf_smoke.py'
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/stage_runtime_original_licenses.py'
+      - 'scripts/verify_staged_tcl_tk_license.py'
+      - 'tests/test_verify_staged_tcl_tk_license.py'
       - 'scripts/runtime_version_receipt.py'
       - 'tests/test_runtime_version_receipt.py'
       - 'tests/test_stage_runtime_original_licenses.py'
@@ -152,6 +154,10 @@ jobs:
       - name: Verify original source hashes and retain human NOTICE release blocks
         run: |
           python -c "import hashlib,json; from pathlib import Path; root=Path('.build-windows/runtime-original-license-candidates'); x=json.loads((root/'manifest.json').read_text(encoding='utf-8')); a=json.loads(Path('.build-windows/frozen-exe-evidence.json').read_text(encoding='utf-8')); assert x['exe_sha256']==a['exe_sha256']; assert x['original_candidate_file_count']==len(x['originals'])>0; assert sum(x['source_role_counts'].values())==len(x['originals']); assert set(x['source_role_counts'])=={'cpython','tcl','tk','pyinstaller'}; assert x['actual_exe_sha256_confirmed'] is True; assert all(hashlib.sha256((root/r['candidate_file']).read_bytes()).hexdigest()==r['sha256'] for r in x['originals']); assert x['third_party_license_notice_human_review_required'] is True and x['customer_notice_ready'] is False and x['customer_release_ready'] is False and x['copyright_and_redistribution_rights_verified'] is False; print('LOCAL_EXACT_RUNTIME_ORIGINAL_TEXT_HASHES_RECORDED_NO_LEGAL_SIGNOFF')"
+      - name: Bind installed Tcl Tk originals to upstream release byte hashes for this exact EXE
+        run: |
+          python -m scripts.verify_staged_tcl_tk_license --exe dist-windows/CodeCheckerOffline.exe --runtime-receipt .build-windows/runtime-version-receipt.json --staged-dir .build-windows/runtime-original-license-candidates --out .build-windows/tcltk-upstream-installed-source-match.json
+          python -c "import hashlib,json; from pathlib import Path; p=Path('.build-windows/tcltk-upstream-installed-source-match.json'); x=json.loads(p.read_text(encoding='utf-8')); exe=Path('dist-windows/CodeCheckerOffline.exe'); assert x['exe_sha256']==hashlib.sha256(exe.read_bytes()).hexdigest(); assert x['staged_installed_source_hashes_verified'] is True and len(x['source_originals'])==2; assert all(i['upstream_original_bytes_match'] is True and i['exact_bundled_binary_owner_verified'] is False for i in x['source_originals']); assert x['customer_release_ready'] is False and x['third_party_notice_ready'] is False and x['license_compliance_certified'] is False; print('EXACT_EXE_INSTALLED_TCL_TK_LICENSE_BYTES_UPSTREAM_MATCH_HUMAN_RIGHTS_PENDING')"
       - name: Enforce offline executable excludes Gemini/Pydantic runtime
         run: python -m scripts.check_offline_frozen_deps --audit .build-windows/frozen-exe-evidence.json
       - name: Confirm manifest is kept local and flags manual NOTICE review
