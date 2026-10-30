@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import time
 import unittest
 import zipfile
 from pathlib import Path
@@ -118,6 +119,10 @@ class CodeInputTests(unittest.TestCase):
             root = Path(temp)
             source = root / "main.py"
             source.write_bytes(b"pass")
+            # Windows creation timestamps may share a filesystem tick.
+            # Separate the physical files so the path-to-path identity
+            # check has a real, observable replacement signal.
+            time.sleep(0.08)
             replacement = root / "replacement.tmp"
             replacement.write_bytes(b"eval")
             actual_open = os.open
@@ -140,6 +145,10 @@ class CodeInputTests(unittest.TestCase):
             root = Path(temp)
             source = root / "main.py"
             source.write_bytes(b"pass")
+            # Windows creation timestamps may share a filesystem tick.
+            # Separate the physical files so the path-to-path identity
+            # check has a real, observable replacement signal.
+            time.sleep(0.08)
             replacement = root / "replacement.tmp"
             replacement.write_bytes(b"eval")
             actual_open = os.open
