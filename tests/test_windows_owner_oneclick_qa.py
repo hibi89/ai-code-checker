@@ -102,7 +102,7 @@ class ManualGateContractTests(unittest.TestCase):
         gate_section = source.split("$gates = [ordered]@{", 1)[1].split("\n}", 1)[0]
         gates = re.findall(r"(?m)^    ([a-z_]+) = 'UNVERIFIED'$", gate_section)
         manual_section = source.split('$manual = @"', 1)[1].split('"@', 1)[0]
-        checklist = re.findall(r"(?m)^- \\[ \\] \\[([a-z_]+)\\] ", manual_section)
+        checklist = re.findall(r"(?m)^- \[ \] \[([a-z_]+)\] ", manual_section)
         self.assertEqual(len(gates), 10)
         self.assertEqual(checklist, gates)
         self.assertEqual(manual_section.count("- [ ]"), 10)
