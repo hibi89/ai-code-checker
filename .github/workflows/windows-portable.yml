@@ -23,6 +23,8 @@ on:
       - 'scripts/reconcile_native_build.py'
       - 'scripts/reconcile_exe_toc.py'
       - 'scripts/reconcile_pkg_toc.py'
+      - 'scripts/classify_unmatched_carchive.py'
+      - 'tests/test_classify_unmatched_carchive.py'
       - 'tests/test_pkg_toc_provenance.py'
       - 'tests/test_exe_toc_provenance.py'
       - 'tests/test_native_build_provenance.py'
@@ -134,6 +136,12 @@ jobs:
       - name: Enforce P0-H complete accounting and legal release blocks
         run: |
           python -c "import json; from pathlib import Path; g=json.loads(Path('.build-windows/exe-toc-evidence.json').read_text(encoding='utf-8')); p=json.loads(Path('.build-windows/pkg-toc-evidence.json').read_text(encoding='utf-8')); assert p['all_prior_unmatched_accounted_for']; assert p['previously_unmatched_exe_toc']==g['without_exe_toc_claims']; assert p['pkg_unique_record_claims']+p['pkg_ambiguous_record_claims']+p['pkg_no_record_claims']==p['previously_unmatched_exe_toc']; assert p['build_source_paths_excluded'] and p['metadata_not_owner_or_license_proof']; assert p['customer_release_ready'] is False and p['legal_notice_approved'] is False and p['license_compliance_certified'] is False; print('PKG_TOC_METADATA_CHECKED_NO_RELEASE')"
+      - name: Classify final unclaimed CArchive row using exact local EXE option type
+        run: |
+          python -m scripts.classify_unmatched_carchive --audit .build-windows/frozen-exe-evidence.json --pkg .build-windows/pkg-toc-evidence.json --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/final-unmatched-carchive.json
+      - name: Preserve original copyright and every remaining customer release block
+        run: |
+          python -c "import json; from pathlib import Path; p=json.loads(Path('.build-windows/final-unmatched-carchive.json').read_text(encoding='utf-8')); assert p['actual_exe_hash_verified'] is True; assert p['previously_no_pkg_toc_claims']==len(p['records'])==p['runtime_option_metadata_count']+p['unresolved_payload_count']; assert p['metadata_not_evidence_of_license_permission'] is True; assert p['customer_notice_ready'] is False and p['customer_release_ready'] is False and p['license_compliance_certified'] is False; assert all(r['third_party_copyright_notice_review_still_required'] is True and r['actual_archive_source_or_vendor_verified'] is False for r in p['records']); print('PYINSTALLER_OPTION_METADATA_REVIEW_ONLY_NO_LICENSE_SIGNOFF')"
       - name: Reconcile all actual EXE component and original installed LICENSE gaps locally
         run: |
           python -m scripts.reconcile_notice_gaps --audit .build-windows/frozen-exe-evidence.json --mapping .build-windows/ownership-candidates.json --native .build-windows/native-provenance.json --exe-toc .build-windows/exe-toc-evidence.json --pkg-toc .build-windows/pkg-toc-evidence.json --out .build-windows/notice-review-gaps.json
