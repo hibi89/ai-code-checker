@@ -30,7 +30,7 @@ function Assert-LocalPath([string]$RawPath) {
     }
     $cursor = [System.IO.Path]::GetDirectoryName($full)
     while (-not [string]::IsNullOrWhiteSpace($cursor)) {
-        $item = Get-Item -LiteralPath $cursor -ErrorAction Stop
+        $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
         if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
             throw 'Reparse or linked parent is not allowed.'
         }
