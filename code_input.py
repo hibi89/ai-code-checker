@@ -296,15 +296,16 @@ def _read_checked_source(path: Path, observed: os.stat_result, max_bytes: int) -
     The descriptor and pathname are checked after opening and reading to
     reject ordinary file-replacement races. No customer code is executed.
     """
-    def identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
-        # Windows filesystem/CPython combinations can return st_ino == 0.
-        # Creation/change timestamps add a separate replacement signal even
-        # for an equal-length swap made within an mtime granularity window.
-        # These are best-effort race checks, not an atomic filesystem snapshot.
-        birth_ns = getattr(value, "st_birthtime_ns", value.st_ctime_ns)
-        return (
-            value.st_dev, value.st_ino, value.st_size,
-            value.st_mtime_ns, value.st_ctime_ns, birth_ns,
+    def common_identity(value: os.stat_result) -> tuple[int, int, int, int]:
+        # Cross-interface fields only: on Windows pathlib.lstat() and
+        # os.fstat() may expose *different* change-time semantics.
+        return (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+
+    def same_interface_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+        # Compare these only lstat-to-lstat or fstat-to-fstat. This lets
+        # Windows notice many equal-size replacements even when st_ino is 0.
+        return common_identity(value) + (
+            value.st_ctime_ns, getattr(value, "st_birthtime_ns", value.st_ctime_ns),
         )
 
     reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
@@ -318,15 +319,15 @@ def _read_checked_source(path: Path, observed: os.stat_result, max_bytes: int) -
         opened = os.fstat(fd)
         if (not stat.S_ISREG(opened.st_mode)
                 or getattr(opened, "st_file_attributes", 0) & reparse
-                or path.is_symlink() or identity(opened) != identity(observed)):
+                or path.is_symlink() or common_identity(opened) != common_identity(observed)):
             raise InputError("검사할 파일이 열리는 동안 변경되었습니다. 다시 미리보기를 실행하세요.")
         with os.fdopen(fd, "rb", closefd=False) as stream:
             raw = stream.read(max_bytes + 1)
         after = os.fstat(fd)
         on_disk = path.lstat()
         if (len(raw) > max_bytes or path.is_symlink()
-                or identity(after) != identity(observed)
-                or identity(on_disk) != identity(observed)):
+                or same_interface_identity(after) != same_interface_identity(opened)
+                or same_interface_identity(on_disk) != same_interface_identity(observed)):
             raise InputError("검사할 파일이 읽히는 동안 변경되었습니다. 다시 미리보기를 실행하세요.")
         return raw
     finally:
