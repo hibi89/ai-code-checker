@@ -93,10 +93,40 @@ class StagedLicenseTests(unittest.TestCase):
                 else:
                     self.manifest["ambiguous_source_roles"] = value
                 self.refresh()
-                with self.assertRaises(ValueError):
-                    self.verify()
+                report = self.verify()
+                self.assertEqual(report["status"], "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED")
+                self.assertEqual(report["missing_or_ambiguous_roles"], value)
+                self.assertFalse(report["source_equality_verified"])
+                self.assertFalse(report["customer_release_ready"])
                 self.manifest["missing_source_roles"] = ["cpython", "pyinstaller"]
                 self.manifest["ambiguous_source_roles"] = []
+
+    def test_missing_source_no_approval_and_still_checks_present_tk_bytes(self):
+        self.manifest["source_role_counts"]["tcl"] = 0
+        self.manifest["original_candidate_file_count"] = 1
+        self.manifest["originals"] = [self.manifest["originals"][1]]
+        self.manifest["missing_source_roles"] = ["cpython", "pyinstaller", "tcl"]
+        self.refresh()
+        report = self.verify()
+        self.assertEqual(report["missing_or_ambiguous_roles"], ["tcl"])
+        self.assertEqual(report["status"], "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED")
+        self.assertFalse(report["source_equality_verified"])
+        self.assertFalse(report["customer_release_ready"])
+        self.assertNotIn("source_originals", report)
+        self.assertNotIn(str(self.root), repr(report))
+        self.staged.joinpath("tk-01.original").write_bytes(b"changed text")
+        with self.assertRaises(ValueError):
+            self.verify()
+
+    def test_missing_source_does_not_skip_exact_exe_receipt_verification(self):
+        self.manifest["source_role_counts"]["tcl"] = 0
+        self.manifest["original_candidate_file_count"] = 1
+        self.manifest["originals"] = [self.manifest["originals"][1]]
+        self.manifest["missing_source_roles"] = ["cpython", "pyinstaller", "tcl"]
+        self.refresh()
+        self.exe.write_bytes(b"same name but different exact EXE")
+        with self.assertRaises(ValueError):
+            self.verify()
 
     def test_staged_original_tampering_and_wrong_manifest_digest_fail(self):
         raw = self.sources["tcl"]

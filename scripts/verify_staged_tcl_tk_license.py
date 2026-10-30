@@ -14,6 +14,7 @@ from pathlib import Path
 from scripts.verify_upstream_tcl_tk_license import (
     MAX_LICENSE, MAX_RECEIPT, _safe_read, compare_originals,
 )
+from scripts.runtime_version_receipt import verify_receipt
 
 FORMAT = "code_checker_runtime_original_license_candidates_v1"
 MAX_MANIFEST = 128 * 1024
@@ -40,8 +41,6 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
             or sum(manifest["source_role_counts"].values()) != len(manifest["originals"])
             or not isinstance(manifest.get("missing_source_roles"), list)
             or not isinstance(manifest.get("ambiguous_source_roles"), list)
-            or any(role in manifest["missing_source_roles"] + manifest["ambiguous_source_roles"]
-                   for role in ("tcl", "tk"))
             or manifest["source_role_counts"]["tcl"] != 1
             or manifest["source_role_counts"]["tk"] != 1
             or manifest.get("exe_sha256") != receipt.get("exe_sha256")
@@ -49,6 +48,59 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
             or manifest.get("frozen_tcl_patchlevel") != receipt.get("tcl_runtime_patchlevel")
             or manifest.get("frozen_tk_patchlevel") != receipt.get("tk_runtime_patchlevel")):
         raise ValueError("Incomplete/mismatched frozen runtime original manifest")
+
+    counts = manifest["source_role_counts"]
+    missing = manifest["missing_source_roles"]
+    ambiguous = manifest["ambiguous_source_roles"]
+    if (any(not isinstance(role, str) or role not in counts for role in missing + ambiguous)
+            or len(missing) != len(set(missing))
+            or len(ambiguous) != len(set(ambiguous))
+            or set(missing) != {role for role in counts if counts[role] == 0}
+            or not set(ambiguous).issubset(set(missing))
+            or any(type(count) is not int or count < 0 or count > 16 for count in counts.values())):
+        raise ValueError("Invalid missing/ambiguous installed source accounting")
+
+    unavailable = sorted(role for role in ("tcl", "tk")
+                         if role in missing or role in ambiguous)
+    if unavailable:
+        # Missing installed source is an explicit, EXE-hash-bound unresolved
+        # compliance gap, NOT a CI green source-byte match or release approval.
+        # Check any present Tcl/Tk candidate before recording this limitation.
+        for role in ("tcl", "tk"):
+            role_rows = [row for row in manifest["originals"]
+                         if isinstance(row, dict) and row.get("role") == role]
+            if role in unavailable:
+                if role_rows or counts[role] != 0:
+                    raise ValueError("Claimed missing source exists in manifest")
+                continue
+            if counts[role] != 1 or len(role_rows) != 1:
+                raise ValueError("Unexpected existing source candidate count")
+            item = role_rows[0]
+            if (item.get("candidate_file") != role + "-01.original"
+                    or item.get("installed_source_basename") != "license.terms"
+                    or item.get("source_kind") != "installed_python_runtime_tree"
+                    or item.get("human_review_required") is not True
+                    or item.get("corresponding_frozen_entry_or_copyright_owner_verified") is not False
+                    or type(item.get("bytes")) is not int
+                    or not isinstance(item.get("sha256"), str)):
+                raise ValueError("Unexpected staged candidate metadata")
+            raw = _safe_read(staged / item["candidate_file"], MAX_LICENSE)
+            if len(raw) != item["bytes"] or hashlib.sha256(raw).hexdigest() != item["sha256"]:
+                raise ValueError("Present staged source candidate was modified")
+        verify_receipt(receipt, exe)
+        return {
+            "format": "code_checker_staged_tcl_tk_upstream_review_v1",
+            "status": "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED",
+            "exe_sha256": receipt["exe_sha256"],
+            "exe_bytes": receipt["exe_bytes"],
+            "missing_or_ambiguous_roles": unavailable,
+            "staged_manifest_sha256": hashlib.sha256(raw_manifest).hexdigest(),
+            "source_equality_verified": False,
+            "installed_source_binary_copyright_owner_verified": False,
+            "third_party_notice_ready": False,
+            "license_compliance_certified": False,
+            "customer_release_ready": False,
+        }
 
     originals = {}
     for role in ("tcl", "tk"):
@@ -96,7 +148,10 @@ def main(argv: list[str] | None = None) -> int:
         report = verify_staged(args.exe, receipt, args.staged_dir)
         with args.out.open("x", encoding="utf-8") as target:
             json.dump(report, target, sort_keys=True, indent=2, ensure_ascii=True)
-        print("ACTUAL_EXE_STAGED_TCLTK_UPSTREAM_SOURCE_MATCH_PASS")
+        if report["status"] == "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED":
+            print("EXACT_EXE_TCLTK_INSTALLED_SOURCE_MISSING_UPSTREAM_MATCH_UNVERIFIED")
+        else:
+            print("ACTUAL_EXE_STAGED_TCLTK_UPSTREAM_SOURCE_MATCH_PASS")
         print("ORIGINAL_LICENSE_TEXT_OUTPUT=False")
         print("BINARY_OWNER_AND_REDISTRIBUTION_REVIEW=REQUIRED")
         print("CUSTOMER_RELEASE_READY=False")
