@@ -25,6 +25,13 @@ except ImportError:
 
 MAX_LICENSE_TEXT_BYTES = 1024 * 1024
 MAX_MAPPINGS = 30000
+# Only these exact in-repository namespace/module names are owned.
+# Do NOT treat arbitrary scripts.* or other nested modules as first party:
+# a 3rd-party module sharing that prefix must remain unresolved.
+FIRST_PARTY_QUALIFIED = frozenset({
+    "scripts", "scripts.runtime_version_receipt",
+})
+
 FIRST_PARTY = frozenset({
     "desktop_core", "desktop_ui", "offline_core", "offline_coverage",
     "offline_report", "report_cleanup", "report_history", "output_safety", "input_safety", "code_input", "static_checks", "review_models",
@@ -102,7 +109,7 @@ def make_mapping(audit: dict, *, package_claims=None, installed_files=None) -> d
             for pkg in package_claims.get(root, [])
             if canonicalize_name(pkg) in installed
         })
-        if root in FIRST_PARTY:
+        if root in FIRST_PARTY or module in FIRST_PARTY_QUALIFIED:
             kind, owners = "first_party_candidate", ["repository"]
         elif declared:
             kind = "installed_dist_unique_name_claim" if len(declared) == 1 else "ambiguous_dist_name_claim"
