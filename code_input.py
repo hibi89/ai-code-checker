@@ -296,8 +296,16 @@ def _read_checked_source(path: Path, observed: os.stat_result, max_bytes: int) -
     The descriptor and pathname are checked after opening and reading to
     reject ordinary file-replacement races. No customer code is executed.
     """
-    def identity(value: os.stat_result) -> tuple[int, int, int, int]:
-        return (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+    def identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+        # Windows filesystem/CPython combinations can return st_ino == 0.
+        # Creation/change timestamps add a separate replacement signal even
+        # for an equal-length swap made within an mtime granularity window.
+        # These are best-effort race checks, not an atomic filesystem snapshot.
+        birth_ns = getattr(value, "st_birthtime_ns", value.st_ctime_ns)
+        return (
+            value.st_dev, value.st_ino, value.st_size,
+            value.st_mtime_ns, value.st_ctime_ns, birth_ns,
+        )
 
     reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
     if (not stat.S_ISREG(observed.st_mode)
