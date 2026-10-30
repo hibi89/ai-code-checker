@@ -122,7 +122,16 @@ def make_mapping(audit: dict, *, package_claims=None, installed_files=None) -> d
             raise ValueError("Duplicate CArchive entry")
         unique.add(pathkey)
         lower = name.lower()
-        if re.search(r"(?:^|/)python3\d+\.dll$", lower):
+        # A PYZ CArchive 'z' entry is the PyInstaller nested module
+        # container itself, not a separate third-party distribution. Require
+        # the actual archive reader to have identified modules inside *this*
+        # exact PYZ to avoid treating an arbitrary .pyz file as harmless.
+        if (name == "PYZ.pyz" and str(row.get("typecode")) == "z"
+                and any(child.get("archive") == name for child in pyz)):
+            kind, owners = "pyinstaller_pyz_container_format_candidate", [
+                "PyInstaller archive container only; nested modules reviewed individually"
+            ]
+        elif re.search(r"(?:^|/)python3\d+\.dll$", lower):
             kind, owners = "cpython_runtime_filename_candidate", ["CPython"]
         elif (re.search(r"(?:^|/)(?:tcl|tk)\d+.*\.dll$", lower)
               or lower.startswith(("_tcl_data/", "_tk_data/"))):
