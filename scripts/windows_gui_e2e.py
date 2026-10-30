@@ -419,7 +419,7 @@ def main() -> int:
             rc = 1
         for result in results:
             print("GUI_E2E: " + result)
-        if errors or rc != 0 or len(results) != 11:
+        if errors or rc != 0 or len(results) != 12:
             print("GUI_E2E_FAILURE: " + json.dumps(errors, ensure_ascii=False), file=sys.stderr)
             return 1
         print("WINDOWS_TK_WIDGET_INTEGRATION_PASS")
