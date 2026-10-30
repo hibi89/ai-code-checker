@@ -36,7 +36,7 @@ function Invoke-Check {
 }
 Push-Location $repo
 try {
-  Invoke-Check 'syntax' @('-m','py_compile','desktop_core.py','desktop_ui.py','code_input.py','offline_core.py','offline_report.py','static_checks.py')
+  Invoke-Check 'syntax' @('-m','py_compile','desktop_core.py','desktop_ui.py','code_input.py','offline_core.py','offline_report.py','static_checks.py','offline_models.py')
   Invoke-Check 'mvp_offline' @('-m','scripts.mvp_acceptance')
   Invoke-Check 'controller_self_test' @('desktop_ui.py','--self-test')
   if (-not $Quick) {
