@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 from scripts.build_notice_review_queue import _verify_exe
+from scripts.runtime_version_receipt import MAX_RECEIPT_BYTES, verify_receipt
 
 FORMAT = "code_checker_runtime_original_license_candidates_v1"
 MAX_ORIGINAL_BYTES = 1024 * 1024
@@ -164,7 +165,8 @@ def _pyinstaller_candidates(dist) -> list[tuple[str, bytes]]:
     return records
 
 
-def stage_candidates(exe: Path, audit: dict, python_root: Path, dist, out_dir: Path) -> dict:
+def stage_candidates(exe: Path, audit: dict, python_root: Path, dist, out_dir: Path,
+                     runtime_receipt: dict | None = None) -> dict:
     """Stage originals as exact bytes, metadata only for downstream reviewers."""
     if (not isinstance(audit, dict)
             or audit.get("format") != "code_checker_p0d_frozen_archive_audit_v1"
@@ -184,6 +186,10 @@ def stage_candidates(exe: Path, audit: dict, python_root: Path, dist, out_dir: P
             or python_root.resolve() in out_dir.parent.resolve().parents):
         raise ValueError("Output may not modify installed runtime tree")
 
+    # Bind version evidence observed from the actual frozen Tk interpreter to
+    # this exact EXE before creating or writing any license candidate files.
+    if runtime_receipt is not None:
+        verify_receipt(runtime_receipt, exe)
     root_sources, ambiguous_source_roles = _runtime_candidates(python_root)
     py_sources = _pyinstaller_candidates(dist)
     # The exact build distribution may have no RECORD listed license text.
@@ -224,6 +230,12 @@ def stage_candidates(exe: Path, audit: dict, python_root: Path, dist, out_dir: P
         "exe_bytes": exe_size,
         "runtime_python_version": ".".join(map(str, sys.version_info[:3])),
         "build_pyinstaller_version": (str(dist.version) if dist is not None else None),
+        "frozen_tcl_tk_runtime_receipt_verified": runtime_receipt is not None,
+        "frozen_tcl_patchlevel": (runtime_receipt["tcl_runtime_patchlevel"]
+                                  if runtime_receipt is not None else None),
+        "frozen_tk_patchlevel": (runtime_receipt["tk_runtime_patchlevel"]
+                                 if runtime_receipt is not None else None),
+        "exact_runtime_version_is_not_license_source_or_owner_proof": True,
         "original_candidate_file_count": len(rows),
         "source_role_counts": counts,
         "missing_source_roles": missing,
@@ -249,6 +261,7 @@ def main() -> int:
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--python-root", type=Path, default=Path(sys.base_prefix))
+    parser.add_argument("--runtime-receipt", type=Path, default=None)
     args = parser.parse_args()
     try:
         source = args.audit
@@ -256,14 +269,24 @@ def main() -> int:
                 or not 0 < source.stat().st_size <= 16 * 1024 * 1024):
             raise ValueError("Missing, linked or oversized frozen EXE audit")
         audit = json.loads(source.read_text(encoding="utf-8"))
+        receipt = None
+        if args.runtime_receipt is not None:
+            evidence = args.runtime_receipt
+            if (evidence.is_symlink() or not evidence.is_file()
+                    or not 0 < evidence.stat().st_size <= MAX_RECEIPT_BYTES):
+                raise ValueError("Missing, linked or oversized runtime receipt")
+            receipt = json.loads(evidence.read_text(encoding="utf-8"))
         dist = metadata.distribution("pyinstaller")
-        report = stage_candidates(args.exe, audit, args.python_root, dist, args.out_dir)
+        report = stage_candidates(
+            args.exe, audit, args.python_root, dist, args.out_dir, receipt)
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError,
             metadata.PackageNotFoundError):
         print("LOCAL_RUNTIME_ORIGINAL_LICENSE_STAGE_INVALID")
         return 1
     print("LOCAL_RUNTIME_ORIGINAL_LICENSE_STAGE_PASS")
     print("ORIGINAL_LOCAL_FILE_CANDIDATES=" + str(report["original_candidate_file_count"]))
+    print("FROZEN_RUNTIME_VERSION_HASH_BOUND=" +
+          str(report["frozen_tcl_tk_runtime_receipt_verified"]))
     print("CPYTHON_SOURCE_FILES=" + str(report["source_role_counts"]["cpython"]))
     print("TCL_SOURCE_FILES=" + str(report["source_role_counts"]["tcl"]))
     print("TK_SOURCE_FILES=" + str(report["source_role_counts"]["tk"]))

@@ -696,6 +696,9 @@ if __name__ == "__main__":
         raise SystemExit(packaged_scenario_smoke_test())
     if len(sys.argv) == 2 and sys.argv[1] == "--gui-smoke":
         raise SystemExit(packaged_gui_smoke_test())
+    if len(sys.argv) == 3 and sys.argv[1] == "--runtime-version-receipt":
+        from scripts.runtime_version_receipt import main as runtime_version_main
+        raise SystemExit(runtime_version_main(["--write-frozen", sys.argv[2]]))
     if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
         raise SystemExit(packaged_smoke_test())
     if len(sys.argv) != 1:

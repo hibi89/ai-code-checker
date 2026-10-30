@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.stage_runtime_original_licenses import _safe_regular_file, stage_candidates
+from scripts.runtime_version_receipt import capture_receipt
 
 
 class FakePyInstaller:
@@ -79,6 +80,52 @@ class RuntimeOriginalLicenseTests(unittest.TestCase):
             self.assertTrue(row["human_review_required"])
         self.assertNotIn(str(self.root), repr(result))
         self.assertNotIn("CPython original mock", repr(result))
+
+    def test_frozen_runtime_versions_bound_to_same_exe_without_approving_notice(self):
+        class FakeTk:
+            def __init__(self):
+                self.tk = self
+
+            def withdraw(self):
+                pass
+
+            def call(self, *parts):
+                return "8.6.15"
+
+            def destroy(self):
+                pass
+
+        receipt = capture_receipt(self.exe, FakeTk, frozen=True, python_version="3.13.9")
+        report = stage_candidates(
+            self.exe, self.audit, self.runtime, self.dist, self.out, receipt)
+        self.assertTrue(report["frozen_tcl_tk_runtime_receipt_verified"])
+        self.assertEqual(report["frozen_tcl_patchlevel"], "8.6.15")
+        self.assertEqual(report["frozen_tk_patchlevel"], "8.6.15")
+        self.assertTrue(report["exact_runtime_version_is_not_license_source_or_owner_proof"])
+        self.assertFalse(report["customer_notice_ready"])
+        self.assertFalse(report["customer_release_ready"])
+        self.assertNotIn(str(self.root), repr(report))
+
+    def test_different_exe_receipt_fails_before_license_stage(self):
+        class FakeTk:
+            def __init__(self):
+                self.tk = self
+
+            def withdraw(self):
+                pass
+
+            def call(self, *parts):
+                return "8.6.15"
+
+            def destroy(self):
+                pass
+
+        receipt = capture_receipt(self.exe, FakeTk, frozen=True, python_version="3.13.9")
+        receipt["exe_sha256"] = "0" * 64
+        with self.assertRaises(ValueError):
+            stage_candidates(
+                self.exe, self.audit, self.runtime, self.dist, self.out, receipt)
+        self.assertFalse(self.out.exists())
 
     def test_same_size_exe_tamper_is_rejected_before_writes(self):
         raw = self.exe.read_bytes()

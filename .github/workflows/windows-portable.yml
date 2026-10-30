@@ -9,6 +9,8 @@ on:
       - 'scripts/windows_browser_pdf_smoke.py'
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/stage_runtime_original_licenses.py'
+      - 'scripts/runtime_version_receipt.py'
+      - 'tests/test_runtime_version_receipt.py'
       - 'tests/test_stage_runtime_original_licenses.py'
       - 'offline_models.py'
       - 'review_models.py'
@@ -105,9 +107,42 @@ jobs:
         run: python -m scripts.windows_defender_scan_contract --evidence .build-windows/defender-custom-scan.json --exe dist-windows/CodeCheckerOffline.exe
       - name: Audit actual frozen EXE CArchive, nested PYZ and local license file evidence
         run: python -m scripts.audit_frozen_exe --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/frozen-exe-evidence.json
+      - name: Observe actual frozen Tcl Tk patchlevels for license reviewer (not approval)
+        shell: pwsh
+        run: |
+          # A --windowed GUI EXE may return control to PowerShell before it
+          # finishes; use the same bounded child-process wait as the existing
+          # synthetic Windows EXE smoke rather than an immediate LASTEXITCODE.
+          $exe = (Resolve-Path -LiteralPath 'dist-windows/CodeCheckerOffline.exe').Path
+          $folder = (Resolve-Path -LiteralPath '.build-windows').Path
+          $receipt = Join-Path $folder 'runtime-version-receipt.json'
+          if (Test-Path -LiteralPath $receipt) { throw 'Refuse existing runtime receipt' }
+          $info = [System.Diagnostics.ProcessStartInfo]::new()
+          $info.FileName = $exe
+          $info.ArgumentList.Add('--runtime-version-receipt')
+          $info.ArgumentList.Add($receipt)
+          $info.WorkingDirectory = (Get-Location).Path
+          $info.UseShellExecute = $false
+          $info.CreateNoWindow = $true
+          $process = [System.Diagnostics.Process]::new()
+          try {
+            $process.StartInfo = $info
+            if (-not $process.Start()) { throw 'Cannot start frozen runtime probe' }
+            if (-not $process.WaitForExit(60000)) {
+              try { $process.Kill() } catch { }
+              try { [void]$process.WaitForExit(5000) } catch { }
+              throw 'Frozen runtime probe exceeded 60-second timeout'
+            }
+            if ($process.ExitCode -ne 0) { throw "Frozen runtime probe exited $($process.ExitCode)" }
+          } finally {
+            $process.Dispose()
+          }
+          if (-not (Test-Path -LiteralPath $receipt -PathType Leaf)) { throw 'Frozen runtime receipt missing' }
+          python -m scripts.runtime_version_receipt --verify $receipt $exe
+          if ($LASTEXITCODE -ne 0) { throw 'Frozen runtime receipt mismatch' }
       - name: Stage EXE-bound CPython Tcl Tk PyInstaller original license candidates locally
         run: |
-          python -m scripts.stage_runtime_original_licenses --exe dist-windows/CodeCheckerOffline.exe --audit .build-windows/frozen-exe-evidence.json --out-dir .build-windows/runtime-original-license-candidates
+          python -m scripts.stage_runtime_original_licenses --exe dist-windows/CodeCheckerOffline.exe --audit .build-windows/frozen-exe-evidence.json --runtime-receipt .build-windows/runtime-version-receipt.json --out-dir .build-windows/runtime-original-license-candidates
       - name: Verify original source hashes and retain human NOTICE release blocks
         run: |
           python -c "import hashlib,json; from pathlib import Path; root=Path('.build-windows/runtime-original-license-candidates'); x=json.loads((root/'manifest.json').read_text(encoding='utf-8')); a=json.loads(Path('.build-windows/frozen-exe-evidence.json').read_text(encoding='utf-8')); assert x['exe_sha256']==a['exe_sha256']; assert x['original_candidate_file_count']==len(x['originals'])>0; assert sum(x['source_role_counts'].values())==len(x['originals']); assert set(x['source_role_counts'])=={'cpython','tcl','tk','pyinstaller'}; assert x['actual_exe_sha256_confirmed'] is True; assert all(hashlib.sha256((root/r['candidate_file']).read_bytes()).hexdigest()==r['sha256'] for r in x['originals']); assert x['third_party_license_notice_human_review_required'] is True and x['customer_notice_ready'] is False and x['customer_release_ready'] is False and x['copyright_and_redistribution_rights_verified'] is False; print('LOCAL_EXACT_RUNTIME_ORIGINAL_TEXT_HASHES_RECORDED_NO_LEGAL_SIGNOFF')"
