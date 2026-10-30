@@ -620,7 +620,9 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
                 85,
             ))
 
-        if attribute_name == "execute" and node.args:
+        # SQL drivers expose direct, batch and SQLite script execution.
+        # Match only visible dynamic SQL construction; parameter binding remains safe.
+        if attribute_name in {"execute", "executemany", "executescript"} and node.args:
             query = node.args[0]
             if _sql_dynamic(query) or _sql_direct_local(query, node, resolver):
                 findings.append(_finding(

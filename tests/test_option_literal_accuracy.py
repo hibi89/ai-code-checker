@@ -58,6 +58,29 @@ class OptionLiteralAccuracyTests(unittest.TestCase):
         code = 'cursor.execute(f"SELECT * FROM t WHERE id={user_id}")\n'
         self.assertEqual(rules(code), (("PY-SQL-CONCAT", 1),))
 
+    def test_sql_batch_and_script_calls_detect_dynamic_queries(self) -> None:
+        cases = (
+            ('cursor.executemany(f"INSERT INTO t VALUES ({value})", rows)\n', 1),
+            ('sql = "UPDATE t SET x=" + value\ncursor.executemany(sql, rows)\n', 2),
+            ('db.executescript(f"DROP TABLE {table}")\n', 1),
+            ('sql = "DELETE FROM t WHERE id=" + value\ndb.executescript(sql)\n', 2),
+        )
+        for source, line in cases:
+            with self.subTest(source=source):
+                self.assertEqual(rules(source), (("PY-SQL-CONCAT", line),))
+
+    def test_sql_bound_and_static_batch_script_calls_stay_quiet(self) -> None:
+        cases = (
+            'cursor.executemany("INSERT INTO t VALUES (?)", rows)\n',
+            'db.executescript("CREATE TABLE t(id INTEGER);")\n',
+            'cursor.execute_many(f"DELETE FROM t WHERE x={value}", rows)\n',
+            'not_sql.executemany(f"render {name}", rows)\n',
+            'sql = "DELETE FROM t WHERE x=?"\ncursor.executemany(sql, rows)\n',
+        )
+        for source in cases:
+            with self.subTest(source=source):
+                self.assertEqual(rules(source), ())
+
     def test_sql_dynamic_format_width_stays_candidate(self) -> None:
         code = 'cursor.execute(f"SELECT {1:{width}} FROM t")\n'
         self.assertEqual(rules(code), (("PY-SQL-CONCAT", 1),))
