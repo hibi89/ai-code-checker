@@ -52,13 +52,29 @@ def _safe_regular_file(path: Path, root: Path) -> bytes | None:
                 or not 0 < observed.st_size <= MAX_ORIGINAL_BYTES):
             return None
         before = (observed.st_dev, observed.st_ino, observed.st_size, observed.st_mtime_ns)
-        with path.open("rb") as stream:
-            raw = stream.read(MAX_ORIGINAL_BYTES + 1)
-        after = path.lstat()
-        if (len(raw) != observed.st_size or len(raw) > MAX_ORIGINAL_BYTES
-                or (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns) != before):
-            return None
-        return raw
+        # Open the inspected file itself, not a newly resolved path. The
+        # second identity check rejects a replace-between-lstat-and-open race.
+        flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(path, flags)
+        try:
+            opened = os.fstat(fd)
+            opened_id = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+            if (not stat.S_ISREG(opened.st_mode)
+                    or getattr(opened, "st_file_attributes", 0) & _REPARSE
+                    or path.is_symlink() or opened_id != before):
+                return None
+            with os.fdopen(fd, "rb", closefd=False) as stream:
+                raw = stream.read(MAX_ORIGINAL_BYTES + 1)
+            after = os.fstat(fd)
+            on_disk = path.lstat()
+            after_id = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+            disk_id = (on_disk.st_dev, on_disk.st_ino, on_disk.st_size, on_disk.st_mtime_ns)
+            if (len(raw) != observed.st_size or len(raw) > MAX_ORIGINAL_BYTES
+                    or path.is_symlink() or after_id != before or disk_id != before):
+                return None
+            return raw
+        finally:
+            os.close(fd)
     except (OSError, ValueError):
         return None
 
