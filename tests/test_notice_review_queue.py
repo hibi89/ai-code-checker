@@ -19,6 +19,12 @@ class ExactBinaryNoticeQueueTests(unittest.TestCase):
         self.exe = self.folder / "synthetic.exe"
         self.exe.write_bytes(b"MZ" + b"synthetic, nonexecutable metadata fixture")
         self.stages = fixture()
+        # The shared P1-V fixture omits P0-F's optional category annotation;
+        # actual generated P0-F records always provide this field.
+        self.stages[2]["records"][0]["initial_category"] = next(
+            row["mapping"] for row in self.stages[1]["entries"]
+            if row["name"] == "mystery.dll"
+        )
         sha = hashlib.sha256(self.exe.read_bytes()).hexdigest()
         for item in self.stages:
             item["exe_sha256"] = sha
@@ -65,6 +71,10 @@ class ExactBinaryNoticeQueueTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.queue()
         self.stages = fixture()
+        self.stages[2]["records"][0]["initial_category"] = next(
+            row["mapping"] for row in self.stages[1]["entries"]
+            if row["name"] == "mystery.dll"
+        )
         sha = hashlib.sha256(self.exe.read_bytes()).hexdigest()
         for item in self.stages:
             item["exe_sha256"] = sha
