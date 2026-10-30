@@ -78,17 +78,54 @@ try {
 $defenderStatus = 'UNVERIFIED'
 $antivirusEnabled = $null
 $realtimeEnabled = $null
+# Defender's WMI/service status query can block indefinitely on some hosted
+# Windows builds. Run only the fixed, read-only query in a bounded child pwsh,
+# never in this evidence writer. A timeout stays UNVERIFIED (not disabled).
+$probe = [System.Diagnostics.Process]::new()
+try {
+    $start = [System.Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    foreach ($arg in @('-NoProfile', '-NonInteractive', '-Command')) {
+        [void]$start.ArgumentList.Add($arg)
+    }
+    $query = @'
+$ErrorActionPreference = 'Stop'
 try {
     $mp = Get-MpComputerStatus -ErrorAction Stop
-    if ($null -ne $mp -and $null -ne $mp.AntivirusEnabled -and
-        $null -ne $mp.RealTimeProtectionEnabled) {
-        $defenderStatus = 'OBSERVED'
-        $antivirusEnabled = [bool]$mp.AntivirusEnabled
-        $realtimeEnabled = [bool]$mp.RealTimeProtectionEnabled
+    if ($null -eq $mp -or $null -eq $mp.AntivirusEnabled -or $null -eq $mp.RealTimeProtectionEnabled) { exit 2 }
+    $antivirus = [bool]$mp.AntivirusEnabled
+    $realtime = [bool]$mp.RealTimeProtectionEnabled
+    Write-Output "$antivirus,$realtime"
+    exit 0
+} catch { exit 2 }
+'@
+    [void]$start.ArgumentList.Add($query)
+    $probe.StartInfo = $start
+    if ($probe.Start()) {
+        if ($probe.WaitForExit(10000)) {
+            $observed = $probe.StandardOutput.ReadToEnd().Trim()
+            if ($probe.ExitCode -eq 0 -and $observed -cmatch '^(True|False),(True|False)$') {
+                $defenderStatus = 'OBSERVED'
+                $antivirusEnabled = ($Matches[1] -ceq 'True')
+                $realtimeEnabled = ($Matches[2] -ceq 'True')
+            }
+        } else {
+            # Stop only the exact status-query child, not Defender or other
+            # Windows processes. The absence of observation is not PASS/FAIL.
+            try { $probe.Kill() } catch { }
+            try { [void]$probe.WaitForExit(2000) } catch { }
+        }
     }
 } catch {
-    # No third-party AV claims, no inference from missing Defender cmdlet.
     $defenderStatus = 'UNVERIFIED'
+    $antivirusEnabled = $null
+    $realtimeEnabled = $null
+} finally {
+    $probe.Dispose()
 }
 
 $evidence = [ordered]@{
