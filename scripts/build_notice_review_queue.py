@@ -20,6 +20,29 @@ from scripts.reconcile_notice_gaps import (
 )
 
 FORMAT = "code_checker_local_binary_notice_review_queue_v1"
+_BUILD_EVIDENCE = frozenset({
+    "recorded_build_source_path_candidate", "basename_hypothesis_only",
+    "no_analysis_claim", "ambiguous_multiple_source_records",
+})
+_SOURCE_CATEGORIES = frozenset({
+    None, "python_site_packages", "python_runtime_or_tcl_tree_candidate",
+    "windows_os_tree_candidate", "repository_build_tree",
+    "other_build_source_location",
+})
+_BYTE_EVIDENCE = frozenset({
+    "not_tested", "not_native", "source_missing_or_oversized",
+    "archive_reader_unavailable", "unsupported_embedded_entry_type",
+    "embedded_entry_oversized", "byte_identical_to_recorded_build_source",
+    "different_bytes_review_required", "comparison_error_unverified",
+})
+_EXE_EVIDENCE = frozenset({
+    None, "unique_exe_build_toc_entry_claim_only",
+    "ambiguous_exe_build_toc_entries", "no_exe_toc_entry_claim",
+})
+_PKG_EVIDENCE = frozenset({
+    None, "unique_pkg_toc_record_claim_only",
+    "ambiguous_pkg_toc_records", "no_pkg_toc_record",
+})
 MAX_EXE_BYTES = 256 * 1024 * 1024
 _REPARSE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
@@ -90,6 +113,15 @@ def build_review_queue(audit: dict, mapping: dict, native: dict,
                 or native_row["initial_category"] != row["mapping"]):
             raise ValueError("Unresolved row disagrees with native provenance")
         evidence = native_row["build_record_evidence"]
+        byte_evidence = native_row.get("source_byte_match", "not_tested")
+        source_category = native_row.get("source_location_category")
+        exe_evidence = exe_by_name.get(name, {}).get("exe_toc_evidence")
+        pkg_evidence = pkg_by_name.get(name, {}).get("pkg_toc_evidence")
+        if (evidence not in _BUILD_EVIDENCE or byte_evidence not in _BYTE_EVIDENCE
+                or source_category not in _SOURCE_CATEGORIES
+                or exe_evidence not in _EXE_EVIDENCE
+                or pkg_evidence not in _PKG_EVIDENCE):
+            raise ValueError("Unknown or unsafe provenance status in review")
         category_counts[row["mapping"]] += 1
         source_counts[evidence] += 1
         # Unknown means no proof, even if build source and embedded bytes match.
@@ -98,10 +130,10 @@ def build_review_queue(audit: dict, mapping: dict, native: dict,
             "entry_kind": "CArchive",
             "unresolved_category": row["mapping"],
             "build_record_evidence": evidence,
-            "source_byte_match": native_row.get("source_byte_match", "not_tested"),
-            "source_location_category": native_row.get("source_location_category"),
-            "exe_toc_evidence": exe_by_name.get(name, {}).get("exe_toc_evidence"),
-            "pkg_toc_evidence": pkg_by_name.get(name, {}).get("pkg_toc_evidence"),
+            "source_byte_match": byte_evidence,
+            "source_location_category": source_category,
+            "exe_toc_evidence": exe_evidence,
+            "pkg_toc_evidence": pkg_evidence,
             "human_owner_version_and_license_review": "REQUIRED",
             "redistribution_permission_verified": False,
         })
