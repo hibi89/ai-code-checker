@@ -149,8 +149,8 @@ $record = [ordered]@{
     }
     optional_defender_command_status = $scanStatus
     manual_gates = $gates
-    source_code_executed = $false
-    internet_packet_observed = $false
+    customer_source_executed = $false
+    os_network_packet_capture = 'NOT_PERFORMED'
     customer_os_acceptance_certified = $false
     rights_and_notice_certified = $false
     customer_release_ready = $false
