@@ -123,6 +123,32 @@ class ComponentOwnershipTests(unittest.TestCase):
         self.assertEqual(mapping["total_rows"], baseline["total_rows"] + 1)
         self.assertFalse(mapping["customer_release_ready"])
 
+    def test_frozen_runtime_receipt_imports_are_only_exact_first_party(self):
+        audit = sample_audit()
+        audit["archive"]["pyz_modules"].extend([
+            {"module": "scripts"},
+            {"module": "scripts.runtime_version_receipt"},
+        ])
+        result = make_mapping(audit, package_claims={}, installed_files={})
+        ownership = {row["name"]: row["mapping"] for row in result["entries"]}
+        self.assertEqual(ownership["scripts"], "first_party_candidate")
+        self.assertEqual(ownership["scripts.runtime_version_receipt"],
+                         "first_party_candidate")
+        baseline = make_mapping(sample_audit(), package_claims={}, installed_files={})
+        self.assertEqual(result["unresolved_count"], baseline["unresolved_count"])
+        self.assertFalse(result["license_compliance_certified"])
+        self.assertFalse(result["customer_release_ready"])
+
+    def test_unknown_scripts_module_does_not_inherit_first_party(self):
+        audit = sample_audit()
+        audit["archive"]["pyz_modules"].append({"module": "scripts.unverified_vendor"})
+        result = make_mapping(audit, package_claims={}, installed_files={})
+        ownership = {row["name"]: row["mapping"] for row in result["entries"]}
+        self.assertEqual(ownership["scripts.unverified_vendor"], "unresolved")
+        baseline = make_mapping(sample_audit(), package_claims={}, installed_files={})
+        self.assertEqual(result["unresolved_count"], baseline["unresolved_count"] + 1)
+        self.assertFalse(result["customer_release_ready"])
+
     def test_ambiguous_package_cannot_be_assigned_a_single_owner(self):
         audit = sample_audit()
         audit["python_build_distributions"].append({
