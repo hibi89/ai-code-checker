@@ -22,6 +22,53 @@ $dist = Join-Path $repo 'dist-windows'
 $work = Join-Path $repo '.build-windows'
 $exe = Join-Path $dist 'CodeCheckerOffline.exe'
 if (Test-Path -LiteralPath $exe) { throw 'Existing EXE will not be overwritten.' }
+# Owner-only guard. Common cloud-sync roots are not privacy-safe output stores.
+# Conservatively reject known folder names, environment roots and junctions.
+# This does NOT certify that a path is free of third-party backup software.
+function Assert-OwnerPrivatePath([string]$RawPath) {
+  $full = [System.IO.Path]::GetFullPath($RawPath)
+  $root = [System.IO.Path]::GetPathRoot($full)
+  if ([string]::IsNullOrWhiteSpace($root) -or
+      $full.StartsWith('\\') -or $full.StartsWith('//') -or
+      $root.StartsWith('\\') -or $root.StartsWith('//')) {
+    throw 'Owner acceptance refuses remote or device paths.'
+  }
+  $drive = [System.IO.DriveInfo]::new($root)
+  if ($drive.DriveType.ToString() -notin @('Fixed', 'Removable', 'Ram')) {
+    throw 'Owner acceptance refuses remote or mapped drives.'
+  }
+  if ($full -match '(?i)(?:^|[\\/])(?:OneDrive(?: - [^\\/]+)?|Dropbox|Google Drive|iCloudDrive)(?:[\\/]|$)') {
+    throw 'Owner acceptance refuses known cloud-sync folder paths.'
+  }
+  foreach ($envRoot in @($env:OneDrive, $env:OneDriveConsumer, $env:OneDriveCommercial)) {
+    if (-not [string]::IsNullOrWhiteSpace($envRoot)) {
+      $canonical = [System.IO.Path]::GetFullPath($envRoot).TrimEnd('\', '/')
+      if ($full.Equals($canonical, [System.StringComparison]::OrdinalIgnoreCase) -or
+          $full.StartsWith(($canonical + '\'), [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Owner acceptance refuses configured OneDrive roots.'
+      }
+    }
+  }
+  $cursor = $full
+  while (-not [string]::IsNullOrWhiteSpace($cursor)) {
+    if (Test-Path -LiteralPath $cursor) {
+      $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+      if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw 'Owner acceptance refuses linked or junction paths.'
+      }
+    }
+    $parent = [System.IO.Path]::GetDirectoryName($cursor)
+    if ([string]::IsNullOrWhiteSpace($parent) -or $parent -eq $cursor) { break }
+    $cursor = $parent
+  }
+}
+if ($OwnerAcceptance) {
+  # Check all source and output roots before invoking Python or creating a build.
+  foreach ($path in @($repo, $dist, $work, $resolvedEvidenceDir)) {
+    Assert-OwnerPrivatePath $path
+  }
+}
+
 Push-Location $repo
 try {
   python -c "import PyInstaller, tkinter; print('Build dependencies found')"
