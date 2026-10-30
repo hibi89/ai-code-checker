@@ -13,6 +13,20 @@
 
 **사용자 PC의 실제 화면은 AI가 직접 검증할 수 없다.** SmartScreen이나 Defender가 실행을 차단하면 우회하기보다 차단 결과를 기록하고 해당 항목을 BLOCKED 처리한다. 미승인 EXE를 외부에 배포하지 않는다.
 
+## 개발자 Windows PC에서 EXE와 검수 영수증을 함께 만드는 경우
+
+고객 PC가 아니라 **소유자 개발 PC**에서 아직 EXE 후보가 없는 경우, 다음 선택형 명령을 사용할 수 있다. 사전에 Windows, `pwsh`(PowerShell 7), Python, `tkinter`, 고정된 `requirements-offline-build.txt`의 PyInstaller가 설치되어 있어야 한다. 이 명령은 패키지 설치·다운로드·API·고객 소스 전송·Defender 설정 변경을 수행하지 않는다.
+
+```powershell
+pwsh -NoProfile -File .\scripts\build_windows_portable.ps1 `
+  -OwnerAcceptance `
+  -EvidenceDir .\owner-acceptance-private-NEW
+```
+
+기존 `dist-windows/CodeCheckerOffline.exe`가 존재하거나 출력 폴더가 이미 있으면 **덮어쓰지 않고 중단**한다. 빌드/합성 스모크 뒤 같은 로컬 EXE에 대해 기존 원클릭 검수를 자동 실행하고 SHA-256과 미완료 수동 게이트 10개를 대조한다. 실패 시 생성된 로컬 EXE/증거를 자동 삭제하지 않으며, 결과는 출시 승인이 아니다. 실제 일반 Windows 검수에는 EXE를 별도 소유자 통제 환경에서 수동 확인해야 한다. EXE나 원문 LICENSE를 공개 GitHub artifact에 업로드하지 않는다.
+
+`-OwnerAcceptance`를 빼면 기존 빌드 명령이 그대로 작동한다. `-EvidenceDir`만 단독 지정하면 오류로 중단한다. 이미 만들어진 후보가 있다면 아래의 기존 한 번에 실행을 사용한다.
+
 ## 한 번에 실행
 
 저장소 루트 또는 로컬 검수용 복사본에서:
