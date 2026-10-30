@@ -35,15 +35,17 @@ class OwnerOneClickWindowsTests(unittest.TestCase):
         ], capture_output=True, text=True, errors="replace", timeout=30, check=False)
 
     def test_script_parser_has_no_errors(self):
+        # pwsh -Command does not reliably populate $args[0] for a trailing
+        # positional path. Pass a quoted literal to the parser instead.
+        quoted_source = str(SCRIPT).replace("'", "''")
         command = (
             "$tokens = $null; $errors = $null; "
             "[System.Management.Automation.Language.Parser]::ParseFile("
-            "$args[0], [ref]$tokens, [ref]$errors) | Out-Null; "
+            f"'{quoted_source}', [ref]$tokens, [ref]$errors) | Out-Null; "
             "if ($errors.Count -ne 0) { $errors | Out-String | Write-Error; exit 1 }"
         )
         result = subprocess.run([
-            self.pwsh, "-NoProfile", "-NonInteractive", "-Command",
-            command, str(SCRIPT),
+            self.pwsh, "-NoProfile", "-NonInteractive", "-Command", command,
         ], capture_output=True, text=True, timeout=30, errors="replace")
         self.assertEqual(result.returncode, 0, result.stderr)
 
