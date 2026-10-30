@@ -36,6 +36,9 @@ on:
       - 'verify_local.ps1'
       - 'tests/test_mvp_acceptance.py'
       - 'scripts/windows_acceptance_readonly.ps1'
+      - 'scripts/windows_local_exe_smoke.ps1'
+      - 'scripts/windows_local_exe_smoke_contract.py'
+      - 'tests/test_windows_local_exe_smoke_contract.py'
       - 'scripts/windows_acceptance_contract.py'
       - 'scripts/windows_defender_file_scan.ps1'
       - 'scripts/windows_defender_scan_contract.py'
@@ -72,6 +75,13 @@ jobs:
       - name: Build EXE and run synthetic offline smoke
         shell: pwsh
         run: ./scripts/build_windows_portable.ps1
+      - name: Re-run existing EXE on Windows without Python as synthetic customer-candidate workflow
+        shell: pwsh
+        run: |
+          ./scripts/windows_local_exe_smoke.ps1 -ExePath 'dist-windows/CodeCheckerOffline.exe' -OutputPath '.build-windows/windows-local-exe-smoke.json' -TimeoutSeconds 120
+      - name: Confirm exact binary receipt and preserve all consumer release gates
+        run: |
+          python -m scripts.windows_local_exe_smoke_contract --evidence .build-windows/windows-local-exe-smoke.json --exe dist-windows/CodeCheckerOffline.exe
       - name: Capture read-only local binary/Defender/signature observations
         shell: pwsh
         run: |
