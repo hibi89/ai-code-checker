@@ -49,6 +49,8 @@ on:
       - 'verify_local.ps1'
       - 'tests/test_mvp_acceptance.py'
       - 'scripts/windows_acceptance_readonly.ps1'
+      - 'scripts/windows_owner_oneclick_qa.ps1'
+      - 'tests/test_windows_owner_oneclick_qa.py'
       - 'scripts/windows_local_exe_smoke.ps1'
       - 'scripts/windows_local_exe_smoke_contract.py'
       - 'tests/test_windows_local_exe_smoke_contract.py'
@@ -204,6 +206,12 @@ jobs:
         run: |
           python -m scripts.consolidate_windows_retail_evidence --exe dist-windows/CodeCheckerOffline.exe --readonly .build-windows/windows-acceptance-readonly.json --smoke .build-windows/windows-local-exe-smoke.json --runtime .build-windows/runtime-version-receipt.json --defender .build-windows/defender-custom-scan.json --out .build-windows/exact-exe-retail-preflight-summary.json
           python -c "import json; from pathlib import Path; p=Path('.build-windows/exact-exe-retail-preflight-summary.json'); x=json.loads(p.read_text(encoding='utf-8')); assert x['status']=='EXACT_BINARY_RECEIPTS_VALID_RELEASE_BLOCKED'; assert all(v=='UNVERIFIED' for v in x['human_release_gates'].values()); assert x['customer_release_ready'] is False and x['legal_notice_approved'] is False and x['malware_free_certified'] is False and x['real_buyer_pc_test_certified'] is False; print('LOCAL_WINDOWS_EVIDENCE_CONSOLIDATED_NO_RETAIL_APPROVAL')"
+      - name: Owner one-command Windows EXE QA and manual acceptance worksheet (not release)
+        shell: pwsh
+        run: |
+          ./scripts/windows_owner_oneclick_qa.ps1 -ExePath 'dist-windows/CodeCheckerOffline.exe' -EvidenceDir '.build-windows/owner-oneclick-qa'
+          if (-not $?) { throw 'Owner Windows QA failed' }
+          python -c "import hashlib,json; from pathlib import Path; root=Path('.build-windows/owner-oneclick-qa'); x=json.loads((root/'owner-preflight.json').read_text(encoding='utf-8')); exe=Path('dist-windows/CodeCheckerOffline.exe'); assert x['format']=='code_checker_owner_windows_oneclick_preflight_v1'; assert x['exe_sha256']==hashlib.sha256(exe.read_bytes()).hexdigest(); assert len(x['manual_gates'])==10 and all(v=='UNVERIFIED' for v in x['manual_gates'].values()); assert x['customer_release_ready'] is False and x['customer_os_acceptance_certified'] is False and x['rights_and_notice_certified'] is False; assert x['os_network_packet_capture']=='NOT_PERFORMED'; assert (root/'owner-manual-checklist.md').is_file(); assert (root/'exe-synthetic-gui.json').is_file(); assert (root/'readonly-os-observation.json').is_file(); print('OWNER_ONECLICK_REAL_EXE_SYNTHETIC_PASS_MANUAL_RELEASE_BLOCKED')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
         run: |
