@@ -8,6 +8,11 @@ on:
       - 'scripts/windows_gui_e2e.py'
       - 'scripts/windows_browser_pdf_smoke.py'
       - 'scripts/audit_frozen_exe.py'
+      - 'offline_models.py'
+      - 'review_models.py'
+      - 'scripts/check_offline_frozen_deps.py'
+      - 'tests/test_offline_dependency_boundary.py'
+      - 'scripts/offline_dependency_inventory.py'
       - 'scripts/map_frozen_licenses.py'
       - 'scripts/reconcile_notice_gaps.py'
       - 'scripts/build_notice_review_queue.py'
@@ -96,6 +101,8 @@ jobs:
         run: python -m scripts.windows_defender_scan_contract --evidence .build-windows/defender-custom-scan.json --exe dist-windows/CodeCheckerOffline.exe
       - name: Audit actual frozen EXE CArchive, nested PYZ and local license file evidence
         run: python -m scripts.audit_frozen_exe --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/frozen-exe-evidence.json
+      - name: Enforce offline executable excludes Gemini/Pydantic runtime
+        run: python -m scripts.check_offline_frozen_deps --audit .build-windows/frozen-exe-evidence.json
       - name: Confirm manifest is kept local and flags manual NOTICE review
         run: |
           python -c "import json; from pathlib import Path; p=Path('.build-windows/frozen-exe-evidence.json'); j=json.loads(p.read_text(encoding='utf-8')); assert j['archive']['top_level_count']>0; assert j['archive']['pyz_module_count']>0; assert j['license_compliance_certified'] is False; assert j['third_party_notice_ready_to_distribute'] is False; assert j['customer_release_ready'] is False; print('LOCAL_BINARY_MANIFEST_PRESENT_REVIEW_GATE_OPEN')"
