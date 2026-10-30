@@ -21,6 +21,9 @@ class PrivateCandidateBuildContractTests(unittest.TestCase):
         script = BUILDER.read_text(encoding="utf-8")
         self.assertIn("[switch]$OwnerAcceptance", script)
         self.assertIn("if ($OwnerAcceptance)", script)
+        self.assertIn("function Assert-OwnerPrivatePath", script)
+        self.assertIn("Assert-OwnerPrivatePath $path", script)
+        self.assertIn("OneDriveCommercial", script)
         self.assertIn("$PSBoundParameters.ContainsKey('EvidenceDir')", script)
         self.assertIn("windows_owner_oneclick_qa.ps1", script)
         self.assertIn("$receipt.customer_release_ready -cne $false", script)
@@ -38,10 +41,10 @@ class PrivateCandidateBuildWindowsTests(unittest.TestCase):
         if cls.pwsh is None:
             raise unittest.SkipTest("PowerShell 7 is not installed")
 
-    def run_builder(self, *options):
+    def run_builder(self, *options, env=None):
         return subprocess.run(
             [self.pwsh, "-NoProfile", "-NonInteractive", "-File", str(BUILDER), *map(str, options)],
-            text=True, capture_output=True, errors="replace", timeout=30, check=False,
+            text=True, capture_output=True, errors="replace", timeout=30, check=False, env=env,
         )
 
     def test_missing_evidence_dir_fails_before_build(self):
@@ -54,6 +57,42 @@ class PrivateCandidateBuildWindowsTests(unittest.TestCase):
             result = self.run_builder("-EvidenceDir", str(Path(folder) / "new-evidence"))
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("-EvidenceDir requires explicit -OwnerAcceptance.", result.stderr + result.stdout)
+
+    def test_configured_onedrive_source_refused_before_build(self):
+        # No EXE creation or dependencies. Mark the repository itself as a
+        # configured sync root, then verify immediate fail-closed behavior.
+        with tempfile.TemporaryDirectory() as folder:
+            env = os.environ.copy()
+            env["OneDrive"] = str(BUILDER.resolve().parents[1])
+            result = self.run_builder(
+                "-OwnerAcceptance", "-EvidenceDir", str(Path(folder) / "fresh"),
+                env=env,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Owner acceptance refuses", result.stderr + result.stdout)
+            self.assertFalse((Path(folder) / "fresh").exists())
+
+    def test_configured_onedrive_evidence_refused_before_build(self):
+        with tempfile.TemporaryDirectory() as folder:
+            env = os.environ.copy()
+            env["OneDrive"] = folder
+            proposed = Path(folder) / "new-receipts"
+            result = self.run_builder(
+                "-OwnerAcceptance", "-EvidenceDir", str(proposed), env=env,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Owner acceptance refuses", result.stderr + result.stdout)
+            self.assertFalse(proposed.exists())
+
+    def test_named_cloud_sync_folder_refused_without_env(self):
+        with tempfile.TemporaryDirectory() as folder:
+            proposed = Path(folder) / "OneDrive - Example" / "owner-qa"
+            result = self.run_builder(
+                "-OwnerAcceptance", "-EvidenceDir", str(proposed),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("cloud-sync folder", result.stderr + result.stdout)
+            self.assertFalse(proposed.exists())
 
     def test_existing_evidence_dir_not_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
