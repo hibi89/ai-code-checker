@@ -37,7 +37,6 @@ class FunctionScopedImportTests(unittest.TestCase):
             "def f():\n    import subprocess as s\n    s = other\n    s.run(cmd, shell=True)\n",
             "def f(enabled):\n    if enabled:\n        import subprocess as s\n    s.run(cmd, shell=True)\n",
             "def f(enabled):\n    if enabled:\n        import subprocess as s\n    else:\n        s.run(cmd, shell=True)\n",
-            "def outer():\n    import subprocess as s\n    def inner():\n        s.run(cmd, shell=True)\n",
         )
         for source in sources:
             with self.subTest(source=source):
@@ -55,6 +54,16 @@ class FunctionScopedImportTests(unittest.TestCase):
             "        s.run(command, shell=True)\n"
         )
         self.assertEqual(flagged(source), [("PY-SHELL", 3), ("PY-SHELL", 8)])
+
+    def test_closure_import_requires_stable_unconditional_binding(self) -> None:
+        cases = (
+            ("def outer():\n    import subprocess as sp\n    def inner():\n        sp.run(cmd, shell=True)\n", [("PY-SHELL", 4)]),
+            ("def outer():\n    if enabled:\n        import subprocess as sp\n    def inner():\n        sp.run(cmd, shell=True)\n", []),
+            ("def outer():\n    import subprocess as sp\n    sp = replacement\n    def inner():\n        sp.run(cmd, shell=True)\n", []),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(flagged(source), expected)
 
     def test_module_import_still_available_to_function(self) -> None:
         source = "import subprocess as sp\ndef f():\n    sp.run(cmd, shell=True)\n"

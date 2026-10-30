@@ -39,7 +39,11 @@ PYTHON_CASES = (
     Case("local-branch-inside", "def check(cmd, enabled):\n    if enabled:\n        import subprocess as sp\n        sp.run(cmd, shell=True)\n", (("PY-SHELL", 4),)),
     Case("local-branch-else", "def check(cmd, enabled):\n    if enabled:\n        import subprocess as sp\n    else:\n        sp.run(cmd, shell=True)\n", ()),
     Case("local-sibling", "def first():\n    import subprocess as sp\ndef second():\n    sp.run(cmd, shell=True)\n", ()),
-    Case("local-nested-closure-uncertain", "def outer():\n    import subprocess as sp\n    def inner():\n        sp.run(cmd, shell=True)\n", ()),
+    # P2-13: a single unguarded outer binding is a real lexical closure,
+    # while conditional and rebound names remain unproven.
+    Case("local-nested-closure-stable", "def outer():\n    import subprocess as sp\n    def inner():\n        sp.run(cmd, shell=True)\n", (("PY-SHELL", 4),)),
+    Case("local-nested-closure-guarded", "def outer():\n    if enabled:\n        import subprocess as sp\n    def inner():\n        sp.run(cmd, shell=True)\n", ()),
+    Case("local-nested-closure-rebound", "def outer():\n    import subprocess as sp\n    sp = fake\n    def inner():\n        sp.run(cmd, shell=True)\n", ()),
     Case("local-global-leak", "def check(cmd):\n    import subprocess as sp\nsp.run(cmd, shell=True)\n", ()),
     # Explicit builtins module / symbol aliases are sensitive only when proven.
     Case("builtins-module-eval", "import builtins\nbuiltins.eval(value)\n", (("PY-DYNAMIC-EXEC", 2),)),
