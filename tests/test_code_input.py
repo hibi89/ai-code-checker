@@ -117,9 +117,9 @@ class CodeInputTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = root / "main.py"
-            source.write_bytes(b"print('safe')\\n".replace(b"\\\\n", b"\\n"))
+            source.write_bytes(b"pass")
             replacement = root / "replacement.tmp"
-            replacement.write_bytes(b"print('evil')\\n".replace(b"\\\\n", b"\\n"))
+            replacement.write_bytes(b"eval")
             actual_open = os.open
             swapped = False
 
@@ -139,9 +139,9 @@ class CodeInputTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = root / "main.py"
-            source.write_bytes(b"print('safe')\\n".replace(b"\\\\n", b"\\n"))
+            source.write_bytes(b"pass")
             replacement = root / "replacement.tmp"
-            replacement.write_bytes(b"print('evil')\\n".replace(b"\\\\n", b"\\n"))
+            replacement.write_bytes(b"eval")
             actual_open = os.open
             swapped = False
 
