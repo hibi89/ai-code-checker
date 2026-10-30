@@ -111,6 +111,43 @@ class RuntimeOriginalLicenseTests(unittest.TestCase):
         self.assertTrue(result["third_party_license_notice_human_review_required"])
         self.assertFalse(result["customer_notice_ready"])
 
+    def test_alternate_lib_tcl_layout_recovers_original_tcl_license(self):
+        """A Windows runtime may have tcl8.x below Lib rather than tcl."""
+        original = self.runtime / "tcl" / "tcl8.6" / "license.terms"
+        raw = original.read_bytes()
+        original.unlink()
+        alternate = self.runtime / "Lib" / "tcl8.6"
+        alternate.mkdir(parents=True)
+        (alternate / "license.terms").write_bytes(raw)
+        result = stage_candidates(self.exe, self.audit, self.runtime, self.dist, self.out)
+        self.assertEqual(result["source_role_counts"]["tcl"], 1)
+        self.assertNotIn("tcl", result["missing_source_roles"])
+        self.assertEqual(result["ambiguous_source_roles"], [])
+        staged = next(row for row in result["originals"] if row["role"] == "tcl")
+        self.assertEqual((self.out / staged["candidate_file"]).read_bytes(), raw)
+        self.assertFalse(staged["corresponding_frozen_entry_or_copyright_owner_verified"])
+
+    def test_conflicting_installed_tcl_licenses_fail_closed(self):
+        alternate = self.runtime / "Lib" / "tcl8.6"
+        alternate.mkdir(parents=True)
+        (alternate / "license.terms").write_bytes(b"other Tcl release; not interchangeable")
+        result = stage_candidates(self.exe, self.audit, self.runtime, self.dist, self.out)
+        self.assertEqual(result["source_role_counts"]["tcl"], 0)
+        self.assertIn("tcl", result["ambiguous_source_roles"])
+        self.assertIn("tcl", result["missing_source_roles"])
+        self.assertFalse(result["customer_notice_ready"])
+        self.assertFalse(result["customer_release_ready"])
+
+    def test_same_install_original_in_two_known_layouts_is_not_ambiguous(self):
+        original = (self.runtime / "tcl" / "tcl8.6" / "license.terms").read_bytes()
+        alternate = self.runtime / "Lib" / "tcl8.6"
+        alternate.mkdir(parents=True)
+        (alternate / "license.terms").write_bytes(original)
+        result = stage_candidates(self.exe, self.audit, self.runtime, self.dist, self.out)
+        self.assertEqual(result["source_role_counts"]["tcl"], 1)
+        self.assertEqual(result["ambiguous_source_roles"], [])
+        self.assertEqual(result["original_candidate_file_count"], 4)
+
     def test_linked_license_file_is_not_copied(self):
         target = self.root / "outside-license.txt"
         target.write_bytes(b"FAKE OUTSIDE SECRET")
