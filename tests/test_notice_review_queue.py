@@ -84,6 +84,13 @@ class ExactBinaryNoticeQueueTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.queue()
 
+    def test_untrusted_build_location_string_is_not_exposed(self) -> None:
+        self.stages[2]["records"][0]["source_location_category"] = (
+            r"C:\\Users\\someone\\secret-build\\internal.dll"
+        )
+        with self.assertRaises(ValueError):
+            self.queue()
+
     def test_review_row_has_build_metadata_not_build_source_path(self) -> None:
         self.stages[2]["records"][0].update({
             "source_location_category": "python_site_packages",
