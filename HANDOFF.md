@@ -1,3 +1,5 @@
+> **2026-10-31 해총 공시 수신 / 최신 운영 지시:** [48h 코어 집중·기술스택/재사용 모듈 사전 확정·CI 병렬 처리](https://github.com/hibi89/hackathon-command-center-2026/blob/main/docs/strategy/20261031_OWNER_BACKEND_FIRST_48H_EXECUTION_PROTOCOL.md). 개발 담당은 `hibi89/ai-code-checker@main`; 소스 작업은 기존 feature/PR 정책을 따른다. 다음 `ㄱ`에서 최신 코드/스택·개발 설계 대비 누락·원본 LICENSE/NOTICE/미분류 EXE 구성요소·Windows 실실행 증거를 점검 후 **진짜 핵심 기능 또는 실출시 차단 해소 작업 묶음**을 실행한다. 변경 기능 필수 스모크는 즉시 수행하고 CI는 run/SHA를 남겨 독립 작업을 병행한다. 실패한 CI/Windows·Privacy·권리/출시 게이트는 무시하지 않음. 현재 제품 범위/코드/사용자 데이터/기존 Gemini v1/출시 권한은 변경하지 않는다. **이번 커밋은 공시만, 새 기능/CI/실고객 검증 없음.**
+
 # CODE CHECKER — HANDOFF (10 required sections)
 
 Last revision: 2026-10-26 KST. Latest code SHA and CI must be fetched rather than inferred. Resume trigger: **[코드체커 깃헙 확인해]** / **ㄱ**.
