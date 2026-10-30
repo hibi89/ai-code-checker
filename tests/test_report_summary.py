@@ -54,6 +54,22 @@ class ReportSummaryTests(unittest.TestCase):
         self.assertIn("근거 대조 실패", render_html(report))
         self.assertNotIn("forged-evidence", render_html(report))
 
+    def test_static_report_has_responsive_a4_print_without_remote_assets(self) -> None:
+        report = build_report(scan_text("eval('1')\n", language="python"))
+        page = render_html(report)
+        self.assertIn("@page{size:A4;", page)
+        self.assertIn("@media print{", page)
+        self.assertIn("thead{display:table-header-group}", page)
+        self.assertIn("@media(max-width:720px)", page)
+        self.assertIn("break-inside:avoid", page)
+        self.assertIn("font-family:", page)
+        self.assertNotIn("@import", page)
+        self.assertNotIn("url(", page)
+        self.assertNotIn("http://", page)
+        self.assertNotIn("https://", page)
+        self.assertNotIn("<script", page)
+        self.assertNotIn("<link", page)
+
     def test_report_does_not_load_external_assets(self) -> None:
         report = build_report(scan_text("eval('1')\n", filename="main.py"))
         page = render_html(report)

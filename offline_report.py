@@ -21,6 +21,69 @@ from offline_core import LANGUAGE_SUFFIX, FileCoverage, OfflineScan, scan_path
 from review_models import CodeFinding
 
 
+REPORT_CSS = """
+/* Self-contained, no URL, remote asset, script, or additional dependency. */
+:root{color-scheme:light;--ink:#182338;--muted:#465671;--line:#dbe3ee;--accent:#184f90;--paper:#fff;--canvas:#f3f6fb}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans CJK KR",system-ui,sans-serif;
+ max-width:1080px;margin:0 auto;padding:36px 36px 52px;background:var(--canvas);
+ color:var(--ink);line-height:1.65;font-size:14px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;letter-spacing:-.025em;color:#15345b;margin:0 0 12px;
+ border-bottom:4px solid var(--accent);padding:0 0 16px}
+h2{font-size:19px;line-height:1.35;color:#183b66;margin:0 0 16px;
+ padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;line-height:1.5;color:#183b66;margin:0 0 12px}
+p{margin:9px 0 14px}
+body>p{color:#253a57}
+section{margin:20px 0;background:var(--paper);border:1px solid var(--line);
+ border-radius:12px;padding:22px 24px;box-shadow:0 2px 8px rgba(23,55,94,.035)}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+thead{display:table-header-group}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;overflow-wrap:anywhere;
+ border-bottom:1px solid var(--line)}
+th{background:#e9f1fb;color:#163c68;font-weight:700}
+tbody tr:nth-child(even){background:#f8fafd}
+section table{margin-top:10px}
+article{border:1px solid #cbd9ea;border-left:4px solid #235e9c;
+ border-radius:8px;padding:18px 20px;margin:16px 0;background:#fbfdff}
+article p{margin:7px 0}
+code{font-family:Consolas,"D2Coding",monospace;white-space:pre-wrap;
+ overflow-wrap:anywhere;background:#eef4fb;padding:1px 4px;border-radius:4px}
+.small{color:var(--muted);font-size:12px}
+ul{padding-left:22px}
+li{margin:7px 0}
+@media(max-width:720px){
+ body{padding:18px 12px;font-size:13px}
+ h1{font-size:23px}
+ section{padding:16px 12px;margin:14px 0}
+ table{font-size:12px}
+ th,td{padding:7px 5px}
+ article{padding:12px}
+}
+@page{size:A4;margin:14mm 13mm 16mm}
+@media print{
+ :root{--ink:#161f2f;--muted:#444d5f;--line:#cfd8e2;--canvas:#fff}
+ html,body{width:auto;max-width:none;background:#fff;color:#161f2f;
+  padding:0;margin:0;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ h1{font-size:20pt;margin-bottom:10pt;padding-bottom:10pt}
+ h2{font-size:14pt;margin-bottom:10pt}
+ h3{font-size:11pt}
+ h1,h2,h3,th{break-after:avoid;page-break-after:avoid}
+ p{orphans:2;widows:2}
+ section{box-shadow:none;border:0;border-radius:0;padding:0;margin:14pt 0 16pt;
+  break-inside:auto;overflow:visible}
+ article{box-shadow:none;margin:9pt 0;break-inside:auto;padding:10pt 12pt}
+ article h3{break-after:avoid}
+ tr{break-inside:avoid;page-break-inside:avoid}
+ thead{display:table-header-group}
+ table{table-layout:fixed;font-size:9pt}
+ th,td{padding:5pt 6pt}
+ code{background:#f0f3f7}
+}
+"""
+
+
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 COVERAGE_LABELS = {
     "analyzed": "Python AST 및 규칙 검사", "limited": "제한적 패턴 검사",
@@ -324,12 +387,7 @@ def render_html(report: OfflineReport) -> str:
         "style-src 'unsafe-inline'; img-src 'none'; script-src 'none'; "
         "object-src 'none'; form-action 'none'; base-uri 'none'\">"
         "<title>코드체커 오프라인 보고서</title>"
-        "<style>body{font-family:system-ui,sans-serif;max-width:960px;margin:auto;"
-        "padding:2rem;line-height:1.6;color:#152238}article{border:1px solid #b8c5d3;"
-        "border-radius:8px;padding:1rem;margin:1rem 0}table{width:100%;border-collapse:collapse}"
-        "th,td{border:1px solid #b8c5d3;padding:.45rem;text-align:left;overflow-wrap:anywhere}"
-        "code{white-space:pre-wrap;overflow-wrap:anywhere}.small{color:#465567;font-size:.9rem}"
-        "@media print{body{padding:0}article{break-inside:avoid}}</style></head><body>"
+        "<style>" + REPORT_CSS + "</style></head><body>"
         "<h1>코드체커 오프라인 진단 보고서</h1><p>보고서 상태: <strong>"
         + _h(report.status) + "</strong> / 검사 상태: " + _h(report.scan.status)
         + " / 유형: " + _h(report.scan.input_kind) + "</p>"

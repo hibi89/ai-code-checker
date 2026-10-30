@@ -64,7 +64,6 @@ def main() -> int:
             "--disable-sync",
             "--disable-extensions",
             "--no-pdf-header-footer",
-            "--no-sandbox",
             "--user-data-dir=" + str(user_dir),
             "--print-to-pdf=" + str(expected_pdf),
             scan.html_path.resolve().as_uri(),
@@ -87,6 +86,7 @@ def main() -> int:
             print("PDF_SIGNATURE_OR_SIZE_INVALID", file=sys.stderr)
             return 1
         print("WINDOWS_BROWSER_PDF_SYNTHETIC_PASS")
+        print("BROWSER_SANDBOX_DISABLE_FLAG_USED=False")
         print("BROWSER=" + browser.name)
         print("PDF_BYTES=" + str(expected_pdf.stat().st_size))
         print("PDF_GUI_PRINT_DIALOG=UNVERIFIED")
