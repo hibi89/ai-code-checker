@@ -105,6 +105,27 @@ def capture_report_receipt(html_path: Path, markdown_path: Path) -> ReportReceip
         return None
 
 
+def validate_current_report_receipt(receipt: ReportReceipt | None) -> Path:
+    """Check both generated files still match this session before browser open.
+
+    The generated HTML is local but must not be trusted after its bytes or
+    filesystem identity change. This is a bounded pre-open check, NOT atomic
+    protection against another process replacing a file after verification.
+    """
+    if not isinstance(receipt, ReportReceipt):
+        raise ReportCleanupError("현재 보고서 생성 이력을 확인할 수 없습니다.")
+    try:
+        directory = _validated_pair(receipt.html.path, receipt.markdown.path)
+        if directory != receipt.directory:
+            raise ReportCleanupError("보고서 저장 폴더의 실제 경로가 변경되었습니다.")
+        for expected in (receipt.html, receipt.markdown):
+            if _identity(expected.path, directory) != expected:
+                raise ReportCleanupError("보고서 생성 후 파일 내용 또는 상태가 변경되었습니다.")
+    except (OSError, RuntimeError) as exc:
+        raise ReportCleanupError("현재 보고서 파일을 안전하게 확인할 수 없습니다.") from exc
+    return receipt.html.path
+
+
 def delete_report_pair(receipt: ReportReceipt) -> None:
     """Explicitly delete the two unchanged regular files; never delete a folder.
 
