@@ -10,6 +10,8 @@ on:
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/map_frozen_licenses.py'
       - 'scripts/reconcile_notice_gaps.py'
+      - 'scripts/build_notice_review_queue.py'
+      - 'tests/test_notice_review_queue.py'
       - 'tests/test_notice_gap_ledger.py'
       - 'scripts/reconcile_native_build.py'
       - 'scripts/reconcile_exe_toc.py'
@@ -110,6 +112,12 @@ jobs:
       - name: Reconcile all actual EXE component and original installed LICENSE gaps locally
         run: |
           python -m scripts.reconcile_notice_gaps --audit .build-windows/frozen-exe-evidence.json --mapping .build-windows/ownership-candidates.json --native .build-windows/native-provenance.json --exe-toc .build-windows/exe-toc-evidence.json --pkg-toc .build-windows/pkg-toc-evidence.json --out .build-windows/notice-review-gaps.json
+      - name: Generate actual EXE-hash-bound per-component local review queue
+        run: |
+          python -m scripts.build_notice_review_queue --audit .build-windows/frozen-exe-evidence.json --mapping .build-windows/ownership-candidates.json --native .build-windows/native-provenance.json --exe-toc .build-windows/exe-toc-evidence.json --pkg-toc .build-windows/pkg-toc-evidence.json --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/notice-review-queue.json
+      - name: Keep detailed license review local and distribution blocked
+        run: |
+          python -c "import json; from pathlib import Path; p=Path('.build-windows/notice-review-queue.json'); x=json.loads(p.read_text(encoding='utf-8')); assert x['five_stage_evidence_reconciled'] and x['actual_exe_hash_verified']; assert x['unresolved_entry_count']==len(x['unresolved_entries_requiring_review']); assert len(x['manual_review_tasks'])==7; assert all(not v['redistribution_permission_verified'] and v['human_owner_version_and_license_review']=='REQUIRED' for v in x['unresolved_entries_requiring_review']); assert x['original_license_texts_included'] is False and x['third_party_notice_ready'] is False and x['license_compliance_certified'] is False and x['customer_release_ready'] is False; print('LOCAL_NOTICE_REVIEW_EACH_UNRESOLVED_ITEM_REQUIRES_HUMAN_VERIFICATION')"
       - name: Preserve every manual license review and release blocker
         run: |
           python -c "import json; from pathlib import Path; x=json.loads(Path('.build-windows/notice-review-gaps.json').read_text(encoding='utf-8')); assert x['metadata_complete'] is True; assert x['candidate_distribution_count']>0; assert x['selected_installed_distribution_count']>=x['candidate_distribution_count']; assert len(x['manual_review_tasks'])==7; assert x['original_license_texts_embedded_in_output'] is False; assert x['notice_ready_to_distribute'] is False; assert x['copyright_and_binary_owners_verified'] is False; assert x['license_compliance_certified'] is False; assert x['customer_release_ready'] is False; print('LOCAL_NOTICE_GAP_LEDGER_ACCOUNTED_REVIEW_REQUIRED')"
