@@ -209,7 +209,7 @@ def main() -> int:
                         # through the trusted current-report button. Keep this
                         # synthetic fixture separate from historical reports.
                         tamper_result = run_scan(
-                            ScanRequest("paste", text="eval('synthetic')\\n", language="python"),
+                            ScanRequest("paste", text="eval('synthetic')\n", language="python"),
                             rootdir / "tampered-open-fixture", "current-tamper",
                         )
                         window.last_result = tamper_result
