@@ -89,9 +89,9 @@ jobs:
         run: python -m scripts.windows_browser_pdf_smoke
       - name: Verify MVP scan/report user journey before candidate packaging
         run: python -m scripts.mvp_acceptance
-      - name: Build EXE and run synthetic offline smoke
+      - name: Build EXE with opt-in local owner preflight (not retail approval)
         shell: pwsh
-        run: ./scripts/build_windows_portable.ps1
+        run: ./scripts/build_windows_portable.ps1 -OwnerAcceptance -EvidenceDir '.build-windows/owner-oneclick-qa'
       - name: Re-run existing EXE on Windows without Python as synthetic customer-candidate workflow
         shell: pwsh
         run: |
@@ -209,8 +209,7 @@ jobs:
       - name: Owner one-command Windows EXE QA and manual acceptance worksheet (not release)
         shell: pwsh
         run: |
-          ./scripts/windows_owner_oneclick_qa.ps1 -ExePath 'dist-windows/CodeCheckerOffline.exe' -EvidenceDir '.build-windows/owner-oneclick-qa'
-          if (-not $?) { throw 'Owner Windows QA failed' }
+          if (-not (Test-Path -LiteralPath '.build-windows/owner-oneclick-qa/owner-preflight.json' -PathType Leaf)) { throw 'Integrated owner Windows QA receipt missing' }
           python -c "import hashlib,json; from pathlib import Path; root=Path('.build-windows/owner-oneclick-qa'); x=json.loads((root/'owner-preflight.json').read_text(encoding='utf-8')); exe=Path('dist-windows/CodeCheckerOffline.exe'); assert x['format']=='code_checker_owner_windows_oneclick_preflight_v1'; assert x['exe_sha256']==hashlib.sha256(exe.read_bytes()).hexdigest(); assert len(x['manual_gates'])==10 and all(v=='UNVERIFIED' for v in x['manual_gates'].values()); assert x['customer_release_ready'] is False and x['customer_os_acceptance_certified'] is False and x['rights_and_notice_certified'] is False; assert x['os_network_packet_capture']=='NOT_PERFORMED'; assert (root/'owner-manual-checklist.md').is_file(); assert (root/'exe-synthetic-gui.json').is_file(); assert (root/'readonly-os-observation.json').is_file(); print('OWNER_ONECLICK_REAL_EXE_SYNTHETIC_PASS_MANUAL_RELEASE_BLOCKED')"
       - name: Confirm EXE exists and print digest
         shell: pwsh
