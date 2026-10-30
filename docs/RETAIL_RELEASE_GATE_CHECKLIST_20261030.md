@@ -60,3 +60,16 @@
 - 실사용 또는 법적 원본 미확보: **BLOCKED/UNVERIFIED** 유지. 비용·권한·공개 배포·범위 변경은 사용자 승인 필요.
 - 최종 출시 승인 조건: 정확한 고객 전달 ZIP과 hash, 실제 사용 검증, 라이선스 원문 확인·NOTICE, 상품 안내/환불·지원 규정, 사용자 최종 배포 승인, 크몽 적격 판매 심사.
 - 문서 근거 시점: **2026-10-30 KST**. 이 파일의 공식 URL은 공개 라이선스 검수의 시작점이며, 실제 고객 전달물의 권한을 인증하지 않는다.
+
+## 6. 2026-10-31 — 실제 EXE에 묶인 미확인 항목별 검토 큐 (P1-W)
+
+- **선택한 방법:** 실제 EXE SHA-256과 기존 P0-D/E/F/G/H의 5단계 metadata를 대조하여 미확인 항목별 인벤토리를 로컬 파일로 작성한다. 파일명만으로 라이선스를 임의 인증하는 방식은 오판 위험 때문에 제외한다.
+- 이미 생성된 같은 Windows 개발 빌드의 EXE, 5단계 임시 증거가 있는 경우에만 다음 명령을 실행한다. `notice-review-queue.json`이 이미 존재하면 다른 이름을 선택하며 기존 내용은 덮어쓰지 않는다.
+
+```powershell
+python -m scripts.build_notice_review_queue --audit .build-windows/frozen-exe-evidence.json --mapping .build-windows/ownership-candidates.json --native .build-windows/native-provenance.json --exe-toc .build-windows/exe-toc-evidence.json --pkg-toc .build-windows/pkg-toc-evidence.json --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/notice-review-queue.json
+```
+
+- [GitHub Windows CI 41077287199](https://github.com/hibi89/ai-code-checker/actions/runs/41077287199)에서 **실제 EXE SHA 일치 PASS**, CArchive 1018, PYZ 548, 미확인 92항목, 설치 패키지 검토 8개, original license-file 후보 26개 관찰. **법무 검토 92건 완료가 아니라 검토해야 할 항목 92건을 모두 계상한 상태**다.
+- 세부 JSON은 `.build-windows` 내부의 임시 **로컬 전용 파일**이다. CI artifact, 공개 GitHub, 크몽으로 자동 업로드하지 않으므로 이후 사용자 PC에서 동일 EXE로 다시 생성해야 실제 검토할 수 있다. 해당 로스터는 고객 원본 LICENSE 텍스트나 재배포 권한을 포함하지 않는다.
+- `third_party_notice_ready=False`, `customer_release_ready=False` 유지. 실제 바이너리/저작권 원문 매칭과 고객용 NOTICE의 승인 및 소비자 PC 수락까지 **판매 불가**.
