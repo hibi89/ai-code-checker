@@ -59,7 +59,7 @@ class ReviewProgressTests(unittest.TestCase):
         wrong_queue = copy.deepcopy(self.queue)
         wrong_queue["unresolved_entries_requiring_review"][0][
             "source_byte_match"
-        ] = "not_tested"
+        ] = "byte_identical_to_recorded_build_source"
         with self.assertRaises(ValueError):
             summarize_progress(wrong_queue, self.exe, progress)
         original = self.exe.read_bytes()
