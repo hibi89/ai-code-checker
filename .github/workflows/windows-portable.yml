@@ -45,6 +45,8 @@ on:
       - 'tests/test_input_safety.py'
       - 'offline_report.py'
       - 'code_input.py'
+      - 'offline_coverage.py'
+      - 'tests/test_windows_folder_junction_boundary.py'
       - 'static_checks.py'
       - 'review_models.py'
       - 'requirements-offline-build.txt'
