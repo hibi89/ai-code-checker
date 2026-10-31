@@ -29,6 +29,21 @@ function Assert-LocalPath([string]$RawPath, [bool]$MustExist) {
     if ($drive.DriveType.ToString() -notin @('Fixed', 'Removable', 'Ram')) {
         throw 'Mapped or remote drives are not accepted.'
     }
+    # A local drive can still be synced. Refuse known cloud folder names and
+    # configured OneDrive roots BEFORE reading EXE bytes or creating receipts.
+    # This does not detect every custom backup/sync application.
+    if ($full -match '(?i)(?:^|[\\/])(?:OneDrive(?: - [^\\/]+)?|Dropbox|Google Drive|iCloudDrive)(?:[\\/]|$)') {
+        throw 'Known cloud-sync EXE/evidence locations are not accepted.'
+    }
+    foreach ($envRoot in @($env:OneDrive, $env:OneDriveConsumer, $env:OneDriveCommercial)) {
+        if (-not [string]::IsNullOrWhiteSpace($envRoot)) {
+            $canonical = [System.IO.Path]::GetFullPath($envRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+            if ($full.Equals($canonical, [System.StringComparison]::OrdinalIgnoreCase) -or
+                $full.StartsWith(($canonical + [System.IO.Path]::DirectorySeparatorChar), [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw 'Configured OneDrive EXE/evidence locations are not accepted.'
+            }
+        }
+    }
     $cursor = [System.IO.Path]::GetDirectoryName($full)
     while ($cursor) {
         $parent = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop

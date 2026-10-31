@@ -55,3 +55,9 @@ pwsh -NoProfile -File .\scripts\windows_owner_oneclick_qa.ps1 `
 `OWNER_WINDOWS_ONECLICK_SYNTHETIC_PASS`는 **보안·라이선스 및 구매자 수락 통과가 아니다**. 실제 사람은 EXE를 수동 실행해 GUI 입력·분석·보고서/삭제, Windows 보호 경고, OS 수준 외부 패킷, PDF 페이지·한글 글꼴을 확인해야 한다. 필요한 고객 LICENSE/NOTICE가 최종 ZIP에 모두 포함되고 정확한 재배포 권리가 입증된 뒤에만 별도의 소유자 출시 승인을 요청한다.
 
 GitHub hosted Windows CI에서는 같은 EXE를 사용해 이 스크립트의 합성 경로를 실행하지만, 출력 JSON·EXE·보고서·LICENSE 원문을 artifact로 업로드하지 않는다. 일반 소비자 Windows 10/11의 SmartScreen 평판과 사람의 시각 수락은 **미검증**을 유지한다.
+
+## 2026-10-31 — 독립 실행 원클릭 QA의 동기화 경로 보호
+
+`scripts/windows_owner_oneclick_qa.ps1`를 직접 실행하는 경우에도 EXE 입력과 새 `EvidenceDir` 출력 **두 경로 모두** OneDrive/OneDrive - 조직명/Dropbox/Google Drive/iCloudDrive로 알려진 경로명과 Windows OneDrive 환경변수에 지정된 루트를 사전에 거절한다. 기존 `build_windows_portable.ps1 -OwnerAcceptance` 경로 정책과 일치시킨 것이다. 심볼릭 링크·정션/UNC·원격 드라이브/기존 출력 거절도 유지한다. 이 검사는 OS 또는 타사 동기화의 모든 가능성을 검증하는 것이 아니며, 고객 PC 수락/라이선스/상품 출시 승인이 아니다.
+
+검증 근거는 실제 Windows/PowerShell 7에서의 부정 테스트(동기화 EXE 경로, 영수증 저장 경로, 임의 이름의 설정된 OneDrive 루트)와 동일 EXE 합성 스모크이다. 소유자가 통제하는 새 비동기화 로컬 폴더만 사용하며 기존 파일·보안 설정을 수정하지 않는다.
