@@ -170,7 +170,7 @@ class OfflineReportTests(unittest.TestCase):
 
     def test_offline_redaction_messages_describe_local_processing(self) -> None:
         token = "ghp_" + "123456789012345678901234567890"
-        source = f'api_key = "{token}"\nemail = "test@example.com"\n'
+        source = f'api_key = "{token}"\nemail = "synthetic@sample.invalid"\n'
         scan = scan_text(source, filename="redacted.py")
         report = build_report(scan)
         self.assertEqual(scan.status, "complete")
