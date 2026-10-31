@@ -88,8 +88,8 @@ class OptionLiteralAccuracyTests(unittest.TestCase):
 
     def test_literal_dynamic_import_pickle_loads_and_load_are_candidates(self) -> None:
         cases = (
-            '__import__("pickle").loads(data)\\n',
-            'getattr(__import__("pickle"), "load")(stream)\\n',
+            '__import__("pickle").loads(data)\n',
+            'getattr(__import__("pickle"), "load")(stream)\n',
         )
         for code in cases:
             with self.subTest(code=code):
@@ -97,8 +97,8 @@ class OptionLiteralAccuracyTests(unittest.TestCase):
 
     def test_literal_dynamic_import_requests_verify_false_is_candidate(self) -> None:
         cases = (
-            '__import__("requests").get(url, verify=False)\\n',
-            'getattr(__import__("requests"), "post")(url, verify=0)\\n',
+            '__import__("requests").get(url, verify=False)\n',
+            'getattr(__import__("requests"), "post")(url, verify=0)\n',
         )
         for code in cases:
             with self.subTest(code=code):
@@ -106,15 +106,15 @@ class OptionLiteralAccuracyTests(unittest.TestCase):
 
     def test_dynamic_import_provenance_requires_unshadowed_literal_api(self) -> None:
         cases = (
-            '__import__(module).loads(data)\\n',
-            '__import__("json").loads(data)\\n',
-            '__import__("pickle", globals()).loads(data)\\n',
-            '__import__ = fake\\n__import__("pickle").loads(data)\\n',
-            'getattr = fake\\ngetattr(__import__("pickle"), "loads")(data)\\n',
-            '__import__("requests").get(url, verify=True)\\n',
-            '__import__("requests").get(url, verify=option)\\n',
-            '__import__("other").get(url, verify=False)\\n',
-            'getattr(__import__("requests"), method)(url, verify=False)\\n',
+            '__import__(module).loads(data)\n',
+            '__import__("json").loads(data)\n',
+            '__import__("pickle", globals()).loads(data)\n',
+            '__import__ = fake\n__import__("pickle").loads(data)\n',
+            'getattr = fake\ngetattr(__import__("pickle"), "loads")(data)\n',
+            '__import__("requests").get(url, verify=True)\n',
+            '__import__("requests").get(url, verify=option)\n',
+            '__import__("other").get(url, verify=False)\n',
+            'getattr(__import__("requests"), method)(url, verify=False)\n',
         )
         for code in cases:
             with self.subTest(code=code):
