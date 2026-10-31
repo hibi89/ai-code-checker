@@ -15,6 +15,7 @@ from scripts.verify_upstream_tcl_tk_license import (
     MAX_LICENSE, MAX_RECEIPT, _safe_read, compare_originals,
 )
 from scripts.runtime_version_receipt import verify_receipt
+from scripts import verify_upstream_tcl_tk_license as upstream
 
 FORMAT = "code_checker_runtime_original_license_candidates_v1"
 MAX_MANIFEST = 128 * 1024
@@ -63,7 +64,11 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
     if unavailable:
         # Missing installed source is an explicit, EXE-hash-bound unresolved
         # compliance gap, NOT a CI green source-byte match or release approval.
-        # Check any present Tcl/Tk candidate before recording this limitation.
+        # Check any present Tcl/Tk candidate against its own upstream tagged
+        # blob before recording the OTHER role as unavailable. An available Tk
+        # file is not made unverifiable just because Tcl was absent from the
+        # installed Python runtime tree.
+        checked_present: list[dict] = []
         for role in ("tcl", "tk"):
             role_rows = [row for row in manifest["originals"]
                          if isinstance(row, dict) and row.get("role") == role]
@@ -85,6 +90,30 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
             raw = _safe_read(staged / item["candidate_file"], MAX_LICENSE)
             if len(raw) != item["bytes"] or hashlib.sha256(raw).hexdigest() != item["sha256"]:
                 raise ValueError("Present staged source candidate was modified")
+            version = receipt[role + "_runtime_patchlevel"]
+            if not isinstance(version, str):
+                raise ValueError("Missing frozen Tcl/Tk runtime version")
+            pinned = upstream.PINNED.get(role, {}).get(version)
+            actual_blob = upstream.git_blob_id(raw)
+            # A Windows-distributed text may use CRLF while upstream Git
+            # stores LF. Do not call normalized equality exact byte equality.
+            lf_normalized_blob = upstream.git_blob_id(
+                raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            )
+            normalized_match = bool(pinned and lf_normalized_blob == pinned[1])
+            checked_present.append({
+                "component": role,
+                "runtime_patchlevel": version,
+                "official_git_tag": pinned[0] if pinned else None,
+                "upstream_license_git_blob_sha1": pinned[1] if pinned else None,
+                "installed_license_git_blob_sha1": actual_blob,
+                "upstream_original_bytes_match": bool(pinned and actual_blob == pinned[1]),
+                "lf_normalized_upstream_blob_match": normalized_match,
+                "line_endings_only_difference": bool(
+                    pinned and actual_blob != pinned[1] and normalized_match
+                ),
+                "exact_bundled_binary_owner_verified": False,
+            })
         verify_receipt(receipt, exe)
         return {
             "format": "code_checker_staged_tcl_tk_upstream_review_v1",
@@ -92,6 +121,13 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
             "exe_sha256": receipt["exe_sha256"],
             "exe_bytes": receipt["exe_bytes"],
             "missing_or_ambiguous_roles": unavailable,
+            "available_installed_source_originals": checked_present,
+            "available_source_count": len(checked_present),
+            "available_upstream_original_bytes_match": (
+                bool(checked_present) and all(
+                    row["upstream_original_bytes_match"] for row in checked_present
+                )
+            ),
             "staged_manifest_sha256": hashlib.sha256(raw_manifest).hexdigest(),
             "source_equality_verified": False,
             "installed_source_binary_copyright_owner_verified": False,
@@ -148,6 +184,15 @@ def main(argv: list[str] | None = None) -> int:
             json.dump(report, target, sort_keys=True, indent=2, ensure_ascii=True)
         if report["status"] == "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED":
             print("EXACT_EXE_TCLTK_INSTALLED_SOURCE_MISSING_UPSTREAM_MATCH_UNVERIFIED")
+            for row in report["available_installed_source_originals"]:
+                print(
+                    row["component"].upper() + "_INSTALLED_LICENSE_OFFICIAL_BYTES_MATCH="
+                    + str(row["upstream_original_bytes_match"])
+                )
+                print(
+                    row["component"].upper() + "_INSTALLED_LICENSE_LF_NORMALIZED_MATCH="
+                    + str(row["lf_normalized_upstream_blob_match"])
+                )
         else:
             print("ACTUAL_EXE_STAGED_TCLTK_UPSTREAM_SOURCE_MATCH_PASS")
         print("ORIGINAL_LICENSE_TEXT_OUTPUT=False")
