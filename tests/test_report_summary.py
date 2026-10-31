@@ -79,5 +79,34 @@ class ReportSummaryTests(unittest.TestCase):
         self.assertNotIn("<link", page)
 
 
+    def test_redaction_observations_are_separate_from_other_risks(self) -> None:
+        token = "ghp_" + "123456789012345678901234567890"
+        source = (
+            f'api_key = "{token}"\n'
+            'email = "synthetic@sample.invalid"\n'
+            'eval("1")\n'
+        )
+        report = build_report(scan_text(source, filename="sample.py"))
+        redactions = [row for row in report.findings if row.rule_id.startswith("GEN-REDACT-")]
+        self.assertEqual(len(redactions), 2)
+        self.assertEqual(len(report.findings) - len(redactions), 1)
+        self.assertEqual(report.status, "complete")
+        for rendered in (render_html(report), render_markdown(report)):
+            self.assertIn("기타 규칙 후보 1", rendered)
+            self.assertIn("로컬 마스킹 처리 관찰 2", rendered)
+            self.assertIn("외부 전송", rendered)
+            self.assertIn("실제 유출", rendered)
+            self.assertIn("정적 규칙 일치 후보", rendered)
+            self.assertNotIn(token, rendered)
+        self.assertIn("GEN-REDACT-SECRET", {row.rule_id for row in report.findings})
+        self.assertIn("GEN-REDACT-PII", {row.rule_id for row in report.findings})
+
+    def test_clean_report_has_zero_redaction_observations(self) -> None:
+        report = build_report(scan_text("eval('synthetic')\n", filename="sample.py"))
+        for rendered in (render_html(report), render_markdown(report)):
+            self.assertIn("기타 규칙 후보 1", rendered)
+            self.assertIn("로컬 마스킹 처리 관찰 0", rendered)
+
+
 if __name__ == "__main__":
     unittest.main()
