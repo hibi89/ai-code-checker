@@ -572,95 +572,186 @@ def packaged_smoke_test() -> int:
 
 
 def packaged_scenario_smoke_test() -> int:
-    """Drive actual frozen Tk widgets with synthetic code and local reports.
+    """Run real FROZEN Tk preview->scan->report for local synthetic inputs.
 
-    This is intentionally not a retail Windows, OS-packet, Defender or human
-    PDF visual acceptance check. No customer files, internet or browser.
+    This exercises the onefile EXE environment, not just the development
+    Python Tk interpreter. No actual customer files, file-picker automation,
+    internet, source execution, browser, packet monitor or license approval.
     """
     import tempfile
     import time
+    import zipfile
     from pathlib import Path
 
-    success = [False]
+    successful = [False]
     failures: list[str] = []
     try:
         with tempfile.TemporaryDirectory(prefix="code-checker-frozen-gui-") as temp:
-            output = Path(temp) / "synthetic-local-reports"
+            fixture_root = Path(temp)
+            output = fixture_root / "synthetic-local-reports"
+            source_file = fixture_root / "synthetic-input.txt"
+            source_file.write_text("eval('txt-synthetic')\n", encoding="utf-8")
+            original_source = source_file.read_bytes()
+            folder = fixture_root / "synthetic-project"
+            folder.mkdir()
+            (folder / "check.py").write_text("eval('folder-synthetic')\n", encoding="utf-8")
+            (folder / ".git").mkdir()
+            (folder / ".git" / "excluded.py").write_text(
+                "eval('NEVER_SCANNED')\n", encoding="utf-8"
+            )
+            archive_path = fixture_root / "synthetic.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("core.py", "eval('zip-synthetic')\n")
+                archive.writestr("generic.js", "const synthetic = 1;\n")
+            blocked_path = fixture_root / "blocked.zip"
+            with zipfile.ZipFile(blocked_path, "w") as archive:
+                archive.writestr("../outside.py", "eval('DO_NOT_USE')\n")
+
+            # Only real Tk buttons, preview callbacks and scan/report worker
+            # are exercised; OS file-picker interaction remains unverified.
+            scenarios = (
+                ("paste", None, "complete", None),
+                ("txt", source_file, "complete", None),
+                ("zip", archive_path, "partial", "zip"),
+                ("folder", folder, "partial", "folder"),
+                ("blocked", blocked_path, "blocked", None),
+            )
+            completed: list[str] = []
+            saved_pairs: list[tuple[Path, Path]] = []
 
             def on_ready(window) -> None:
-                deadline = time.monotonic() + 35
+                index = [0]
+                deadline = time.monotonic() + 95
 
                 def fail(reason: str) -> None:
                     failures.append(reason)
-                    window.root.destroy()
+                    try:
+                        window.root.destroy()
+                    except Exception:
+                        pass
 
-                def await_phase(expected: str) -> None:
+                def wait_for(phase: str) -> None:
                     if time.monotonic() > deadline:
-                        fail("timeout-" + expected)
+                        fail("frozen-scenario-timeout-" + phase)
                         return
                     if not window.root.winfo_exists():
                         return
                     try:
-                        if expected == "preview":
+                        if phase == "preview":
                             if not window.busy and window.preview_request is not None:
                                 if window.scan_button.instate(["disabled"]):
-                                    fail("scan-button-disabled")
+                                    fail("frozen-scan-button-disabled")
                                     return
                                 window.scan_button.invoke()
-                                window.root.after(40, lambda: await_phase("report"))
+                                window.root.after(40, lambda: wait_for("report"))
                                 return
-                        elif expected == "report":
+                        elif phase == "report":
                             if not window.busy and window.last_result is not None:
-                                result = window.last_result
+                                label, _input, expected, detail = scenarios[index[0]]
+                                report = window.last_result
                                 if (
-                                    result.status != "complete" or result.findings < 1
-                                    or result.verified < 1
-                                    or not result.html_path.is_file()
-                                    or not result.markdown_path.is_file()
-                                    or result.html_path.parent != output
+                                    report.status != expected
+                                    or report.findings < 1
+                                    or report.verified < 1
+                                    or not report.html_path.is_file()
+                                    or not report.markdown_path.is_file()
+                                    or report.html_path.parent != output
                                     or window.open_button.instate(["disabled"])
                                     or window.delete_button.instate(["disabled"])
-                                    or result.report_receipt is None
+                                    or report.report_receipt is None
                                 ):
-                                    fail("frozen-scan-or-controls-invalid")
+                                    fail("frozen-report-invalid-" + label)
                                     return
-                                report_html = result.html_path.read_text(encoding="utf-8")
-                                report_markdown = result.markdown_path.read_text(encoding="utf-8")
+                                if detail == "zip" and report.limited != 1:
+                                    fail("frozen-zip-generic-limited-count-wrong")
+                                    return
+                                if detail == "folder" and report.pruned_subtrees != 1:
+                                    fail("frozen-folder-ignored-tree-not-disclosed")
+                                    return
+                                html = report.html_path.read_text(encoding="utf-8")
+                                markdown = report.markdown_path.read_text(encoding="utf-8")
                                 if (
-                                    "코드체커 오프라인 진단 보고서" not in report_html
-                                    or "코드체커 오프라인 진단 보고서" not in report_markdown
-                                    or "eval" not in report_html
-                                    or "<!doctype html>" not in report_html.lower()
+                                    "코드체커 오프라인 진단 보고서" not in html
+                                    or "코드체커 오프라인 진단 보고서" not in markdown
+                                    or "eval" not in html
+                                    or "<!doctype html>" not in html.lower()
+                                    or "NEVER_SCANNED" in html
+                                    or "DO_NOT_USE" in html
                                 ):
-                                    fail("frozen-report-content-invalid")
+                                    fail("frozen-report-body-invalid-" + label)
                                     return
-                                success[0] = True
-                                window.root.destroy()
+                                saved_pairs.append((report.html_path, report.markdown_path))
+                                completed.append(label)
+                                index[0] += 1
+                                window.root.after(30, begin)
                                 return
-                        if not window.busy and "실패" in window.state_var.get():
-                            fail("gui-reported-error-" + expected)
+                        elif phase == "blocked":
+                            if not window.busy and "실패/차단" in window.state_var.get():
+                                if (
+                                    window.last_result is not None
+                                    or window.preview_request is not None
+                                    or not window.open_button.instate(["disabled"])
+                                    or not window.delete_button.instate(["disabled"])
+                                    or len(saved_pairs) != 4
+                                ):
+                                    fail("frozen-invalid-zip-left-stale-report-openable")
+                                    return
+                                completed.append("blocked")
+                                index[0] += 1
+                                window.root.after(30, begin)
+                                return
+                        if not window.busy and "실패/차단" in window.state_var.get():
+                            fail("frozen-unexpected-GUI-error-" + phase)
                             return
-                        window.root.after(40, lambda: await_phase(expected))
+                        window.root.after(40, lambda: wait_for(phase))
                     except Exception as error:
-                        fail("phase-" + expected + "-" + type(error).__name__)
+                        fail("frozen-" + phase + "-" + type(error).__name__)
 
-                try:
-                    window.paste_button.invoke()
-                    window.language_var.set("Python")
-                    window.paste_text.delete("1.0", "end")
-                    window.paste_text.insert("1.0", "eval('1+1')\n")
-                    window.output_var.set(str(output))
-                    window.root.update_idletasks()
-                    window.preview_button.invoke()
-                    await_phase("preview")
-                except Exception as error:
-                    fail("setup-" + type(error).__name__)
+                def begin() -> None:
+                    if index[0] == len(scenarios):
+                        if (
+                            completed != [case[0] for case in scenarios]
+                            or len(saved_pairs) != 4
+                            or len({str(a) for a, _ in saved_pairs}) != 4
+                            or not all(a.is_file() and b.is_file()
+                                       for a, b in saved_pairs)
+                            or source_file.read_bytes() != original_source
+                        ):
+                            fail("frozen-multiple-scenario-sources-or-reports-changed")
+                            return
+                        successful[0] = True
+                        window.root.destroy()
+                        return
+                    label, candidate, expected, _detail = scenarios[index[0]]
+                    try:
+                        if label == "paste":
+                            window.paste_button.invoke()
+                            window.language_var.set("Python")
+                            window.paste_text.delete("1.0", "end")
+                            window.paste_text.insert("1.0", "eval('paste-synthetic')\n")
+                        else:
+                            window.kind = "path"
+                            window.source_var.set(str(candidate))
+                            window.language_var.set("Python" if label == "txt" else "자동")
+                            window._clear_preview()
+                        window.output_var.set(str(output))
+                        window.root.update_idletasks()
+                        window.preview_button.invoke()
+                        window.root.after(
+                            40, lambda: wait_for("blocked" if expected == "blocked" else "preview")
+                        )
+                    except Exception as error:
+                        fail("frozen-setup-" + label + "-" + type(error).__name__)
 
-            result_code = launch(on_ready=on_ready)
-            if result_code != 0 or not success[0] or failures:
+                begin()
+
+            status = launch(on_ready=on_ready)
+            if status != 0 or not successful[0] or failures:
                 print("FROZEN_GUI_SCENARIO_FAILURE=" + ",".join(failures), file=sys.stderr)
                 return 1
         print("FROZEN_GUI_PREVIEW_SCAN_REPORT_PASS")
+        print("FROZEN_GUI_INPUT_MODES=PASTE_TXT_ZIP_FOLDER")
+        print("FROZEN_GUI_UNSAFE_ZIP_REJECTED=True")
         print("FROZEN_GUI_REAL_CUSTOMER_DEVICE=UNVERIFIED")
         print("OS_PACKET_CAPTURE=UNVERIFIED")
         return 0
