@@ -37,9 +37,9 @@ function Assert-LocalPath([string]$RawPath, [bool]$MustExist) {
     }
     foreach ($envRoot in @($env:OneDrive, $env:OneDriveConsumer, $env:OneDriveCommercial)) {
         if (-not [string]::IsNullOrWhiteSpace($envRoot)) {
-            $canonical = [System.IO.Path]::GetFullPath($envRoot).TrimEnd([char[]]@('\\', '/'))
+            $canonical = [System.IO.Path]::GetFullPath($envRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
             if ($full.Equals($canonical, [System.StringComparison]::OrdinalIgnoreCase) -or
-                $full.StartsWith(($canonical + '\\'), [System.StringComparison]::OrdinalIgnoreCase)) {
+                $full.StartsWith(($canonical + [System.IO.Path]::DirectorySeparatorChar), [System.StringComparison]::OrdinalIgnoreCase)) {
                 throw 'Configured OneDrive EXE/evidence locations are not accepted.'
             }
         }
