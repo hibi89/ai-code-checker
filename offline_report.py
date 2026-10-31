@@ -111,6 +111,9 @@ RULE_TITLES = (
 )
 
 
+REDACTION_RULE_IDS = frozenset({"GEN-REDACT-SECRET", "GEN-REDACT-PII"})
+
+
 @dataclass(frozen=True)
 class ReportFinding:
     finding: CodeFinding
@@ -209,6 +212,18 @@ def build_report(scan: OfflineScan) -> OfflineReport:
     return OfflineReport(scan, tuple(findings), tuple(errors))
 
 
+def _observation_counts(report: OfflineReport) -> tuple[int, int]:
+    """Keep masked-value observations distinct from other rule candidates."""
+    redacted = sum(row.rule_id in REDACTION_RULE_IDS for row in report.findings)
+    return len(report.findings) - redacted, redacted
+
+
+def _finding_kind(row: ReportFinding) -> str:
+    if row.rule_id in REDACTION_RULE_IDS:
+        return "로컬 마스킹 처리 관찰 (외부 전송·실제 유출의 증거 아님)"
+    return "정적 규칙 일치 후보 (취약점 확정 아님)"
+
+
 def _plain(value: object) -> str:
     return " ".join(str(value).replace("\r", " ").splitlines()).strip()
 
@@ -272,12 +287,15 @@ def _location(row: ReportFinding) -> str:
 
 def render_markdown(report: OfflineReport) -> str:
     counts = report.scan.counts
+    risk_count, redaction_count = _observation_counts(report)
     lines = [
         "# 코드체커 오프라인 진단 보고서", "",
         f"- 보고서 상태: {_m(report.status)}",
         f"- 검사 상태: {_m(report.scan.status)}",
         f"- 입력 유형: {_m(report.scan.input_kind)}",
         f"- 발견 후보: {len(report.findings)}개 (근거 일치 {report.verified_count}개)",
+        f"- 분류: 기타 규칙 후보 {risk_count}개 / 로컬 마스킹 처리 관찰 {redaction_count}개",
+        "- 마스킹 관찰은 원본 입력의 민감정보 형태를 가린 사실이며 외부 전송·실제 유출 증거가 아닙니다.",
         f"- 파일: 발견 {counts['enumerated']} / Python 분석 {counts['analyzed']} / 제한 {counts['limited']} / 실패 {counts['failed']} / 제외 {counts['excluded']} / 미지원 {counts['unsupported']}",
         f"- 하위 탐색 생략 폴더: {counts['pruned_subtrees']}개 (각 폴더 내부 파일 수는 미확인)",
         "- 방식: 로컬 정적 규칙과 Python AST. AI 호출·코드 실행 없음.", "",
@@ -304,6 +322,7 @@ def render_markdown(report: OfflineReport) -> str:
         lines.extend([
             f"### {index}. [{_m(finding.severity)}] {_m(finding.title)}", "",
             f"- 규칙 ID: {_m(row.rule_id)}",
+            f"- 유형: {_m(_finding_kind(row))}",
             f"- 위치: {_m(_location(row))}",
             f"- 근거: {'일치(발견 위치만 검증)' if row.verified else '대조 실패 — 사람 확인 필요'}",
             f"- 영향 가능성: {_m(finding.impact)}",
@@ -337,6 +356,7 @@ def render_markdown(report: OfflineReport) -> str:
 
 def render_html(report: OfflineReport) -> str:
     counts = report.scan.counts
+    risk_count, redaction_count = _observation_counts(report)
     rows = "".join(
         "<tr><td>" + _h(item.path) + "</td><td>"
         + _h(COVERAGE_LABELS.get(item.status, item.status)) + "</td><td>"
@@ -349,7 +369,8 @@ def render_html(report: OfflineReport) -> str:
         excerpt = "<p><strong>마스킹 발췌:</strong> <code>" + _h(row.excerpt) + "</code></p>" if row.verified else ""
         findings.append(
             "<article><h3>" + str(index) + ". [" + _h(item.severity) + "] " + _h(item.title) + "</h3>"
-            + "<p><strong>규칙:</strong> " + _h(row.rule_id) + " / <strong>위치:</strong> "
+            + "<p><strong>유형:</strong> " + _h(_finding_kind(row))
+            + "</p><p><strong>규칙:</strong> " + _h(row.rule_id) + " / <strong>위치:</strong> "
             + _h(_location(row)) + "</p><p><strong>근거:</strong> "
             + ("일치(발견 위치만 검증)" if row.verified else "대조 실패 — 사람 확인 필요")
             + "</p><p><strong>영향 가능성:</strong> " + _h(item.impact)
@@ -395,12 +416,15 @@ def render_html(report: OfflineReport) -> str:
         + _h(report.status) + "</strong> / 검사 상태: " + _h(report.scan.status)
         + " / 유형: " + _h(report.scan.input_kind) + "</p>"
         + "<p>발견 후보 " + str(len(report.findings)) + "건 (근거 일치 "
-        + str(report.verified_count) + "건) / 파일 " + str(counts["enumerated"])
+        + str(report.verified_count) + "건) / 기타 규칙 후보 " + str(risk_count)
+        + "건 / 로컬 마스킹 처리 관찰 " + str(redaction_count)
+        + "건 / 파일 " + str(counts["enumerated"])
         + " / Python 분석 " + str(counts["analyzed"]) + " / 제한 " + str(counts["limited"])
         + " / 실패 " + str(counts["failed"]) + " / 제외 " + str(counts["excluded"])
         + " / 미지원 " + str(counts["unsupported"])
         + " / 하위 탐색 제외 폴더 " + str(counts["pruned_subtrees"]) + " (내부 파일 수 미확인)</p>"
-        "<p class='small'>오프라인 정적 분석만 수행. complete도 안전성·무결점 보증이 아닙니다.</p>"
+        "<p class='small'>오프라인 정적 분석만 수행. complete도 안전성·무결점 보증이 아닙니다."
+        " 마스킹 관찰은 입력의 민감정보 형태를 가린 사실이며 외부 전송·실제 유출 증거가 아닙니다.</p>"
         + summaries + "<section><h2>파일별 검사 범위</h2><table><thead><tr><th>파일</th>"
         "<th>상태</th><th>분석기</th><th>사유</th></tr></thead><tbody>"
         + rows + "</tbody></table></section><section><h2>위험 후보</h2>"
