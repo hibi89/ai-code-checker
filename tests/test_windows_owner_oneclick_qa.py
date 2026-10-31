@@ -28,11 +28,14 @@ class OwnerOneClickWindowsTests(unittest.TestCase):
         self.exe.write_bytes(b"MZ inert fixture -- NEVER LAUNCH")
         self.evidence = self.folder / "owner-evidence"
 
-    def run_owner(self, exe: Path, output: Path) -> subprocess.CompletedProcess[str]:
+    def run_owner(
+        self, exe: Path, output: Path, *, env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.run([
             self.pwsh, "-NoProfile", "-NonInteractive", "-File", str(SCRIPT),
             "-ExePath", str(exe), "-EvidenceDir", str(output),
-        ], capture_output=True, text=True, errors="replace", timeout=30, check=False)
+        ], capture_output=True, text=True, errors="replace", timeout=30,
+            check=False, env=env)
 
     def test_script_parser_has_no_errors(self):
         # pwsh -Command does not reliably populate $args[0] for a trailing
@@ -90,6 +93,48 @@ class OwnerOneClickWindowsTests(unittest.TestCase):
         result = self.run_owner(self.exe, link / "owner-evidence")
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((root / "owner-evidence").exists())
+
+
+    def test_known_cloud_sync_exe_path_rejected_before_execution(self):
+        for folder_name in ("OneDrive", "OneDrive - Personal", "Dropbox", "Google Drive", "iCloudDrive"):
+            with self.subTest(folder=folder_name):
+                folder = self.folder / folder_name
+                folder.mkdir(exist_ok=True)
+                candidate = folder / "candidate.exe"
+                candidate.write_bytes(b"MZ inert fixture -- NEVER LAUNCH")
+                output = self.folder / ("fresh-" + str(len(folder_name)) + "-" + folder_name.replace(" ", ""))
+                result = self.run_owner(candidate, output)
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertIn("cloud-sync", result.stderr)
+                self.assertFalse(output.exists())
+
+    def test_known_cloud_sync_evidence_path_rejected_before_write(self):
+        folder = self.folder / "Dropbox"
+        folder.mkdir()
+        output = folder / "private-evidence"
+        result = self.run_owner(self.exe, output)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cloud-sync", result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_configured_onedrive_root_rejected_even_without_sync_name(self):
+        configured_root = self.folder / "custom-sync-root"
+        configured_root.mkdir()
+        folder = configured_root / "private"
+        folder.mkdir()
+        candidate = folder / "candidate.exe"
+        candidate.write_bytes(b"MZ inert fixture -- NEVER LAUNCH")
+        env = dict(os.environ)
+        env["OneDrive"] = str(configured_root)
+        output = self.folder / "safe-evidence"
+        result = self.run_owner(candidate, output, env=env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Configured OneDrive", result.stderr)
+        self.assertFalse(output.exists())
+        # Evidence under the configured sync root is also forbidden.
+        result = self.run_owner(self.exe, configured_root / "new-evidence", env=env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((configured_root / "new-evidence").exists())
 
 
 class ManualGateContractTests(unittest.TestCase):
