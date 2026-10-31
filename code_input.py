@@ -383,6 +383,19 @@ def _bundle_from_records(
     return CodeBundle(files, warnings, excluded, total_bytes)
 
 
+def _is_linked_or_reparse(path: Path) -> bool:
+    """Detect POSIX links and Windows junction/reparse paths before traversal.
+
+    os.walk(followlinks=False) is not sufficient for every Windows junction;
+    reject both known link types without opening contents or following them.
+    """
+    info = path.lstat()
+    return path.is_symlink() or bool(
+        getattr(info, "st_file_attributes", 0)
+        & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    )
+
+
 def load_directory(root_path: str | Path, limits: InputLimits = InputLimits()) -> CodeBundle:
     original = Path(root_path).expanduser()
     if original.is_symlink():
@@ -391,15 +404,22 @@ def load_directory(root_path: str | Path, limits: InputLimits = InputLimits()) -
         root = original.resolve(strict=True)
     except OSError as error:
         raise InputError(f"입력 폴더를 찾을 수 없습니다: {root_path}") from error
-    if not root.is_dir():
-        raise InputError("입력 경로가 폴더가 아닙니다.")
+    if not root.is_dir() or _is_linked_or_reparse(original):
+        raise InputError("일반 로컬 폴더가 아니거나 Windows 연결 경로입니다.")
 
     warnings: list[str] = []
     excluded: list[str] = []
     records: list[tuple[str, bytes]] = []
     candidate_count = 0
 
-    for current, dirnames, filenames in os.walk(root, topdown=True, followlinks=False):
+    def walk_failed(error: OSError) -> None:
+        # os.walk otherwise skips unreadable folders and can misreport a
+        # partially enumerated project as a complete, clean scan.
+        raise InputError("프로젝트 하위 폴더를 완전히 열거하지 못했습니다.") from error
+
+    for current, dirnames, filenames in os.walk(
+        root, topdown=True, followlinks=False, onerror=walk_failed
+    ):
         current_path = Path(current)
         relative_directory = current_path.relative_to(root)
         depth = len(relative_directory.parts)
@@ -408,11 +428,19 @@ def load_directory(root_path: str | Path, limits: InputLimits = InputLimits()) -
                 warnings.append(f"폴더 깊이 제한으로 하위 폴더를 생략함: {relative_directory.as_posix()}")
             dirnames[:] = []
         else:
-            dirnames[:] = sorted(
-                name for name in dirnames
-                if name.lower() not in IGNORED_DIRECTORIES
-                and not (current_path / name).is_symlink()
-            )
+            safe_dirs: list[str] = []
+            for name in sorted(dirnames):
+                if name.lower() in IGNORED_DIRECTORIES:
+                    continue
+                try:
+                    if _is_linked_or_reparse(current_path / name):
+                        # Keep the subtree out of both the loader and scan.
+                        # offline_coverage records its name as pruned.
+                        continue
+                except OSError as error:
+                    raise InputError("하위 폴더 연결 상태를 확인할 수 없습니다.") from error
+                safe_dirs.append(name)
+            dirnames[:] = safe_dirs
 
         for filename in sorted(filenames):
             file_path = current_path / filename

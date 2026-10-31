@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from code_input import IGNORED_DIRECTORIES, InputError, InputLimits
+from code_input import IGNORED_DIRECTORIES, InputError, InputLimits, _is_linked_or_reparse
 
 
 def list_pruned_subtrees(
@@ -24,8 +24,11 @@ def list_pruned_subtrees(
     folder markers as source files or claim that all filesystem files were seen.
     """
     path = Path(root).expanduser()
-    if path.is_symlink() or not path.is_dir():
-        raise InputError("안전한 실폴더가 아닙니다.")
+    try:
+        if _is_linked_or_reparse(path) or not path.is_dir():
+            raise InputError("안전한 실폴더가 아닙니다.")
+    except OSError as error:
+        raise InputError("프로젝트 폴더 경로를 확인하지 못했습니다.") from error
     root_resolved = path.resolve(strict=True)
     pruned: list[str] = []
     visited = 0
@@ -46,7 +49,11 @@ def list_pruned_subtrees(
         for name in sorted(dirnames):
             child = parent / name
             display = child.relative_to(root_resolved).as_posix() + "/"
-            if depth >= limits.max_depth or name.lower() in IGNORED_DIRECTORIES or child.is_symlink():
+            try:
+                linked = _is_linked_or_reparse(child)
+            except OSError as error:
+                raise InputError("하위 폴더 연결 상태를 확인할 수 없습니다.") from error
+            if depth >= limits.max_depth or name.lower() in IGNORED_DIRECTORIES or linked:
                 pruned.append(display)
                 if len(pruned) > max_pruned_subtrees:
                     raise InputError("제외 폴더 수가 안전 한도를 초과했습니다.")
