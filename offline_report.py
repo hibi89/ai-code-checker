@@ -103,6 +103,9 @@ RULE_TITLES = (
     ("신뢰할 수 없는 데이터의 pickle 역직렬화 가능성", "PY-PICKLE"),
     ("SQL 질의 문자열을 동적으로 조합함", "PY-SQL-CONCAT"),
     ("TLS 인증서 검증을 비활성화함", "GEN-TLS-VERIFY"),
+    ("비밀정보 형태의 값이 로컬 검사 입력에서 마스킹됨", "GEN-REDACT-SECRET"),
+    ("개인정보 형태의 값이 로컬 검사 입력에서 마스킹됨", "GEN-REDACT-PII"),
+    # Preserve rule IDs for legacy reports with transfer-specific titles.
     ("비밀정보 형태의 값이 전송 전에 마스킹됨", "GEN-REDACT-SECRET"),
     ("개인정보 형태의 값이 전송 전에 마스킹됨", "GEN-REDACT-PII"),
 )

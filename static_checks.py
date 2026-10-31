@@ -643,27 +643,30 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
     return findings
 
 
-def run_static_checks(bundle: CodeBundle) -> list[CodeFinding]:
+def run_static_checks(bundle: CodeBundle, *, offline: bool = False) -> list[CodeFinding]:
+    """Analyze the masked bundle; keep legacy AI-mode wording by default."""
     findings: list[CodeFinding] = []
     for source in bundle.files:
         for redaction in source.redactions:
             is_credential = redaction.kind not in {
                 "email address", "Korean phone number", "Korean resident number"
             }
+            phase = "로컬 검사 입력에서" if offline else "전송 전에"
+            personal_phase = "로컬 검사 입력에서" if offline else "AI 전송 전에"
             findings.append(_finding(
                 source,
                 "HIGH",
                 "security",
                 (
-                    "비밀정보 형태의 값이 전송 전에 마스킹됨"
+                    f"비밀정보 형태의 값이 {phase} 마스킹됨"
                     if is_credential
-                    else "개인정보 형태의 값이 전송 전에 마스킹됨"
+                    else f"개인정보 형태의 값이 {phase} 마스킹됨"
                 ),
                 redaction.line_number,
                 (
                     f"{redaction.kind} 형태의 문자열이 감지되었습니다. 실제 자격증명이라면 노출된 것으로 간주해야 합니다."
                     if is_credential
-                    else f"{redaction.kind} 형태의 값이 감지되어 AI 전송 전에 가려졌습니다."
+                    else f"{redaction.kind} 형태의 값이 감지되어 {personal_phase} 가려졌습니다."
                 ),
                 (
                     "해당 키나 비밀번호를 폐기·교체하고, 저장소와 배포 환경에 실제 비밀값이 남지 않았는지 확인하세요."

@@ -233,6 +233,23 @@ def _split_delimited_txt(
     return bundle, origins, excluded
 
 
+def _offline_warning(warning: str) -> str:
+    """Correct only the legacy loader's generated transfer wording.
+
+    The shared loader and cloud/Gemini CLI keep their original semantics.
+    This changes display text, not the redacted source or raw warning list.
+    """
+    matched = re.fullmatch(
+        r"비밀정보 형태의 값 ([0-9]+)개를 전송 전에 마스킹함: (.+)", warning
+    )
+    if matched is None:
+        return warning
+    return (
+        f"비밀정보 형태의 값 {matched.group(1)}개를 "
+        f"로컬 검사 입력에서 마스킹함: {matched.group(2)}"
+    )
+
+
 def _check_bundle(
     bundle: CodeBundle,
     *,
@@ -271,14 +288,17 @@ def _check_bundle(
             coverage.append(FileCoverage(source.path, "limited", "generic-patterns-only", "no language-specific analyzer", origin))
         if incremental:
             # Static checks are file-local; preserve existing file and finding order.
-            findings.extend(run_static_checks(CodeBundle([source])))
+            findings.extend(run_static_checks(CodeBundle([source]), offline=True))
         if on_progress is not None:
             on_progress(index, len(bundle.files))
     if check_cancelled is not None:
         check_cancelled()
     if not incremental:
-        findings = run_static_checks(bundle)
-    return OfflineScan(bundle, findings, coverage, input_kind, list(bundle.warnings))
+        findings = run_static_checks(bundle, offline=True)
+    return OfflineScan(
+        bundle, findings, coverage, input_kind,
+        [_offline_warning(warning) for warning in bundle.warnings],
+    )
 
 
 def _txt_bundle(
