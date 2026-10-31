@@ -168,5 +168,39 @@ class OfflineReportTests(unittest.TestCase):
                     self.assertEqual(main(), 3)
 
 
+    def test_offline_redaction_messages_describe_local_processing(self) -> None:
+        token = "ghp_" + "123456789012345678901234567890"
+        source = f'api_key = "{token}"\nemail = "test@example.com"\n'
+        scan = scan_text(source, filename="redacted.py")
+        report = build_report(scan)
+        self.assertEqual(scan.status, "complete")
+        self.assertTrue(any("로컬 검사 입력에서 마스킹함" in s for s in scan.warnings))
+        self.assertTrue(any("전송 전에 마스킹함" in s for s in scan.bundle.warnings))
+        self.assertIn("GEN-REDACT-SECRET", {row.rule_id for row in report.findings})
+        self.assertIn("GEN-REDACT-PII", {row.rule_id for row in report.findings})
+        self.assertTrue(all(row.verified for row in report.findings))
+        for rendered in (render_html(report), render_markdown(report)):
+            self.assertIn("로컬 검사 입력에서", rendered)
+            self.assertNotIn("전송 전에", rendered)
+            self.assertNotIn("AI 전송", rendered)
+            self.assertNotIn(token, rendered)
+
+    def test_incremental_offline_scan_uses_same_local_redaction_copy(self) -> None:
+        token = "ghp_" + "123456789012345678901234567890"
+        source = f'api_key = "{token}"\n'
+        normal = build_report(scan_text(source, filename="redacted.py"))
+        incremental = build_report(scan_text(
+            source, filename="redacted.py",
+            on_progress=lambda completed, total: None,
+        ))
+        self.assertEqual(
+            [(row.rule_id, row.finding.title) for row in normal.findings],
+            [(row.rule_id, row.finding.title) for row in incremental.findings],
+        )
+        self.assertEqual(normal.scan.warnings, incremental.scan.warnings)
+        self.assertEqual(normal.verified_count, incremental.verified_count)
+        self.assertNotIn("전송 전에", render_html(incremental))
+
+
 if __name__ == "__main__":
     unittest.main()
