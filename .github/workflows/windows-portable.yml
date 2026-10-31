@@ -10,6 +10,8 @@ on:
       - 'scripts/audit_frozen_exe.py'
       - 'scripts/stage_runtime_original_licenses.py'
       - 'scripts/verify_staged_tcl_tk_license.py'
+      - 'scripts/verify_frozen_tcltk_dll_provenance.py'
+      - 'tests/test_verify_frozen_tcltk_dll_provenance.py'
       - 'tests/test_verify_staged_tcl_tk_license.py'
       - 'scripts/runtime_version_receipt.py'
       - 'tests/test_runtime_version_receipt.py'
@@ -168,6 +170,10 @@ jobs:
       - name: Enforce unresolved license and customer-release gates
         run: |
           python -c "import json; from pathlib import Path; p=Path('.build-windows/ownership-candidates.json'); m=json.loads(p.read_text(encoding='utf-8')); a=json.loads(Path('.build-windows/frozen-exe-evidence.json').read_text(encoding='utf-8')); assert m['all_items_accounted_for_in_metadata']; assert m['total_rows']==a['archive']['top_level_count']+a['archive']['pyz_module_count']; assert m['candidate_dist_count']==len(m['installed_dist_candidates'])==0; assert m['license_text_draft']['staged_original_license_files']>0; assert m['license_compliance_certified'] is False; assert m['customer_release_ready'] is False; assert m['third_party_notice_ready_to_distribute'] is False; print('LOCAL_OWNER_CANDIDATES_PRESENT_DISTRIBUTION_BLOCKED')"
+      - name: Bind actual frozen Tcl Tk DLL bytes to exact local build source files
+        run: |
+          python -m scripts.verify_frozen_tcltk_dll_provenance --exe dist-windows/CodeCheckerOffline.exe --audit .build-windows/frozen-exe-evidence.json --runtime-receipt .build-windows/runtime-version-receipt.json --analysis-toc .build-windows/CodeCheckerOffline/Analysis-00.toc --out .build-windows/tcltk-exact-dll-provenance.json
+          python -c "import json; from pathlib import Path; d=json.loads(Path('.build-windows/tcltk-exact-dll-provenance.json').read_text(encoding='utf-8')); assert d['exact_embedded_build_source_bytes_match'] is True and {r['role'] for r in d['dlls']}=={'tcl','tk'} and all(r['exact_build_source_bytes_match'] is True for r in d['dlls']); assert d['vendor_binary_ownership_verified'] is False and d['installed_original_license_text_verified'] is False and d['third_party_notice_ready'] is False and d['license_compliance_certified'] is False and d['customer_release_ready'] is False; print('DLL_SOURCE_BYTES_ONLY_RETAIL_RELEASE_BLOCKED')"
       - name: Reconcile remaining native and resource names to local build source records
         run: python -m scripts.reconcile_native_build --mapping .build-windows/ownership-candidates.json --analysis-toc .build-windows/CodeCheckerOffline/Analysis-00.toc --exe dist-windows/CodeCheckerOffline.exe --out .build-windows/native-provenance.json
       - name: Enforce original unresolved accounting and non-commercial gates
