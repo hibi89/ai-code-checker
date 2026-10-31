@@ -326,13 +326,14 @@ def _literal_imported_module(node: ast.AST, resolver: _ImportResolver) -> str | 
             or not isinstance(node.args[0].value, str)):
         return None
     module = node.args[0].value
-    return module if module in {"builtins", "subprocess", "os", "asyncio"} else None
+    return module if module in {"builtins", "subprocess", "os", "asyncio", "pickle", "requests"} else None
 
 
 def _dynamic_import_target(call: ast.Call, resolver: _ImportResolver) -> tuple[str, str] | None:
     """Recognize direct literal module-function calls, not arbitrary call chains.
 
-    Supports __import__('subprocess').run(...) and
+    Supports __import__('subprocess').run(...), __import__('pickle').loads(...),
+    and __import__('requests').get(...), plus
     getattr(__import__('builtins'), 'eval')(...). Both dynamic lookup
     operators must resolve to unshadowed builtins by lexical inspection.
     The result means a syntactic risk candidate, not actual runtime identity.
@@ -596,7 +597,10 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
                 90,
             ))
 
-        if resolver.imported(node, "pickle", {"load", "loads"}):
+        if (resolver.imported(node, "pickle", {"load", "loads"})
+                or (literal_dynamic_target is not None
+                    and literal_dynamic_target[0] == "pickle"
+                    and literal_dynamic_target[1] in {"load", "loads"})):
             findings.append(_finding(
                 source, "HIGH", "security",
                 "신뢰할 수 없는 데이터의 pickle 역직렬화 가능성",
@@ -608,7 +612,10 @@ def _python_findings(source: SourceFile) -> list[CodeFinding]:
 
         # Generic verify=False text matching on Python caused string/comment FPs.
         # Only recognize explicit requests module/from-import HTTP calls.
-        if resolver.imported(node, "requests", _REQUESTS_CALLS) and any(
+        if (resolver.imported(node, "requests", _REQUESTS_CALLS)
+                or (literal_dynamic_target is not None
+                    and literal_dynamic_target[0] == "requests"
+                    and literal_dynamic_target[1] in _REQUESTS_CALLS)) and any(
             kw.arg == "verify" and _literal_tls_disabled(kw.value)
             for kw in node.keywords
         ):

@@ -185,6 +185,17 @@ PYTHON_CASES = (
     Case("sql-format-no-placeholder", 'cursor.execute("SELECT * FROM users".format(uid))\n', ()),
     Case("sql-percent-escaped-only", 'cursor.execute("SELECT %% FROM users" % uid)\n', ()),
     Case("sql-parameterized-unchanged", 'cursor.execute("SELECT * FROM users WHERE id=%s", (uid,))\n', ()),
+
+    # Literal dynamic imports: only named, unshadowed builtin helpers count.
+    Case("dynamic-pickle-loads", '__import__("pickle").loads(data)\\n', (("PY-PICKLE", 1),)),
+    Case("dynamic-pickle-getattr-load", 'getattr(__import__("pickle"), "load")(stream)\\n', (("PY-PICKLE", 1),)),
+    Case("dynamic-requests-get-noverify", '__import__("requests").get(url, verify=False)\\n', (("GEN-TLS-VERIFY", 1),)),
+    Case("dynamic-requests-getattr-post", 'getattr(__import__("requests"), "post")(url, verify=0)\\n', (("GEN-TLS-VERIFY", 1),)),
+    Case("dynamic-requests-verified", '__import__("requests").get(url, verify=True)\\n', ()),
+    Case("dynamic-pickle-module-unknown", '__import__(module).loads(data)\\n', ()),
+    Case("dynamic-pickle-shadowed-import", '__import__ = custom\\n__import__("pickle").loads(data)\\n', ()),
+    Case("dynamic-pickle-extra-arg", '__import__("pickle", globals()).loads(data)\\n', ()),
+    Case("dynamic-requests-dynamic-member", 'getattr(__import__("requests"), method)(url, verify=False)\\n', ()),
     # Direct literal dynamic imports are recognized only when their helper
     # builtins have not been shadowed. No source code is executed.
     Case("dynamic-builtins-direct-eval", '__import__("builtins").eval(value)\n', (("PY-DYNAMIC-EXEC", 1),)),
