@@ -114,6 +114,8 @@ class StagedLicenseTests(unittest.TestCase):
         tk = report["available_installed_source_originals"][0]
         self.assertEqual(tk["component"], "tk")
         self.assertTrue(tk["upstream_original_bytes_match"])
+        self.assertTrue(tk["lf_normalized_upstream_blob_match"])
+        self.assertFalse(tk["line_endings_only_difference"])
         self.assertEqual(tk["upstream_license_git_blob_sha1"],
                          upstream.git_blob_id(self.sources["tk"]))
         self.assertTrue(report["available_upstream_original_bytes_match"])
@@ -136,8 +138,28 @@ class StagedLicenseTests(unittest.TestCase):
         result = self.verify()
         self.assertEqual(result["status"], "MISSING_INSTALLED_SOURCE_REVIEW_REQUIRED")
         self.assertFalse(result["available_installed_source_originals"][0]["upstream_original_bytes_match"])
+        self.assertFalse(result["available_installed_source_originals"][0]["lf_normalized_upstream_blob_match"])
+        self.assertFalse(result["available_installed_source_originals"][0]["line_endings_only_difference"])
         self.assertFalse(result["available_upstream_original_bytes_match"])
         self.assertFalse(result["customer_release_ready"])
+
+    def test_tk_upstream_mismatch_is_explained_only_by_line_endings_when_proven(self):
+        self.manifest["source_role_counts"]["tcl"] = 0
+        self.manifest["original_candidate_file_count"] = 1
+        self.manifest["originals"] = [self.manifest["originals"][1]]
+        self.manifest["missing_source_roles"] = ["cpython", "pyinstaller", "tcl"]
+        changed = self.sources["tk"].replace(b"\n", b"\r\n")
+        (self.staged / "tk-01.original").write_bytes(changed)
+        self.manifest["originals"][0]["sha256"] = hashlib.sha256(changed).hexdigest()
+        self.manifest["originals"][0]["bytes"] = len(changed)
+        self.refresh()
+        report = self.verify()
+        tk = report["available_installed_source_originals"][0]
+        self.assertFalse(tk["upstream_original_bytes_match"])
+        self.assertTrue(tk["lf_normalized_upstream_blob_match"])
+        self.assertTrue(tk["line_endings_only_difference"])
+        self.assertFalse(report["source_equality_verified"])
+        self.assertFalse(report["customer_release_ready"])
 
     def test_unknown_installed_tk_version_does_not_claim_upstream_match(self):
         self.manifest["source_role_counts"]["tcl"] = 0
@@ -151,6 +173,8 @@ class StagedLicenseTests(unittest.TestCase):
         item = result["available_installed_source_originals"][0]
         self.assertIsNone(item["upstream_license_git_blob_sha1"])
         self.assertFalse(item["upstream_original_bytes_match"])
+        self.assertFalse(item["lf_normalized_upstream_blob_match"])
+        self.assertFalse(item["line_endings_only_difference"])
         self.assertFalse(result["customer_release_ready"])
 
     def test_missing_source_does_not_skip_exact_exe_receipt_verification(self):

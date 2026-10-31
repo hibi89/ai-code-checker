@@ -12,3 +12,7 @@
 `scripts/verify_staged_tcl_tk_license.py`의 기존 CLI 명령/영수증 파일을 그대로 사용한다. 누락 상태에서 `available_installed_source_originals`는 존재한 Tcl/Tk 원문별 역할, 실제 런타임 patchlevel, 검증할 upstream 태그·blob ID, **실제 staged 원문 blob ID 및 일치 여부**를 표시한다. 다른 역할이 없거나 원문 해시가 달라도 영수증은 **개별 사실만** 기록하며 라이선스 준수나 판매 승인은 절대로 참으로 바꾸지 않는다. 설치 원문이 없다면 바이트 비교를 성공 처리하지 않는다.
 
 CI의 기존 Windows EXE 후보 검증에 설치 Tk 바이트 비교 결과를 출력한다. 테스트는 무해한 합성 원문으로 (1) 실제 match (2) 원문과 staged manifest가 서로 일치하지만 공식 원문과 다른 경우 (3) 확인되지 않은 runtime tag를 검증한다. 공식 저작권 소유자/빌드 DLL 공급자·원본 법률 조건·71개 미분류 번들/LICENSE/NOTICE·실 소비자 Windows10/11 사용자 검수는 여전히 대기한다. GitHub에 실제 원본 텍스트/EXE/사용자 코드를 올리지 않는다.
+
+## Windows CI 원본 불일치 실증 및 개행 진단
+
+첫 feature `56d212de6d68764fe46575b637bebcc702bd8eae` Windows CI `41193198825`에서 실제 `Tk` 설치 원본과 official Git blob **바이트 불일치(false)**, Tcl 설치 원본 **0개**, Tk 설치 원본 **1개**, runtime 8.6.15가 확인됐다. 불일치가 라이선스 위반을 뜻하지 않는다. 원인 판단 전에 인쇄 가능한 원본 문자열을 공개하지 않고도 `LF` 개행으로만 변환했을 때 공식 blob과 같아지는지 검증하도록 보강한다. `lf_normalized_upstream_blob_match=true`와 `line_endings_only_difference=true`가 함께 성립할 때만 **개행 차이로 설명할 수 있음**을 기록한다. 아니면 공식 원본과의 텍스트 차이가 남는다. **정확한 바이트 일치(false)는 어떠한 경우에도 true로 변경하지 않으며**, 법적 권리 및 판매 승인 플래그도 false다.

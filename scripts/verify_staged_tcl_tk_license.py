@@ -95,6 +95,12 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
                 raise ValueError("Missing frozen Tcl/Tk runtime version")
             pinned = upstream.PINNED.get(role, {}).get(version)
             actual_blob = upstream.git_blob_id(raw)
+            # A Windows-distributed text may use CRLF while upstream Git
+            # stores LF. Do not call normalized equality exact byte equality.
+            lf_normalized_blob = upstream.git_blob_id(
+                raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            )
+            normalized_match = bool(pinned and lf_normalized_blob == pinned[1])
             checked_present.append({
                 "component": role,
                 "runtime_patchlevel": version,
@@ -102,6 +108,10 @@ def verify_staged(exe: Path, receipt: dict, staged: Path) -> dict:
                 "upstream_license_git_blob_sha1": pinned[1] if pinned else None,
                 "installed_license_git_blob_sha1": actual_blob,
                 "upstream_original_bytes_match": bool(pinned and actual_blob == pinned[1]),
+                "lf_normalized_upstream_blob_match": normalized_match,
+                "line_endings_only_difference": bool(
+                    pinned and actual_blob != pinned[1] and normalized_match
+                ),
                 "exact_bundled_binary_owner_verified": False,
             })
         verify_receipt(receipt, exe)
@@ -178,6 +188,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(
                     row["component"].upper() + "_INSTALLED_LICENSE_OFFICIAL_BYTES_MATCH="
                     + str(row["upstream_original_bytes_match"])
+                )
+                print(
+                    row["component"].upper() + "_INSTALLED_LICENSE_LF_NORMALIZED_MATCH="
+                    + str(row["lf_normalized_upstream_blob_match"])
                 )
         else:
             print("ACTUAL_EXE_STAGED_TCLTK_UPSTREAM_SOURCE_MATCH_PASS")
