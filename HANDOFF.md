@@ -1,3 +1,15 @@
+## 2026-11-12 KST — P3-02 private customer ZIP→exact Windows receipts, 10-point handoff
+1. Objective: AI Code Checker offline retail Windows 85% target; product baseline 78%; DBVORA other room.
+2. Completed: P3-01 fresh private ZIP builder from owner-supplied original documents; P3-02 ZIP+EXE physical SHA/size and existing Windows receipt validation. Compared self-attested receipt merge (rejected) with independent original validators and same exact binary re-read (chosen).
+3. Tests: Python3.13 Linux synthetic isolated 20/20 PASS, 0 FAIL/SKIP, local test shims for upstream input safety/ZIP and Windows validators, so full-source compatibility NOT verified. Correct Git blobs both source/test matches. PR #82 GitHub Actions queued at first observation, not PASS.
+4. State: new feature branch scoped work; 78% final-product provisional unchanged, 85 NOT reached; all release gates BLOCKED. Actual user Windows10/11, frozen EXE licensing/NOTICE and supported buyer acceptance unverified.
+5. Failure: local Github DNS failed; connector Git blob chosen, no force. P3-01 file descriptor offset first targeted test 11pass/1error fixed and 12pass. Full clone/Windows tests unavailable locally, do not invent.
+6. Repo: hibi89/ai-code-checker@feature/retail-private-candidate-20261112 parent 873a1e508f8511bfaffd2ea5ae9b3d43e9d357d3, draft PR https://github.com/hibi89/ai-code-checker/pull/82. P3-01 source 6db46f4a.., P3-02 source ffe7c0cb.., tests/test_private_candidate_*.py, STATUS/HANDOFF/docs; new commit verify after push.
+7. Production: offline customer Windows EXE, Vercel not applicable. No actual distribution/deploy; tests Linux local synthetic only.
+8. Preservation: main existing adf3f4ac8fab87c72d176011b0b719de39797db4 preserved; original EXE/legal source not checked in, private report only explicit local outputs, no paid services/permission changes.
+9. Next: verify full GitHub PR CI jobs and real original `inspect_candidate`/consolidate integration. If CI blocked without jobs, stop and pivot to owner Windows test with user approval; legal Tcl/Tk 71 item mapping, SmartScreen/Defender/OS packet, Korean PDF and sale remain blocked.
+10. Checkpoint 2026-11-12 KST, local 20 scoped with shims, not production; sync central Kmong with score 78 unchanged once feature SHA confirmed.
+
 ## 2026-11-12 KST — P3-01 private candidate builder, AI Code Checker 78% (10-point handoff)
 1. Goal/scope: build offline Windows 10/11 consumer Code Checker, currently 78 provisional, target 85, DBVORA/SMAX/RAG other chats excluded. Python AST/Tk/PyInstaller; no required APIs.
 2. Feature/decision: compared license autofill+distribution (rejected: fabricated legal rights) vs owner-provided physical original docs+private fresh ZIP+SHA and existing validator (selected). New scripts/build_private_customer_candidate.py builds, validates candidate and never approves sale.
