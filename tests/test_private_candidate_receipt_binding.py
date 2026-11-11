@@ -5,6 +5,8 @@ from pathlib import Path
 from unittest.mock import patch
 from scripts.build_private_customer_candidate import create_private_candidate
 from scripts.link_private_candidate_evidence import link_candidate_evidence,main
+from scripts.windows_acceptance_contract import FORMAT as READONLY_FORMAT, PENDING as READONLY_PENDING
+from scripts.windows_local_exe_smoke_contract import FORMAT as SMOKE_FORMAT, PENDING as SMOKE_PENDING
 
 class BindingTests(unittest.TestCase):
  def setUp(self):
@@ -15,7 +17,18 @@ class BindingTests(unittest.TestCase):
    f=self.root/('source-'+name);f.write_text('SYNTHETIC NONLICENSE '+str(i));docs.append(f)
   self.zip=self.root/'candidate.zip';create_private_candidate(exe=self.exe,readme=docs[0],license_file=docs[1],notice=docs[2],component_licenses={'example.txt':docs[3]},output=self.zip)
   self.sha=hashlib.sha256(self.exe.read_bytes()).hexdigest()
-  self.readonly=dict(exe_sha256=self.sha);self.smoke=dict(exe_sha256=self.sha)
+  size=self.exe.stat().st_size
+  self.readonly=dict(format=READONLY_FORMAT,collection_method='win32_readonly_powershell',
+    scope='local_binary_only',exe_sha256=self.sha,exe_bytes=size,
+    signature_observation='Unavailable',
+    defender=dict(availability='UNVERIFIED',antivirus_enabled=None,real_time_protection_enabled=None),
+    pending_gates={key:'UNVERIFIED' for key in READONLY_PENDING},
+    customer_release_ready=False,legal_notice_approved=False)
+  self.smoke=dict(format=SMOKE_FORMAT,collection_method='two_synthetic_exe_modes_no_python_required',
+    scope='existing_local_exe_only',exe_sha256=self.sha,exe_bytes=size,
+    observed_synthetic=dict(packaged_tk_gui_startup='PASS',packaged_preview_scan_report='PASS',
+    executable_hash_stable=True),pending_gates={key:'UNVERIFIED' for key in SMOKE_PENDING},
+    actual_customer_code_used=False,actual_customer_release_ready=False,legal_notice_approved=False)
 
  def test_same_exe_receipts_linked_but_no_release(self):
   r=link_candidate_evidence(self.exe,self.zip,self.readonly,self.smoke)
