@@ -220,6 +220,8 @@ jobs:
         run: |
           python -m scripts.consolidate_windows_retail_evidence --exe dist-windows/CodeCheckerOffline.exe --readonly .build-windows/windows-acceptance-readonly.json --smoke .build-windows/windows-local-exe-smoke.json --runtime .build-windows/runtime-version-receipt.json --defender .build-windows/defender-custom-scan.json --out .build-windows/exact-exe-retail-preflight-summary.json
           python -c "import json; from pathlib import Path; p=Path('.build-windows/exact-exe-retail-preflight-summary.json'); x=json.loads(p.read_text(encoding='utf-8')); assert x['status']=='EXACT_BINARY_RECEIPTS_VALID_RELEASE_BLOCKED'; assert all(v=='UNVERIFIED' for v in x['human_release_gates'].values()); assert x['customer_release_ready'] is False and x['legal_notice_approved'] is False and x['malware_free_certified'] is False and x['real_buyer_pc_test_certified'] is False; print('LOCAL_WINDOWS_EVIDENCE_CONSOLIDATED_NO_RETAIL_APPROVAL')"
+      - name: Bind real built Windows EXE to disposable private ZIP and exact OS receipts (CI only)
+        run: python -m scripts.ci_real_exe_private_review
       - name: Owner one-command Windows EXE QA and manual acceptance worksheet (not release)
         shell: pwsh
         run: |
