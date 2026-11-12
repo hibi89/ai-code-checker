@@ -1,3 +1,15 @@
+## 2026-11-12 KST — P3-04 failure-output integrity, full matrix green (10-point handoff)
+1. Goal/tech: Kmong next non-coin priority AI Code Checker 85→95 target; offline Python3.11+/AST/Tk/PyInstaller; original Gemini CLI/main preserved.
+2. Change/decision: private ZIP/JSON cleanup could delete replaced output paths. Compared racy post-check unlink vs no auto-delete; selected permanent HOLD-on-failure, fresh-name O_EXCL, owner manual cleanup. 3 scripts, 2 test files; adversarial file swap preserved.
+3. Tests: `41bb08b4c5dc5bab58a0402a4b38eef8bb4ec1ab`, [CI #43220090428](https://github.com/hibi89/ai-code-checker/actions/runs/43220090428) 16/16 SUCCESS, Windows/Ubuntu Python3.11–3.15 and dependency audit. Ubuntu24 Python3.13 503/482PASS/21SKIP/0FAIL; Windows2025 503/501PASS/2SKIP/0FAIL, MVP checks PASS.
+4. State: engineering **85% provisional retained**, P95 NOT ACHIEVED, commercial RELEASE HOLD. New tests do not certify customer PC or legal use.
+5. Failure/retry: first `fe2a7b52...` CI had 1 stale fixture FAIL on deletion expectation; fixed expectation to preserve failed output, retested at `41bb08b4c5dc5bab58a0402a4b38eef8bb4ec1ab`; no other failures. No repetitive unproved retries.
+6. Repo/branch/sha/paths: `hibi89/ai-code-checker@feature/retail-private-candidate-20261112`; code `41bb08b4c5dc5bab58a0402a4b38eef8bb4ec1ab`; docs head this commit; `scripts/build_private_customer_candidate.py`, `scripts/prepare_private_retail_review.py`, `scripts/link_private_candidate_evidence.py`, two `tests/test_private_*.py`, `docs/P3_04_SAFE_OUTPUT_HOLD_20261112.md`; main untouched.
+7. Deployment: hosted CI tested, customer clean Windows10/11/actual EXE & PDF not tested; Draft PR #82 unmerged; Vercel N/A, not distributed.
+8. Preservation: original seller EXE/license texts/customer files not uploaded or overwritten, no secrets/permissions/paid API/force push. Rollback via normal revert to pre-change SHA `c7a050ffb5755812dac310a06dc9851bbe74556c`.
+9. Next: owner-controlled real EXE and complete Tcl/Tk/frozen rights/NOTICE original inventory; native buyer Windows10/11 GUI/Defender/SmartScreen/network/PDF and exact ZIP+receipt E2E; support/sale terms and explicit release GO. No synthetic evidence score inflation.
+10. Checked 2026-11-12 KST. Code CI exact `41bb08b4c5dc5bab58a0402a4b38eef8bb4ec1ab`; this docs commit is not a new functional test run.
+
 ## 2026-11-12 KST — P3-03 Code Checker provisional engineering 85% (10-point)
 1. Objective/confirmed requirements/stack: next highest-priority non-DBVORA Kmong product Code Checker 78→85% engineering; offline customer Windows10/11 Python AST/Tk/PyInstaller, existing Gemini v1/main functionality preserved, no mandatory cloud API.
 2. Features/decisions: P3-01 owner-controlled local original LICENSE/NOTICE & candidate EXE→new unapproved ZIP with manifest; P3-02 independent ZIP+EXE physical SHA and already collected Windows readonly/smoke receipt binding; P3-03 one-command ZIP+metadata generation, error rollback only new outputs, no release. Option A guessing library licenses/auto-publishing rejected; B owner-provided originals+independent validators selected.
