@@ -161,11 +161,9 @@ def create_private_candidate(*, exe: Path, readme: Path, license_file: Path,
             "owner_release_approval": False,
         }
     except Exception:
-        if created:
-            try:
-                output.unlink()
-            except OSError:
-                pass
+        # Preserve the failed, unapproved artifact. A different process may
+        # have replaced this pathname; unlinking could erase its file.
+        # O_EXCL prevents reuse. An owner must inspect/remove the HOLD artifact.
         raise
     finally:
         if fd is not None:

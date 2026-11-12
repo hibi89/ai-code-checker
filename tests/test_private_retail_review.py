@@ -120,13 +120,13 @@ class OwnerPrivateReviewTests(unittest.TestCase):
         self.smoke["exe_sha256"] = "0"*64
         self.save_receipts()
         with self.assertRaises(ValueError):prepare_private_review(**self.kw())
-        self.assertFalse(self.out_zip.exists());self.assertFalse(self.out_json.exists())
+        self.assertTrue(self.out_zip.exists());self.assertFalse(self.out_json.exists())
 
-    def test_modified_exe_after_receipts_causes_cleanup(self):
+    def test_modified_exe_after_receipts_keeps_hold_zip(self):
         payload=self.exe.read_bytes()
         self.exe.write_bytes(payload.replace(b"MZ", b"Mz"))
         with self.assertRaises(ValueError): prepare_private_review(**self.kw())
-        self.assertFalse(self.out_zip.exists());self.assertFalse(self.out_json.exists())
+        self.assertTrue(self.out_zip.exists());self.assertFalse(self.out_json.exists())
 
     def test_missing_notice_source_blocks_without_creating_output(self):
         self.notice.unlink()
@@ -146,10 +146,10 @@ class OwnerPrivateReviewTests(unittest.TestCase):
         f=self.kw();f["output_zip"]=symlink/"new.zip"
         with self.assertRaises(ValueError):prepare_private_review(**f)
 
-    def test_corrupt_component_utf8_fails_and_cleans_candidate(self):
+    def test_corrupt_component_utf8_keeps_unapproved_candidate(self):
         self.component.write_bytes(b"\xff\xfe")
         with self.assertRaises(ValueError):prepare_private_review(**self.kw())
-        self.assertFalse(self.out_zip.exists());self.assertFalse(self.out_json.exists())
+        self.assertTrue(self.out_zip.exists());self.assertFalse(self.out_json.exists())
 
     def test_optional_real_schema_runtime_defender_accepted_only_as_observation(self):
         sha=self.readonly["exe_sha256"];size=self.readonly["exe_bytes"]
@@ -179,17 +179,31 @@ class OwnerPrivateReviewTests(unittest.TestCase):
             "tcl_runtime_patchlevel":"8.6.15","tk_runtime_patchlevel":"8.6.15",
             **{key:True for key in FLAGS}}))
         with self.assertRaises(ValueError):prepare_private_review(**self.kw(),runtime=runtime)
-        self.assertFalse(self.out_zip.exists());self.assertFalse(self.out_json.exists())
+        self.assertTrue(self.out_zip.exists());self.assertFalse(self.out_json.exists())
 
-    def test_final_physical_validation_failure_removes_both_outputs(self):
+    def test_final_physical_validation_failure_preserves_hold_outputs(self):
         from scripts import prepare_private_retail_review as mod
         original=mod.inspect_candidate
         def corrupt_after(*args,**kwargs):
             raise ValueError("synthetic post-write invalid")
         with patch.object(mod,"inspect_candidate",side_effect=corrupt_after):
             with self.assertRaises(ValueError):prepare_private_review(**self.kw())
-        self.assertFalse(self.out_zip.exists());self.assertFalse(self.out_json.exists())
+        self.assertTrue(self.out_zip.exists());self.assertTrue(self.out_json.exists())
         self.assertTrue(self.exe.exists());self.assertTrue(self.ro.exists())
+
+    def test_replaced_review_outputs_remain_untouched_after_late_failure(self):
+        from scripts import prepare_private_retail_review as mod
+        def replace_outputs(*_args, **_kwargs):
+            self.out_zip.unlink()
+            self.out_zip.write_bytes(b"OTHER-WRITER-ZIP")
+            self.out_json.unlink()
+            self.out_json.write_bytes(b"OTHER-WRITER-JSON")
+            raise ValueError("synthetic concurrent replacement")
+        with patch.object(mod, "inspect_candidate", side_effect=replace_outputs):
+            with self.assertRaises(ValueError):prepare_private_review(**self.kw())
+        self.assertEqual(self.out_zip.read_bytes(), b"OTHER-WRITER-ZIP")
+        self.assertEqual(self.out_json.read_bytes(), b"OTHER-WRITER-JSON")
+        with self.assertRaises(ValueError):prepare_private_review(**self.kw())
 
     def test_cli_prints_only_hashes_not_private_paths_or_license_text(self):
         argv=["--exe",str(self.exe),"--readme",str(self.readme),

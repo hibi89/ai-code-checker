@@ -111,10 +111,9 @@ def prepare_private_review(*, exe: Path, readme: Path, license_file: Path,
             raise _fail()
         return report
     except Exception:
-        if created_receipt:
-            output_receipt.unlink(missing_ok=True)
-        if created_zip:
-            output_zip.unlink(missing_ok=True)
+        # Never unlink by pathname after a failure: another writer may have
+        # replaced either output. Both paths remain blocked for the next run.
+        # The owner can inspect/remove any HOLD artifact manually.
         raise
 
 

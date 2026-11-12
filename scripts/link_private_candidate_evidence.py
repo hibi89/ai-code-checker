@@ -98,7 +98,8 @@ def main(argv: list[str] | None = None) -> int:
                     json.dump(result, out, sort_keys=True, ensure_ascii=True, indent=2)
                     out.write("\n")
             except Exception:
-                valid_out.unlink(missing_ok=True)
+                # Retain any partial report (HOLD), not another writer's
+                # replacement output. Exclusive creation blocks reuse.
                 raise
         print("PRIVATE_ZIP_AND_WINDOWS_RECEIPTS_LINKED_RELEASE_BLOCKED")
         print("EXE_SHA256=" + result["exact_exe_sha256"])

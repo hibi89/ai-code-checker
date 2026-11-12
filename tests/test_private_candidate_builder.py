@@ -87,22 +87,33 @@ class CandidateTests(unittest.TestCase):
         for content in (b'\xff\xfe\xfc',b'a\x00b'):
             self.notice.write_bytes(content)
             with self.assertRaises(ValueError):create_private_candidate(**self.opts())
-            self.assertFalse(self.out.exists())
+            self.assertTrue(self.out.exists())  # A rejected partial ZIP is preserved.
 
     def test_same_file_used_in_multiple_roles_rejected(self):
         o=self.opts();o['notice']=self.license
         with self.assertRaises(ValueError):create_private_candidate(**o)
 
-    def test_failed_final_validator_rolls_back_only_new_zip(self):
+    def test_failed_final_validator_preserves_unapproved_zip(self):
         with patch('scripts.build_private_customer_candidate.inspect_candidate',side_effect=ValueError('simulated verifier fail')):
             with self.assertRaises(ValueError):create_private_candidate(**self.opts())
-        self.assertFalse(self.out.exists())
+        self.assertTrue(self.out.exists())  # HOLD, never published or reused
         self.assertTrue(self.exe.exists())
 
     def test_nonmatching_receipt_fails_without_approval(self):
         with patch('scripts.build_private_customer_candidate.inspect_candidate',return_value={'customer_release_ready':True}):
             with self.assertRaises(ValueError):create_private_candidate(**self.opts())
-        self.assertFalse(self.out.exists())
+        self.assertTrue(self.out.exists())  # An unapproved artifact, not a release.
+
+    def test_replaced_zip_is_not_deleted_on_late_validator_failure(self):
+        def other_writer(*_args, **_kwargs):
+            self.out.unlink()
+            self.out.write_bytes(b"OTHER-WRITER-ARCHIVE")
+            raise ValueError("synthetic verifier failure after replacement")
+        with patch('scripts.build_private_customer_candidate.inspect_candidate',
+                   side_effect=other_writer):
+            with self.assertRaises(ValueError):create_private_candidate(**self.opts())
+        self.assertEqual(self.out.read_bytes(), b"OTHER-WRITER-ARCHIVE")
+        with self.assertRaises(ValueError):create_private_candidate(**self.opts())
 
     def test_cli_failure_does_not_print_private_paths(self):
         args=['--exe',str(self.exe),'--readme',str(self.readme),'--license',str(self.license),
