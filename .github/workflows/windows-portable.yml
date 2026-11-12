@@ -1,6 +1,12 @@
 name: Windows portable candidate smoke
 
 on:
+  push:
+    branches:
+      - 'feature/retail-private-candidate-20261112'
+    paths:
+      - 'scripts/ci_real_exe_private_review.py'
+      - '.github/workflows/windows-portable.yml'
   pull_request:
     paths:
       - 'desktop_core.py'
