@@ -9,6 +9,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
+import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
@@ -128,6 +130,39 @@ def main() -> int:
         _checked(h.hexdigest() == original_hash and total == original_bytes,
                  "PHYSICAL_ZIP_EXE_CHANGED")
 
+        # Materialize the *packaged* EXE in a Korean/space-containing directory,
+        # then execute it with system binaries on PATH but no Python installation.
+        # The EXE is our own freshly built GitHub candidate, never customer code.
+        consumer_folder = folder / "고객 점검 folder with spaces"
+        consumer_folder.mkdir()
+        extracted = consumer_folder / "CodeCheckerOffline.exe"
+        with zipfile.ZipFile(candidate, "r") as z:
+            with z.open("CodeCheckerOffline.exe") as source:
+                with extracted.open("xb") as target:
+                    shutil.copyfileobj(source, target, length=1024 * 1024)
+        _checked(_digest(extracted) == (original_hash, original_bytes),
+                 "EXTRACTED_EXE_IDENTITY_MISMATCH")
+
+        clean_env = {k: v for k, v in os.environ.items()
+                     if not k.upper().startswith(("PYTHON", "PYINSTALLER", "_MEIPASS"))}
+        system_root = Path(clean_env.get("SystemRoot") or r"C:\Windows")
+        clean_env["PATH"] = os.pathsep.join(
+            (str(system_root / "System32"), str(system_root)))
+        for mode in ("--self-test", "--gui-smoke", "--scenario-smoke"):
+            try:
+                completed = subprocess.run(
+                    [str(extracted), mode], cwd=consumer_folder,
+                    env=clean_env, timeout=120, check=False,
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise AssertionError("EXTRACTED_EXE_MODE_TIMEOUT:" + mode) from exc
+            _checked(completed.returncode == 0,
+                     "EXTRACTED_EXE_MODE_FAILED:" + mode)
+        _checked(_digest(extracted) == (original_hash, original_bytes),
+                 "PACKAGED_EXE_MODIFIED_AFTER_RUN")
+
         before = (_digest(candidate), _digest(report_path))
         try:
             prepare_private_review(**arguments)
@@ -143,6 +178,7 @@ def main() -> int:
     print("REAL_FROZEN_WINDOWS_EXE_PRIVATE_ZIP_E2E_PASS")
     print("EXACT_EXE_SHA256=" + original_hash)
     print("ZIP_RECEIPT_AND_BUNDLE_HASHES_VERIFIED=True")
+    print("EXTRACTED_KOREAN_PATH_PYTHON_FREE_EXE_SMOKE=PASS")
     print("CUSTOMER_RELEASE_READY=False")
     print("LICENSE_AND_ACTUAL_BUYER_PC_ACCEPTANCE=UNVERIFIED")
     return 0
