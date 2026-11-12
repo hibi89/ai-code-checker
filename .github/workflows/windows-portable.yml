@@ -51,6 +51,7 @@ on:
       - 'review_models.py'
       - 'requirements-offline-build.txt'
       - 'scripts/build_windows_portable.ps1'
+      - 'scripts/ci_real_exe_private_review.py'
       - 'scripts/mvp_acceptance.py'
       - 'verify_local.ps1'
       - 'tests/test_mvp_acceptance.py'
