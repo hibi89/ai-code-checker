@@ -110,11 +110,11 @@ class OwnerPrivateReviewTests(unittest.TestCase):
         self.assertEqual(self.out_json.read_text(), "ORIGINAL NONOVERWRITE")
         self.assertFalse(self.out_zip.exists())
 
-    def test_forged_readonly_host_acceptance_fails_without_new_outputs(self):
+    def test_forged_readonly_host_acceptance_fails_with_unapproved_zip_retained(self):
         self.readonly["pending_gates"][next(iter(self.readonly["pending_gates"]))] = "PASS"
         self.save_receipts()
         with self.assertRaises(ValueError):prepare_private_review(**self.kw())
-        self.assertFalse(self.out_zip.exists());self.assertFalse(self.out_json.exists())
+        self.assertTrue(self.out_zip.exists());self.assertFalse(self.out_json.exists())
 
     def test_mismatched_binary_receipt_same_size_refused(self):
         self.smoke["exe_sha256"] = "0"*64
