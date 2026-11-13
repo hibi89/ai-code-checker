@@ -56,8 +56,8 @@ def _safe_zip_preflight(source: Path) -> None:
             for info in infos:
                 raw = info.filename
                 parts = raw.rstrip("/").split("/")
-                if (not raw or raw.startswith("/") or "\\\\" in raw
-                        or "\\x00" in raw or any(p in {"", ".", ".."} for p in parts)
+                if (not raw or raw.startswith("/") or chr(92) in raw
+                        or chr(0) in raw or any(p in {"", ".", ".."} for p in parts)
                         or ":" in parts[0]):
                     raise InputError("위험한 ZIP 내부 경로를 거부했습니다.")
                 key = unicodedata.normalize("NFC", raw.rstrip("/")).casefold()
