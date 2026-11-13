@@ -34,7 +34,7 @@ def run_dev_process(source_zip: str | Path, output_root: str | Path) -> int:
     with tempfile.TemporaryDirectory(prefix="proofqa-dev-") as workdir:
         try:
             process = subprocess.run(
-                [sys.executable, "-E", "-s", "-B", str(adapter),
+                [sys.executable, "-E", "-s", "-B", "-X", "utf8", str(adapter),
                  str(source), "--output-dir", str(destination)],
                 cwd=workdir, env=env, capture_output=True,
                 text=True, encoding="utf-8", timeout=120, check=False,
