@@ -121,6 +121,11 @@ def _validate_actual_p70(graph: dict[str, Any], browser: dict[str, Any]) -> None
         ("GET", "/api/ok", 200), ("GET", "/api/fail", 500),
         ("POST", "/api/save", 200), ("GET", "/api/reopen", 200),
     ]
+    observations = browser.get("http_requests_checked")
+    if (not isinstance(observations, list)
+            or any(not isinstance(event, (list, tuple)) or len(event) != 3 for event in observations)):
+        raise InputError("실 HTTP 이벤트 타입/개수 검증 실패.")
+    normalized_http = [list(event) for event in observations]
     if (browser.get("contract") != "proofqa.p70.browser.acceptance.v1"
             or browser.get("status") != "PASS"
             or browser.get("release_state") != "HOLD"
@@ -130,7 +135,7 @@ def _validate_actual_p70(graph: dict[str, Any], browser: dict[str, Any]) -> None
             or browser.get("payment_or_destructive_actions") is not False
             or browser.get("persist_and_reopen_verified") is not True
             or browser.get("snapshot_confirmed") is not True
-            or browser.get("http_requests_checked") != [list(e) for e in expected]):
+            or normalized_http != [list(e) for e in expected]):
         raise InputError("실 Chromium의 synthetic scope/network/DOM 교차증거가 불충분합니다.")
 
 
