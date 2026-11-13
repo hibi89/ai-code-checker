@@ -53,6 +53,6 @@ jobs:
       - name: P70 pure source-provenance and P50 regression
         run: python -m unittest tests.test_proofqa_p70 tests.test_proofqa_p50 -v
       - name: Real Graphify local AST code and SQL, two findings correlation
-        run: python scripts/proofqa_p70_graph_acceptance.py
+        run: python -m scripts.proofqa_p70_graph_acceptance
       - name: Real agent-browser Chromium local UI HTTP and state acceptance
-        run: python scripts/proofqa_p70_browser_acceptance.py
+        run: python -m scripts.proofqa_p70_browser_acceptance
