@@ -114,6 +114,9 @@ def _validate_actual_p70(graph: dict[str, Any], browser: dict[str, Any]) -> None
                 or not isinstance(row.get("impact_edges"), list)
                 or not any(edge.get("confidence") == "EXTRACTED" for edge in row["impact_edges"])):
             raise InputError("P70 출처/라인/Graphify 신뢰 계약 위반.")
+    source_shas = {row.get("source_sha256") for row in rows if isinstance(row, dict)}
+    if len(source_shas) != 1:
+        raise InputError("서로 다른 후보 소스 파일 digest는 한 검수에 혼용할 수 없습니다.")
     expected = [
         ("GET", "/api/ok", 200), ("GET", "/api/fail", 500),
         ("POST", "/api/save", 200), ("GET", "/api/reopen", 200),
