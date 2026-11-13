@@ -173,6 +173,9 @@ def verify_package(path: str | Path, schema_path: str | Path | None = None) -> d
             or any(not _hex(x.get("sha256")) or x.get("observed") is not True
                    for x in evidence)):
         reject("기계 증거 참조 무결성 오류.")
+    source_record = next(x for x in evidence if x["id"] == "EV-CHECKER")
+    if not _hex(source_record.get("source_file_sha256")):
+        reject("P50 소스 파일 해시 앵커가 없습니다.")
     units = ledger.get("units")
     if not isinstance(units, list) or len(units) != len(COVERED | UNCOVERED):
         reject("Coverage Ledger 항목 수 오류.")
@@ -203,8 +206,11 @@ def verify_package(path: str | Path, schema_path: str | Path | None = None) -> d
                 or row.get("severity") is not None
                 or row.get("category") != "static_candidate"
                 or row.get("source_path") != "app.py"
+                or not isinstance(row.get("source_finding_index"), int)
+                or row["source_finding_index"] < 0
                 or not isinstance(row.get("line"), int) or row["line"] < 1
                 or not _hex(row.get("source_sha256"))
+                or row.get("source_sha256") != source_record["source_file_sha256"]
                 or not _hex(row.get("fingerprint"))
                 or row.get("evidence_refs") != ["EV-CHECKER", "EV-GRAPH"]
                 or not isinstance(row.get("unresolved_fact"), str)
@@ -212,6 +218,13 @@ def verify_package(path: str | Path, schema_path: str | Path | None = None) -> d
                 or row.get("customer_scope_approved") is not False
                 or row.get("verified_by_fresh_independent_agent") is not False):
             reject("확정되지 않은 후보/심각도/근거의 허위 상태.")
+    indices = [row["source_finding_index"] for row in rows]
+    if len(indices) != len(set(indices)) or indices != sorted(indices):
+        reject("CodeChecker 원래 후보 식별자 중복/역순.")
+    for row in rows:
+        raw = (sha + "|" + row["source_path"] + "|" + str(row["line"]) + "|" + str(row["source_finding_index"])).encode("utf-8")
+        if row["fingerprint"] != hashlib.sha256(raw).hexdigest():
+            reject("독립 후보 fingerprint와 원래 소스 SHA/라인 연결 실패.")
     if len(identifiers) != len(set(identifiers)):
         reject("중복 후보 식별자.")
     actual_counts = _counts(rows)
