@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/proofqa/p85/report.schema.json",
+  "title": "PROOFQA AX P85 synthetic report format (NOT customer certification)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "subject_sha256",
+    "scope",
+    "run_status",
+    "release_state",
+    "customer_accepted",
+    "security_certification",
+    "counts",
+    "coverage",
+    "finding_ids",
+    "canonical_lines"
+  ],
+  "properties": {
+    "contract": {
+      "const": "proofqa.p85.audit.v1"
+    },
+    "subject_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "scope": {
+      "const": "SYNTHETIC_ONLY"
+    },
+    "run_status": {
+      "const": "incomplete"
+    },
+    "release_state": {
+      "const": "HOLD"
+    },
+    "customer_accepted": {
+      "const": false
+    },
+    "security_certification": {
+      "const": false
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planned",
+        "completed",
+        "not_covered"
+      ],
+      "properties": {
+        "planned": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_covered": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "confirmed",
+        "needs_validation",
+        "rejected",
+        "not_covered"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confirmed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "needs_validation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rejected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_covered": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "finding_ids": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^PQ85-[0-9]{3}$"
+      }
+    },
+    "canonical_lines": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 26,
+      "items": {
+        "type": "string",
+        "maxLength": 160
+      }
+    }
+  }
+}
