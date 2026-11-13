@@ -251,6 +251,7 @@ def compose(graph: dict[str, Any], browser: dict[str, Any], output_root: str | P
                 (sha + "|" + row["source_path"] + "|" + str(row["line"]) + "|" + str(row["finding_index"])).encode()
             ),
             "source_path": row["source_path"],
+            "source_finding_index": row["finding_index"],
             "line": row["line"],
             "source_sha256": row["source_sha256"],
             "status": "NEEDS_VALIDATION",
@@ -281,7 +282,7 @@ def compose(graph: dict[str, Any], browser: dict[str, Any], output_root: str | P
     }
     evidence = [
         {"id": "EV-CHECKER", "origin": "real P50 offline synthetic ZIP case",
-         "sha256": hashes["p50_case"], "observed": True},
+         "sha256": hashes["p50_case"], "source_file_sha256": actual_rows[0]["source_sha256"], "observed": True},
         {"id": "EV-GRAPH", "origin": "real pinned Graphify code-only AST graph",
          "sha256": hashes["graph_json"], "observed": True},
         {"id": "EV-BROWSER", "origin": "real agent-browser 127.0.0.1 synthetic HTTP/DOM",
