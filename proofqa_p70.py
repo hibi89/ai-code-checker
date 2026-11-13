@@ -73,7 +73,7 @@ def validate_graph(
            or not re.fullmatch("[a-f0-9]{64}", v) for k, v in source_hashes.items()):
         raise InputError("소스 해시 매니페스트가 허용 형식이 아닙니다.")
     nodes = graph.get("nodes")
-    links = graph.get("links")
+    links = graph.get("links") if isinstance(graph.get("links"), list) else graph.get("edges")
     if (not isinstance(nodes, list) or not isinstance(links, list)
             or len(nodes) > MAX_NODES or len(links) > MAX_EDGES):
         raise InputError("Graphify graph.json 구조/수량 한도 오류.")
