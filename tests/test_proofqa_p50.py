@@ -125,6 +125,19 @@ class ProofQaP50Tests(unittest.TestCase):
             self.assertTrue(all(not f["confirmed_vulnerability"] for f in case["findings"]))
             self.assertNotEqual(case["scope"]["status"], "secure")
 
+    def test_bounded_dev_subprocess_does_not_execute_customer_python(self):
+        from scripts.proofqa_p50_dev_runner import run_dev_process
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "customer.zip"
+            marker = root / "SHOULD_NOT_RUN"
+            malicious = "from pathlib import Path\\nPath(" + repr(str(marker)) + ").write_text('executed')\\n"
+            _zip(source, {"app.py": malicious})
+            rc = run_dev_process(source, root / "out")
+            self.assertIn(rc, (0, 3))
+            self.assertFalse(marker.exists(), "scanned code must never execute")
+            self.assertEqual(len(list((root / "out").glob("proofqa-*"))), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
