@@ -131,7 +131,7 @@ class ProofQaP50Tests(unittest.TestCase):
             root = Path(temp)
             source = root / "customer.zip"
             marker = root / "SHOULD_NOT_RUN"
-            malicious = "from pathlib import Path\\nPath(" + repr(str(marker)) + ").write_text('executed')\\n"
+            malicious = "from pathlib import Path\nPath(" + repr(str(marker)) + ").write_text('executed')\n"
             _zip(source, {"app.py": malicious})
             rc = run_dev_process(source, root / "out")
             self.assertIn(rc, (0, 3))
