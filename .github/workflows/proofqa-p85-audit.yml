@@ -1,0 +1,82 @@
+name: PROOFQA P85 audit schema PDF and adversarial acceptance
+
+on:
+  push:
+    branches:
+      - feature/proofqa-ax-p85-independent-audit
+    paths:
+      - "proofqa_p85.py"
+      - "proofqa_p85_verify.py"
+      - "proofqa_p70.py"
+      - "proofqa_p50.py"
+      - "scripts/proofqa_p85_acceptance.py"
+      - "scripts/proofqa_p70_*"
+      - "schemas/proofqa_p85_report.schema.json"
+      - "tests/p85_adversarial_cases.py"
+      - ".github/workflows/proofqa-p85-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proofqa-p85-branch
+  cancel-in-progress: true
+
+jobs:
+  report-security-matrix:
+    name: P85 adversarial and PDF independent verification
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 14
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Install pinned report verification dependencies
+        run: python -m pip install --disable-pip-version-check "reportlab==4.4.5" "pypdf==6.2.0" "jsonschema==4.25.1"
+      - name: Verify dependency consistency
+        run: python -m pip check
+      - name: Compile P85 code
+        run: python -m py_compile proofqa_p85.py proofqa_p85_verify.py tests/p85_adversarial_cases.py
+      - name: P85 adversarial negative suite and PDF text parity
+        run: python -m unittest tests.p85_adversarial_cases -v
+      - name: Confirm original P50 and P70 offline regression
+        run: python -m unittest tests.test_proofqa_p50 tests.test_proofqa_p70 -v
+
+  live-synthetic-integration:
+    name: P85 real Graphify and Chromium to PDF/HTML/JSON independent verifier
+    runs-on: ubuntu-24.04
+    timeout-minutes: 23
+    env:
+      GRAPHIFY_BACKEND: none
+      GRAPHIFY_QUERY_LOG_DISABLE: "1"
+      PYTHONUTF8: "1"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install exact offline code AST and reporting tools
+        run: python -m pip install --disable-pip-version-check "graphifyy[sql]==0.9.108" "reportlab==4.4.5" "pypdf==6.2.0" "jsonschema==4.25.1" "pymupdf==1.26.3"
+      - name: Install actual pinned browser
+        run: |
+          npm install --global agent-browser@0.43.0
+          agent-browser install
+      - name: Verify environment
+        run: |
+          python -m pip check
+          python -c "import importlib.metadata as m; assert m.version('graphifyy') == '0.9.108'; assert m.version('reportlab') == '4.4.5'"
+          agent-browser --version
+      - name: Real synthetic tools to P85 independent process verifier and PDF raster
+        run: python -m scripts.proofqa_p85_acceptance
+      - name: P85 negative suite with actual report generator
+        run: python -m unittest tests.p85_adversarial_cases -v
